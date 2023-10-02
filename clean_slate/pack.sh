@@ -1,0 +1,1 @@
+tar -czf ../clean-cyn.tar.gz * .env
