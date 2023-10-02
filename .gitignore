@@ -127,4 +127,4 @@ dist
 .pnp.*
 
 # Clean slate files are supposed to stay in their archive.
-# clean_slate/*
+clean_slate/*
