@@ -125,6 +125,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-# Clean slate files are supposed to stay in their archive.
-clean_slate/*
