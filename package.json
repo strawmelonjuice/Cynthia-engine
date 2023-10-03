@@ -6,29 +6,26 @@
     "scripts": {
         "preinstall": "npx only-allow pnpm",
         "start": "node ./main.js",
-        "dev": "concurrently \"nodemon -q ./main.js\""
+        "dev": "nodemon -q ./main.js -e gz,js,json"
     },
     "keywords": [],
     "author": "Strawmelonjuice Mar",
     "license": "ISC",
     "dependencies": {
-        "axios": "^1.5.0",
-        "bcrypt": "^5.1.1",
         "biome": "^0.3.3",
         "body-parser": "^1.20.2",
         "comment-json": "^4.2.3",
         "dotenv": "^16.3.1",
         "express": "^4.18.2",
         "handlebars": "^4.7.8",
+        "markdown-it": "^13.0.2",
         "path": "^0.12.7",
         "php-server": "^1.0.0",
-        "pino": "^8.15.1",
-        "pino-http": "^8.5.0",
-        "tar": "^6.2.0"
+        "tar": "^6.2.0",
+        "tslog": "^4.9.2"
     },
     "devDependencies": {
         "@biomejs/biome": "^1.1.2",
-        "concurrently": "^8.2.1",
         "nodemon": "^3.0.1"
     },
     "pnpm": {

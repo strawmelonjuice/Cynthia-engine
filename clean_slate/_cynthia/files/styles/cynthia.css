@@ -1,0 +1,61 @@
+@import url('https://strawmelonjuice.com/gfonts.php/https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300&display=swap');
+body {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  font-family: 'Fira Sans',sans-serif;
+}
+main {
+  border-radius: 10px;
+  background-color: rgb(175, 168, 182);
+  height: 90VH;
+    margin-left: 25VW;
+  padding: 1px 16px;
+  margin-right: auto;
+}
+
+#link-menu {
+  padding: 0;
+  width: 20VW;
+  border-radius: 35px;
+  background-color: #cc6868;
+  position: fixed;
+  height: 85VH;
+  overflow: auto;
+}
+
+#link-menu a {
+  display: block;
+  color: black;
+  padding: 16px;
+  text-decoration: none;
+}
+
+#link-menu a.active {
+  background-color: #04AA6D;
+  color: white;
+}
+
+#link-menu a:hover:not(.active) {
+  background-color: #555;
+  color: white;
+}
+
+@media screen and (max-width: 700px) {
+  #link-menu {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  #link-menu a {float: left;}
+  main {margin-left: 0;}
+}
+
+@media screen and (max-width: 400px) {
+  #link-menu a {
+    text-align: center;
+    float: none;
+  }
+}

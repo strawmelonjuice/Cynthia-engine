@@ -1,4 +1,19 @@
-{
-    "sitename": "My Cynthia site!",
-    "stylefile": "default.css"
-}
+[
+	"default",
+	{
+		"sitename": "My Cynthia site!",
+		"stylefile": "default.css",
+		"handlebar": {
+			"post": "default",
+			"page": "default"
+		},
+		"menulinks": [
+			{"name": "A home page!", "href": "/"},
+			{ "name": "Another page", "href": "/p/2" },
+			{
+				"name": "About Cynthia",
+				"href": "https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD"
+			}
+		]
+	}
+]
