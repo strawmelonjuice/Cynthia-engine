@@ -122,6 +122,7 @@ dist
 # CynthiaConfig
 /.env
 /pack.sh
+/reset.sh
 /GETTINGSTARTED.MD
 /assets
 /_cynthia
