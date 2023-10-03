@@ -4,6 +4,7 @@ const fs = require("fs");
 const tar = require("tar");
 const path = require("path");
 const handlebars = require("handlebars");
+const { parse } = require("comment-json");
 function parseBool(bool) {
 	if (bool === "true" || bool === "1" || bool === 1 || bool === true)
 		return true;
@@ -48,32 +49,24 @@ function HandlebarsAsHTML(file, variables) {
 	const html = compiled(variables);
 	return html;
 }
-// const preloadedresponses = {
-// 	html: {
-// 		index: HandlebarsAsHTML("./assets/hb/index.handlebars", vars),
-// 	},
-// };
+const modes = (() => {
+let d;
+fs.readdirSync(path.join(__dirname, "./_cynthia/config/modes")).forEach(file => {
+    d[file] = parse(readFileSync(path.join(__dirname, "./_cynthia/config/modes", file), {encoding: "utf8"}));
+})
+return d;
+})()
+console.log(modes);
+function LoadPage(id) {
+		
+}
+
 const app = express();
-	// const pino = require("pino-http")();
-	// app.use(pino);
-	app.use(express.json());
-	app.use(require("body-parser").urlencoded({ extended: false }));
-	app.use(
-		session({
-			secret: daSecret,
-			resave: false,
-			saveUninitialized: true,
-			cookie: { secure: "auto" },
-		}),
-	);
-
-	app.use("/assets", express.static(path.join(__dirname, "./assets/")));
-
 	app.get("/*", (req, res) => {
 		let anyerrors;
 		switch (req.url) {
 			case "/":
-				res.send(HandlebarsAsHTML("./assets/hb/index.handlebars", vars));
+				LoadPage("root");
 				// res.send(preloadedresponses.html.index);
 				anyerrors = false;
 				break;
@@ -84,18 +77,12 @@ const app = express();
 				anyerrors = true;
 				break;
 		}
-
 		if (anyerrors) {
 			tell.warn(`[GET] ➡️❌   "${req.url}"`);
 		} else {
 			tell.log(0, "OK", `[GET] ➡️✔️   "${req.url}"`);
 		}
 	});
-app.listen(vars.port, () => {
-	console.info(`⚡️ Running at http://localhost:${vars.port}/`);
-	console.log(
-		0,
-		"PHP",
-		`PHP parser as a child process on http://${PHPParserHTTP}`,
-	);
+app.listen(process.env["PORT"], () => {
+	console.info(`⚡️ Running at http://localhost:${process.env["PORT"]}/`);
 });

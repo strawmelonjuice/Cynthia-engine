@@ -2,4 +2,5 @@
 
 So, you have a clean Cynthia setup right here huh? Wanna get started setting it up?
 
-## What all these files mean
+## What do all these files mean?
+
