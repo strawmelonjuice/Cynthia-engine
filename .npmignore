@@ -1,0 +1,14 @@
+# CynthiaConfig
+/.env
+/pack.sh
+/reset.sh
+/GETTINGSTARTED.MD
+/cynthia_config
+/site
+
+# Clean Cynthia config
+/clean_slate
+
+# Rome and Biome configs
+/rome.json
+/biome.json

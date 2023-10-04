@@ -1,6 +1,6 @@
 {
-    "name": "ldc-34553",
-    "version": "0.0.1",
+    "name": "cynthiacms",
+    "version": "0.1.1",
     "description": "",
     "main": "./main.js",
     "scripts": {
