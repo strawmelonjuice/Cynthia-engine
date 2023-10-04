@@ -193,7 +193,6 @@ async function ReturnPage(id, currenturl) {
 	}
 	// Prepare menu links
 	let menulinks = "";
-	console.log(`Current url: ${currenturl}`);
 	if (
 		pagemeta.menulinkoverride === undefined ||
 		pagemeta.menulinkoverride == null ||
