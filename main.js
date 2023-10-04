@@ -11,6 +11,7 @@ const connsola = new tslog.Logger();
 const MarkdownIt = require("markdown-it");
 const { raw } = require("body-parser");
 const md = new MarkdownIt();
+const pjson = require('./package.json');
 class logging {
 	logfile;
 	constructor(logfile) {
@@ -192,16 +193,23 @@ function ReturnPage(id, currenturl) {
 	${stylesheet}
 	</style>
 	<title>${pagemeta.title} ﹘ ${modes[pagemode].sitename}</title>
+	<script>
+		const pagemetainfo = JSON.parse(${JSON.stringify(pagemeta)});
+	</script>
 	`;
 	// Unite the template with it's content and return it to the server
-	page = HandlebarsAsHTML(
+	page = 
+	`<!-- Generated and hosted through Cynthia v${pjson.version}, by Strawmelonjuice. 
+Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
+-->
+	${HandlebarsAsHTML(
 		path.join("./_cynthia/files/templates/", `${handlebarsfile}.handlebars`),
 		{
 			head: headstuff,
 			content: pagecontent,
 			menulinks: menulinks
 		}
-	);
+	)}`;
 	// console.log(page);
 	return page;
 }
@@ -238,6 +246,7 @@ app.get('/p/:id', async (req, res) => {
 	}
 });
 app.use("/assets", express.static(path.join(__dirname, "/assets/")));
+app.use("/hl-img", express.static(path.join(__dirname, "/node_modules/hl-img/dist/")));
 app.listen(process.env.PORT, () => {
 	tell.info(`⚡️ Running at http://localhost:${process.env.PORT}/`);
 });
