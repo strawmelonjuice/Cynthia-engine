@@ -1,4 +1,4 @@
-const devel = true;
+const devel = (process.argv[2] === "--dev");
 const express = require("express");
 const dotenv = require("dotenv");
 const fs = require("fs");
