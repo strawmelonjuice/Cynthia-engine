@@ -248,17 +248,34 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 
 const app = express();
 app.get("/", async (req, res) => {
+	let pid = "";
 	let anyerrors = false;
-	try {
-		res.send(await ReturnPage("root", "/"));
-		anyerrors = false;
-	} catch {
-		anyerrors = true;
-	}
-	if (anyerrors) {
-		tell.warn(`[GET] ➡️❌   "${req.url}"`);
+	if (typeof req.query.p !== "undefined") pid = req.query.p;
+	if (typeof req.query.page !== "undefined") pid = req.query.page;
+	if (typeof req.query.post !== "undefined") pid = req.query.post;
+	if (typeof req.query.id !== "undefined") pid = req.query.id;
+	if (pid !== "") {
+		try {
+			res.send(await ReturnPage(pid, req.url));
+		} catch {
+			anyerrors = true;
+		}
+		if (anyerrors) {
+			tell.warn(`[GET] ➡️❌   "${req.url}  ~ ${pid}"`);
+		} else {
+			tell.log(0, "OK", `[GET] ➡️✔️   "${req.url} ~ ${pid}"`);
+		}
 	} else {
-		tell.log(0, "OK", `[GET] ➡️✔️   "${req.url}"`);
+		try {
+			res.send(await ReturnPage("root", "/"));
+		} catch {
+			anyerrors = true;
+		}
+		if (anyerrors) {
+			tell.warn(`[GET] ➡️❌   "${req.url}"`);
+		} else {
+			tell.log(0, "OK", `[GET] ➡️✔️   "${req.url}"`);
+		}
 	}
 });
 
