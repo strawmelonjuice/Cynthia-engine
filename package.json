@@ -6,7 +6,8 @@
     "scripts": {
         "preinstall": "npx only-allow npm",
         "start": "nodemon --delay 3000ms ./main.js -w ./cynthia_config/modes -e jsonc",
-        "dev": "nodemon ./main.js --dev -e gz,js,json"
+        "dev": "nodemon ./main.js --dev -e gz,js,json",
+        "test": "node ./main.js --short"
     },
     "keywords": [],
     "author": "Strawmelonjuice Mar",
