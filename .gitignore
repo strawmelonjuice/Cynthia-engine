@@ -128,4 +128,4 @@ dist
 /site
 
 # Submlime (opened in sublime a time.)
-reset.sublime-workspace
+/reset.sublime-workspace

@@ -12,3 +12,11 @@
 # Rome and Biome configs
 /rome.json
 /biome.json
+
+# Logs
+/logs
+
+# Files that npm should ignore smh
+/reset.sublime-workspace
+/cynthiacms-*.tgz
+/.*

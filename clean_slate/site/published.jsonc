@@ -16,7 +16,7 @@
 		"content": {
 			"type": "markdown",
 			"location": "local",
-			"path": "../GETTINGSTARTED.MD"
+			"path": "../../GETTINGSTARTED.MD"
 		},
 		"mode": "strawmelonjuice-cynthia"
 	},
