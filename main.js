@@ -175,11 +175,9 @@ async function ReturnPage(id, currenturl) {
 	let pagecontent;
 	switch (pagemeta.content.type.toLowerCase()) {
 		case "html" || "webfile":
-			tell.silly("Serving html");
 			pagecontent = `<div>${rawpagecontent}</div>`;
 			break;
 		case "plain" || "text" || "plaintext" || "raw":
-			tell.silly("Serving plaintext");
 			pagecontent = `<div><pre>${rawpagecontent
 				.replaceAll("&", "&amp;")
 				.replaceAll("<", "&lt;")
