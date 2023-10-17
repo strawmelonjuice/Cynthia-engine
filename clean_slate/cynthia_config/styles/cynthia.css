@@ -1,72 +1,77 @@
-@import url('https://strawmelonjuice.com/gfonts.php/https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300&display=swap');
+@import url("https://strawmelonjuice.com/gfonts.php/https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300&display=swap");
 body {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  right: 0px;
-  bottom: 0px;
-  font-family: 'Fira Sans',sans-serif;
-  overflow-y: clip;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	font-family: "Fira Sans", sans-serif;
+	overflow-y: clip;
 }
 main {
-  border-radius: 10px;
-  background-color: rgb(175, 168, 182);
-  height: 90VH;
-    margin-left: 25VW;
-  padding: 1px 16px;
-  margin-right: auto;
-  overflow-y: auto;
+	border-radius: 10px;
+	background-color: rgb(175, 168, 182);
+	height: 90vh;
+	margin-left: 25vw;
+	padding: 1px 16px;
+	margin-right: auto;
+	overflow-y: auto;
 }
 
 #link-menu {
-  padding: 0;
-  width: 20VW;
-  border-radius: 35px;
-  background-color: #cc6868;
-  position: fixed;
-  height: 85VH;
-  overflow: auto;
+	padding: 0;
+	width: 20vw;
+	border-radius: 35px;
+	background-color: #cc6868;
+	position: fixed;
+	height: 85vh;
+	overflow: auto;
 }
 
 #link-menu a {
-  display: block;
-  color: black;
-  padding: 16px;
-  text-decoration: none;
+	display: block;
+	color: black;
+	padding: 16px;
+	text-decoration: none;
 }
 
 #link-menu a.active {
-  background-color: #04AA6D;
-  color: white;
+	background-color: #04aa6d;
+	color: white;
 }
 
 #link-menu a:hover:not(.active) {
-  background-color: #555;
-  color: white;
+	background-color: #555;
+	color: white;
 }
 
 @media screen and (max-width: 700px) {
-  #link-menu {
-    width: 100%;
-    height: auto;
-    position: relative;
-  }
-  #link-menu a {float: left;}
-  main {margin-left: 0;}
+	#link-menu {
+		width: 100%;
+		height: auto;
+		position: relative;
+	}
+	#link-menu a {
+		float: left;
+	}
+	main {
+		margin-left: 0;
+	}
 }
 
 @media screen and (max-width: 400px) {
-  #link-menu a {
-    text-align: center;
-    float: none;
-  }
+	#link-menu a {
+		text-align: center;
+		float: none;
+	}
 }
 
 blockquote {
-  background-color: rgba(220, 238, 255, 0.559);
-border-top: 10px none #555555;
-border-right: 2px ridge #555555;
-border-bottom: 2px dashed #ffff8f;
-border-left: 5px groove #555555;
-padding: 2px;
+	background-color: rgba(220, 238, 255, 0.559);
+	border-top: 10px none #555555;
+	border-right: 2px ridge #555555;
+	border-bottom: 2px dashed #ffff8f;
+	border-left: 5px groove #555555;
+	padding: 2px;
+	margin-left: 1.5em;
 }
