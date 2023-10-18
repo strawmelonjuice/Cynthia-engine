@@ -129,3 +129,5 @@ dist
 
 # Submlime (opened in sublime a time.)
 /reset.sublime-workspace
+/.vs
+/.vscode
