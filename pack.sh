@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+3#!/usr/bin/env bash
 echo "Packing to 'clean-cyn.tar.gz'..."
-ls -A ./clean_slate/
-tar -czf ./clean-cyn.tar.gz ./clean_slate/* ./clean_slate/.env
+cd ./clean_slate
+ls -A ./
+tar -czf ../clean-cyn.tar.gz * .env
