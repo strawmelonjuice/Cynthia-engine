@@ -1,12 +1,12 @@
 {
     "name": "@cynthiacms/cynthiacms",
-    "version": "0.1.1",
+    "version": "0.2.1",
     "description": "",
     "main": "./main.js",
     "scripts": {
-        "preinstall": "npx only-allow npm",
         "start": "nodemon --delay 3000ms ./main.js -w ./cynthia_config/modes -e jsonc",
         "dev": "nodemon ./main.js --dev -e gz,js,json",
+        "pretest": "npx only-allow npm",
         "test": "node ./main.js --short"
     },
     "keywords": [],
@@ -29,6 +29,7 @@
     },
     "devDependencies": {
         "@biomejs/biome": "^1.1.2",
+        "eslint": "^8.51.0",
         "nodemon": "^3.0.1"
     }
 }

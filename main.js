@@ -10,7 +10,11 @@ const tslog = require("tslog");
 const connsola = new tslog.Logger();
 const MarkdownIt = require("markdown-it");
 const { raw } = require("body-parser");
-const md = new MarkdownIt();
+const md = new MarkdownIt({
+	html: true,
+	linkify: true,
+	typographer: true,
+});
 const Axios = require("axios");
 const pjson = require("./package.json");
 class logging {
@@ -163,6 +167,10 @@ async function ReturnPage(id, currenturl) {
 		case "external": 
 			rawpagecontent = (await Axios.default.get(pagemeta.content.url).then()).data;
 			break;
+		case "external-direct":
+			return (await Axios.default.get(pagemeta.content.url).then()).data;
+		case "redirect":
+			return ({ do: "relocation", url: pagemeta.content.url });
 		default:
 			rawpagecontent = fs.readFileSync(
 				path.join(__dirname, "/site/pages/", pagemeta.content.path),
@@ -243,7 +251,30 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 	// console.log(page);
 	return page;
 }
-
+async function CynthiaRespond(id,req,res) {
+	let anyerrors = true;
+	try {
+		const cynspon = await ReturnPage(id, req.url);
+		if (typeof cynspon !== "object") {
+			res.send(cynspon);
+			anyerrors = false;
+		} else {
+			if (cynspon.do === "relocation") {
+				res.redirect(302, cynspon.url);
+				console.log(`Redirecting '${req.url}' to '${cynspon.url}'.`);
+				anyerrors = false;
+			}
+		}
+	} catch {
+		anyerrors = true;
+	}
+	if (anyerrors) {
+		tell.log(0, "500", `[GET] ➡️❌   "${req.url}"`);
+		res.send(500);
+	} else {
+		tell.log(0, "200", `[GET] ➡️✔️   "${req.url}"`);
+	}
+}
 const app = express();
 app.get("/", async (req, res) => {
 	let pid = "";
@@ -253,44 +284,15 @@ app.get("/", async (req, res) => {
 	if (typeof req.query.post !== "undefined") pid = req.query.post;
 	if (typeof req.query.id !== "undefined") pid = req.query.id;
 	if (pid !== "") {
-		try {
-			res.send(await ReturnPage(pid, req.url));
-		} catch {
-			anyerrors = true;
-		}
-		if (anyerrors) {
-			tell.warn(`[GET] ➡️❌   "${req.url}  ~ ${pid}"`);
-		} else {
-			tell.log(0, "OK", `[GET] ➡️✔️   "${req.url} ~ ${pid}"`);
-		}
+		CynthiaRespond(pid,req,res);
 	} else {
-		try {
-			res.send(await ReturnPage("root", "/"));
-		} catch {
-			anyerrors = true;
-		}
-		if (anyerrors) {
-			tell.warn(`[GET] ➡️❌   "${req.url}"`);
-		} else {
-			tell.log(0, "OK", `[GET] ➡️✔️   "${req.url}"`);
-		}
+		CynthiaRespond("root", req, res);
 	}
 });
 
 app.get("/p/:id", async (req, res) => {
-	let anyerrors = false;
 	const id = req.params.id;
-	try {
-		res.send(await ReturnPage(id, `/p/${id}`));
-		anyerrors = false;
-	} catch {
-		anyerrors = true;
-	}
-	if (anyerrors) {
-		tell.warn(`[GET] ➡️❌   "${req.url}"`);
-	} else {
-		tell.log(0, "OK", `[GET] ➡️✔️   "${req.url}"`);
-	}
+	CynthiaRespond(id, req, res);
 });
 app.use("/assets", express.static(path.join(__dirname, "/site/assets/")));
 app.use(
