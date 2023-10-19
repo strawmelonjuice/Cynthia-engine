@@ -72,17 +72,17 @@ const tell = lt;
 
 // Plugin loader
 const cynthiabase = {
-	exportoutput: [
+	modifyOutputHTML: [
 		(htmlin) => {
 			return htmlin;
 		},
 	],
-	exportbody: [
+	modifyBodyHTML: [
 		(htmlin) => {
 			return htmlin;
 		},
 	],
-	expressactions: [(expressapp) => {}],
+	expressActions: [(expressapp) => {}],
 };
 fs.readdirSync("./plugins", { withFileTypes: true })
 	.filter((dirent) => dirent.isDirectory())
@@ -93,10 +93,10 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			tell.log(
 				0,
 				chalk.reset.hex("5787b8").italic("Plugins"),
-				`Linking ${chalk.dim.magentaBright(
+				`⬅️➕ Linking ${chalk.dim.magentaBright(
 					plugin_package_json.name
 				)}.${displaylinkedfat} to ${chalk.dim.yellowBright(
-					"cynthiabase"
+					"cynthiacms"
 				)}.${displaylinkedfat}...`
 			);
 		}
@@ -109,7 +109,9 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 		tell.log(
 			0,
 			chalk.reset.hex("5787b8").italic("Plugins"),
-			`Loading plugin: ${chalk.dim.magentaBright(plugin_package_json.name)}...`
+			`⬅️➕ Loading plugin: ${chalk.dim.magentaBright(
+				plugin_package_json.name
+			)}...`
 		);
 		const plugin = require(path.join(
 			__dirname,
@@ -117,17 +119,17 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			pluginfolder,
 			plugin_package_json.main
 		));
-		if (typeof plugin.exportoutput === "function") {
-			linklog(chalk.greenBright("exportoutput"));
-			cynthiabase.exportoutput.push(plugin.exportoutput);
+		if (typeof plugin.modifyOutputHTML === "function") {
+			linklog(chalk.greenBright("modifyOutputHTML"));
+			cynthiabase.modifyOutputHTML.push(plugin.modifyOutputHTML);
 		}
-		if (typeof plugin.expressactions === "function") {
-			linklog(chalk.blueBright("expressactions"));
-			cynthiabase.expressactions.push(plugin.expressactions);
+		if (typeof plugin.expressActions === "function") {
+			linklog(chalk.blueBright("expressActions"));
+			cynthiabase.expressActions.push(plugin.expressActions);
 		}
-		if (typeof plugin.exportbody === "function") {
-			linklog(chalk.greenBright("exportbody"));
-			cynthiabase.exportbody.push(plugin.exportbody);
+		if (typeof plugin.modifyBodyHTML === "function") {
+			linklog(chalk.greenBright("modifyBodyHTML"));
+			cynthiabase.modifyBodyHTML.push(plugin.modifyBodyHTML);
 		}
 	});
 function parseBool(bool) {
@@ -183,7 +185,7 @@ const modes = (() => {
 					encoding: "utf8",
 				})
 			);
-			tell.info(`Loaded mode: '${b[0]}'!`);
+			tell.log(0,chalk.reset.cyanBright("Modes"),`↘️➕ Loaded mode: '${b[0]}'.`);
 			d[b[0]] = b[1];
 		}
 	);
@@ -287,7 +289,7 @@ async function ReturnPage(id, currenturl) {
 	</script>
 	`;
 	// Run body modifier plugins.
-	cynthiabase.exportbody.forEach((modifier) => {
+	cynthiabase.modifyBodyHTML.forEach((modifier) => {
 		pagecontent = modifier(pagecontent);
 	});
 
@@ -305,7 +307,7 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 			menulinks: menulinks,
 		}
 	)}`;
-	cynthiabase.exportoutput.forEach((modifier) => {
+	cynthiabase.modifyOutputHTML.forEach((modifier) => {
 		page = modifier(page);
 	});
 	// console.log("HTML:" + page);
@@ -329,10 +331,10 @@ async function CynthiaRespond(id, req, res) {
 		anyerrors = true;
 	}
 	if (anyerrors) {
-		tell.log(0, "500", `[GET] ➡️❌   "${req.url}"`);
+		tell.log(0, "500", `➡️❌  [GET]		"${req.url}"`);
 		res.sendStatus(500);
 	} else {
-		tell.log(0, "200", `[GET] ➡️✔️   "${req.url}"`);
+		tell.log(0, "200", `➡️✔️  [GET]		"${req.url}"`);
 	}
 }
 const app = express();
@@ -348,7 +350,7 @@ app.get("/", async (req, res) => {
 		CynthiaRespond("root", req, res);
 	}
 });
-cynthiabase.expressactions.forEach((action) => {
+cynthiabase.expressActions.forEach((action) => {
 	action(app);
 });
 app.get("/p/:id", async (req, res) => {
