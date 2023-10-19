@@ -88,6 +88,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 	.filter((dirent) => dirent.isDirectory())
 	.map((dirent) => dirent.name)
 	.forEach((pluginfolder) => {
+		if (pluginfolder.endsWith("-disabled")) return;
 		function linklog(displaylinked) {
 			displaylinkedfat = chalk.bold(displaylinked);
 			tell.log(
