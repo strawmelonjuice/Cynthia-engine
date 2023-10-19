@@ -1,5 +1,11 @@
 # Cynthia
 
+<font style="color: red"><b>
+
+Cynthia is in active development, but not ready for full production usage!
+
+</font></b>
+
 This page is either found on [/p/about/](/p/about/) in your fresh Cynthia install, or on <https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>.
 
 Cynthia is a NodeJS alternative to the engine I built to host <https://strawmelonjuice.com/>. (The original engine is built on a mix of PHP and javascript, Cynthia is pure Javascript.)

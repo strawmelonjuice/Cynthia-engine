@@ -1,0 +1,14 @@
+{
+  "name": "@cynthiacms/hlimg-cynthia",
+  "version": "1.0.0",
+  "description": "HL-IMG loader plugin for CynthiaCMS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "MLC Bloeiman",
+  "license": "MIT",
+  "dependencies": {
+    "hl-img": "^2"
+  }
+}

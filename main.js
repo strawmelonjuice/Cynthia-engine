@@ -1,4 +1,4 @@
-const devel = (process.argv[2] === "--dev" || process.argv[2] === "--short");
+const devel = process.argv[2] === "--dev" || process.argv[2] === "--short";
 const express = require("express");
 const dotenv = require("dotenv");
 const fs = require("fs");
@@ -9,6 +9,7 @@ const { parse } = require("comment-json");
 const tslog = require("tslog");
 const connsola = new tslog.Logger();
 const MarkdownIt = require("markdown-it");
+const chalk = require("chalk");
 const { raw } = require("body-parser");
 const md = new MarkdownIt({
 	html: true,
@@ -17,6 +18,7 @@ const md = new MarkdownIt({
 });
 const Axios = require("axios");
 const pjson = require("./package.json");
+// Logger
 class logging {
 	logfile;
 	constructor(logfile) {
@@ -67,6 +69,67 @@ if (!fs.existsSync("./logs")) {
 if (devel) lt = new tslog.Logger();
 else lt = new logging(logfilename);
 const tell = lt;
+
+// Plugin loader
+const cynthiabase = {
+	exportoutput: [
+		(htmlin) => {
+			return htmlin;
+		},
+	],
+	exportbody: [
+		(htmlin) => {
+			return htmlin;
+		},
+	],
+	expressactions: [(expressapp) => {}],
+};
+fs.readdirSync("./plugins", { withFileTypes: true })
+	.filter((dirent) => dirent.isDirectory())
+	.map((dirent) => dirent.name)
+	.forEach((pluginfolder) => {
+		function linklog(displaylinked) {
+			displaylinkedfat = chalk.bold(displaylinked);
+			tell.log(
+				0,
+				chalk.reset.hex("5787b8").italic("Plugins"),
+				`Linking ${chalk.dim.magentaBright(
+					plugin_package_json.name
+				)}.${displaylinkedfat} to ${chalk.dim.yellowBright(
+					"cynthiabase"
+				)}.${displaylinkedfat}...`
+			);
+		}
+		const plugin_package_json = require(path.join(
+			__dirname,
+			"plugins/",
+			pluginfolder,
+			"/package.json"
+		));
+		tell.log(
+			0,
+			chalk.reset.hex("5787b8").italic("Plugins"),
+			`Loading plugin: ${chalk.dim.magentaBright(plugin_package_json.name)}...`
+		);
+		const plugin = require(path.join(
+			__dirname,
+			"plugins/",
+			pluginfolder,
+			plugin_package_json.main
+		));
+		if (typeof plugin.exportoutput === "function") {
+			linklog(chalk.greenBright("exportoutput"));
+			cynthiabase.exportoutput.push(plugin.exportoutput);
+		}
+		if (typeof plugin.expressactions === "function") {
+			linklog(chalk.blueBright("expressactions"));
+			cynthiabase.expressactions.push(plugin.expressactions);
+		}
+		if (typeof plugin.exportbody === "function") {
+			linklog(chalk.greenBright("exportbody"));
+			cynthiabase.exportbody.push(plugin.exportbody);
+		}
+	});
 function parseBool(bool) {
 	if (bool === "true" || bool === "1" || bool === 1 || bool === true)
 		return true;
@@ -90,9 +153,7 @@ if (!fs.existsSync(path.join(__dirname, "./.env")) || devel) {
 		tell.error(err);
 		process.exit(1);
 	}
-	tell.warn(
-		"Clean CynthiaConfig written! Please adjust then restart Cynthia!"
-	);
+	tell.warn("Clean CynthiaConfig written! Please adjust then restart Cynthia!");
 	if (!devel) process.exit(0);
 	else
 		tell.warn(
@@ -118,12 +179,9 @@ const modes = (() => {
 	fs.readdirSync(path.join(__dirname, "./cynthia_config/modes")).forEach(
 		(file) => {
 			const b = parse(
-				fs.readFileSync(
-					path.join(__dirname, "./cynthia_config/modes", file),
-					{
-						encoding: "utf8",
-					}
-				)
+				fs.readFileSync(path.join(__dirname, "./cynthia_config/modes", file), {
+					encoding: "utf8",
+				})
 			);
 			tell.info(`Loaded mode: '${b[0]}'!`);
 			d[b[0]] = b[1];
@@ -164,13 +222,14 @@ async function ReturnPage(id, currenturl) {
 		case "inline":
 			rawpagecontent = pagemeta.content.raw;
 			break;
-		case "external": 
-			rawpagecontent = (await Axios.default.get(pagemeta.content.url).then()).data;
+		case "external":
+			rawpagecontent = (await Axios.default.get(pagemeta.content.url).then())
+				.data;
 			break;
 		case "external-direct":
 			return (await Axios.default.get(pagemeta.content.url).then()).data;
 		case "redirect":
-			return ({ do: "relocation", url: pagemeta.content.url });
+			return { do: "relocation", url: pagemeta.content.url };
 		default:
 			rawpagecontent = fs.readFileSync(
 				path.join(__dirname, "/site/pages/", pagemeta.content.path),
@@ -213,11 +272,7 @@ async function ReturnPage(id, currenturl) {
 	});
 	// Load stylesheet and head contents
 	stylesheet = fs.readFileSync(
-		path.join(
-			__dirname,
-			"/cynthia_config/styles",
-			modes[pagemode].stylefile
-		),
+		path.join(__dirname, "/cynthia_config/styles", modes[pagemode].stylefile),
 		{
 			encoding: "utf8",
 		}
@@ -231,27 +286,32 @@ async function ReturnPage(id, currenturl) {
 		const pagemetainfo = JSON.parse(${JSON.stringify(pagemeta)});
 	</script>
 	`;
+	// Run body modifier plugins.
+	cynthiabase.exportbody.forEach((modifier) => {
+		pagecontent = modifier(pagecontent);
+	});
+
 	// Unite the template with it's content and return it to the server
-	page = `<!-- Generated and hosted through Cynthia v${
+	let page = `<!-- Generated and hosted through Cynthia v${
 		pjson.version
 	}, by Strawmelonjuice. 
 Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 -->
 	${HandlebarsAsHTML(
-		path.join(
-			"./cynthia_config/templates/",
-			`${handlebarsfile}.handlebars`
-		),
+		path.join("./cynthia_config/templates/", `${handlebarsfile}.handlebars`),
 		{
 			head: headstuff,
 			content: pagecontent,
 			menulinks: menulinks,
 		}
 	)}`;
-	// console.log(page);
-	return page;
+	cynthiabase.exportoutput.forEach((modifier) => {
+		page = modifier(page);
+	});
+	// console.log("HTML:" + page);
+	return `<!DOCTYPE html>${page}</html>`;
 }
-async function CynthiaRespond(id,req,res) {
+async function CynthiaRespond(id, req, res) {
 	let anyerrors = true;
 	try {
 		const cynspon = await ReturnPage(id, req.url);
@@ -270,7 +330,7 @@ async function CynthiaRespond(id,req,res) {
 	}
 	if (anyerrors) {
 		tell.log(0, "500", `[GET] ➡️❌   "${req.url}"`);
-		res.send(500);
+		res.sendStatus(500);
 	} else {
 		tell.log(0, "200", `[GET] ➡️✔️   "${req.url}"`);
 	}
@@ -278,27 +338,24 @@ async function CynthiaRespond(id,req,res) {
 const app = express();
 app.get("/", async (req, res) => {
 	let pid = "";
-	let anyerrors = false;
 	if (typeof req.query.p !== "undefined") pid = req.query.p;
 	if (typeof req.query.page !== "undefined") pid = req.query.page;
 	if (typeof req.query.post !== "undefined") pid = req.query.post;
 	if (typeof req.query.id !== "undefined") pid = req.query.id;
 	if (pid !== "") {
-		CynthiaRespond(pid,req,res);
+		CynthiaRespond(pid, req, res);
 	} else {
 		CynthiaRespond("root", req, res);
 	}
 });
-
+cynthiabase.expressactions.forEach((action) => {
+	action(app);
+});
 app.get("/p/:id", async (req, res) => {
 	const id = req.params.id;
 	CynthiaRespond(id, req, res);
 });
 app.use("/assets", express.static(path.join(__dirname, "/site/assets/")));
-app.use(
-	"/hl-img",
-	express.static(path.join(__dirname, "/node_modules/hl-img/dist/"))
-);
 if (process.argv[2] === "--short") {
 	tell.info("So far so good! Closing now because Cynthia is in CI mode.");
 	process.exit(0);

@@ -1,6 +1,6 @@
 {
     "name": "@cynthiacms/cynthiacms",
-    "version": "0.2.1",
+    "version": "0.2.1-alpha",
     "description": "",
     "main": "./main.js",
     "scripts": {
@@ -16,11 +16,11 @@
         "axios": "^1.5.1",
         "biome": "^0.2.2",
         "body-parser": "^1.20.2",
+        "chalk": "^4",
         "comment-json": "^4.2.3",
         "dotenv": "^16.3.1",
         "express": "^4.18.2",
         "handlebars": "^4.7.8",
-        "hl-img": "^2.0.1",
         "markdown-it": "^13.0.2",
         "path": "^0.12.7",
         "php-server": "^1.0.0",
