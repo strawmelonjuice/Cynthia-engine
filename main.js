@@ -1,4 +1,9 @@
+const CynthiaPluginLoaderVersion = 1;
 const devel = process.argv[2] === "--dev" || process.argv[2] === "--short";
+const verbose =
+	process.argv[2] === "--dev" ||
+	process.argv[2] === "--short" ||
+	process.argv[2] === "--verbose";
 const express = require("express");
 const dotenv = require("dotenv");
 const fs = require("fs");
@@ -18,6 +23,11 @@ const md = new MarkdownIt({
 });
 const Axios = require("axios");
 const pjson = require("./package.json");
+const stripAnsiCodes = (str) =>
+	str.replace(
+		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+		""
+	);
 // Logger
 class logging {
 	logfile;
@@ -32,31 +42,43 @@ class logging {
 			{ flag: "a" }
 		);
 	}
+	connsola2(chalkedname, message) {
+		const numberofspaces = 20 - stripAnsiCodes(chalkedname).length;
+		let spaces = " ".repeat(numberofspaces);
+		if (stripAnsiCodes(chalkedname).length > 15) spaces = " ".repeat(5);
+		console.log(chalkedname + spaces + message);
+	}
 	log(errorlevel, name, content) {
-		connsola.log(errorlevel, name, content);
 		this.logtofile(name, content);
+		this.connsola2(`[${name}]`, content);
 	}
 	warn(content) {
 		this.logtofile("WARN", content);
-		connsola.warn(content);
+		this.connsola2(`[${chalk.hex("#c25700")("WARN")}]`, content);
 	}
 	error(content) {
 		this.logtofile("ERROR", content);
-		connsola.error(content);
+		this.connsola2(
+			`[${chalk.redBright("ERROR")}]`,
+			chalk.bgBlack.red(content)
+		);
 	}
 	info(content) {
 		this.logtofile("INFO", content);
-		connsola.info(content);
+		this.connsola2(`[${chalk.hex("#6699ff")("INFO")}]`, content);
 	}
 	silly(content) {
 		this.logtofile("SILLY", content);
-		connsola.silly(content);
+		this.connsola2(`[${chalk.white("SILLY :3")}]`, chalk.bgBlack.red(content));
 	}
 	fatal(content) {
 		this.logtofile("FATAL", content);
-		connsola.fatal(content);
+		this.connsola2(`[${chalk.bgBlack.red("FATAL")}]`,
+			content
+		);
 	}
 }
+
 let logfilename;
 let starttime;
 {
@@ -66,10 +88,9 @@ let starttime;
 if (!fs.existsSync("./logs")) {
 	fs.mkdirSync("./logs");
 }
-if (devel) lt = new tslog.Logger();
+if (verbose) lt = new tslog.Logger();
 else lt = new logging(logfilename);
 const tell = lt;
-
 // Plugin loader
 const cynthiabase = {
 	modifyOutputHTML: [
@@ -120,6 +141,19 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			pluginfolder,
 			plugin_package_json.main
 		));
+		if (plugin.CyntiaPluginCompat !== CynthiaPluginLoaderVersion) {
+			tell.error(
+				`${
+					plugin_package_json.name
+				}: This plugin was written for a different`
+			);
+			tell.error(
+				`Cynthia Plugin Loader. (Plugin: ${chalk.bold.italic(
+					plugin.CyntiaPluginCompat
+				)}, Cynthia: ${chalk.bold.italic(CynthiaPluginLoaderVersion)})`
+			);
+			return;
+		}
 		if (typeof plugin.modifyOutputHTML === "function") {
 			linklog(chalk.greenBright("modifyOutputHTML"));
 			cynthiabase.modifyOutputHTML.push(plugin.modifyOutputHTML);
@@ -129,7 +163,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			cynthiabase.expressActions.push(plugin.expressActions);
 		}
 		if (typeof plugin.modifyBodyHTML === "function") {
-			linklog(chalk.greenBright("modifyBodyHTML"));
+			linklog(chalk.green("modifyBodyHTML"));
 			cynthiabase.modifyBodyHTML.push(plugin.modifyBodyHTML);
 		}
 	});
@@ -186,7 +220,11 @@ const modes = (() => {
 					encoding: "utf8",
 				})
 			);
-			tell.log(0,chalk.reset.cyanBright("Modes"),`↘️➕ Loaded mode: '${b[0]}'.`);
+			tell.log(
+				0,
+				chalk.reset.cyanBright("Modes"),
+				`↘️➕ Loaded mode: '${b[0]}'.`
+			);
 			d[b[0]] = b[1];
 		}
 	);
@@ -332,10 +370,10 @@ async function CynthiaRespond(id, req, res) {
 		anyerrors = true;
 	}
 	if (anyerrors) {
-		tell.log(0, "500", `➡️❌  [GET]		"${req.url}"`);
+		tell.log(0, "GET / 500", `➡️❌		"${req.url}"`);
 		res.sendStatus(500);
 	} else {
-		tell.log(0, "200", `➡️✔️  [GET]		"${req.url}"`);
+		tell.log(0, "GET / 200", `➡️✔️		"${req.url}"`);
 	}
 }
 const app = express();
