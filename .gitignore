@@ -125,6 +125,8 @@ dist
 /GETTINGSTARTED.MD
 /cynthia_config
 /site
+plugins/hlimg
+
 
 # Submlime (opened in sublime a time.)
 /reset.sublime-workspace

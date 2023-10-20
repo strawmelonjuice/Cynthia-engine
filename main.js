@@ -58,10 +58,7 @@ class logging {
 	}
 	error(content) {
 		this.logtofile("ERROR", content);
-		this.connsola2(
-			`[${chalk.redBright("ERROR")}]`,
-			chalk.bgBlack.red(content)
-		);
+		this.connsola2(`[${chalk.redBright("ERROR")}]`, chalk.bgBlack.red(content));
 	}
 	info(content) {
 		this.logtofile("INFO", content);
@@ -73,9 +70,7 @@ class logging {
 	}
 	fatal(content) {
 		this.logtofile("FATAL", content);
-		this.connsola2(`[${chalk.bgBlack.red("FATAL")}]`,
-			content
-		);
+		this.connsola2(`[${chalk.bgBlack.red("FATAL")}]`, content);
 	}
 }
 
@@ -91,6 +86,12 @@ if (!fs.existsSync("./logs")) {
 if (verbose) lt = new tslog.Logger();
 else lt = new logging(logfilename);
 const tell = lt;
+
+let debuglog = (a) => {};
+if (verbose)
+	debuglog = (a) => {
+		tell.log(0, "DEBUG:", a);
+	};
 // Plugin loader
 const cynthiabase = {
 	modifyOutputHTML: [
@@ -143,9 +144,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 		));
 		if (plugin.CyntiaPluginCompat !== CynthiaPluginLoaderVersion) {
 			tell.error(
-				`${
-					plugin_package_json.name
-				}: This plugin was written for a different`
+				`${plugin_package_json.name}: This plugin was written for a different`
 			);
 			tell.error(
 				`Cynthia Plugin Loader. (Plugin: ${chalk.bold.italic(
@@ -298,20 +297,43 @@ async function ReturnPage(id, currenturl) {
 			break;
 	}
 	// Prepare menu links
-	let menulinks = "";
+	debuglog("Menu links 1");
+	let menu1links = "";
 	if (
-		pagemeta.menulinkoverride === undefined ||
-		pagemeta.menulinkoverride == null ||
-		pagemeta.menulinkoverride.length === 0
+		pagemeta.menu1linkoverride === undefined ||
+		pagemeta.menu1linkoverride == null ||
+		pagemeta.menu1linkoverride.length === 0
 	)
-		menu_links = modes[pagemode].menulinks;
-	else menu_links = pagemeta.menulinksoverride;
-	menu_links.forEach((link) => {
-		if (link.href === currenturl)
-			menulinks = `${menulinks}<a href="${link.href}" class="active">${link.name}</a>`;
-		else menulinks = `${menulinks}<a href="${link.href}">${link.name}</a>`;
-	});
+		menu1_links = modes[pagemode].menu1links;
+	else menu1_links = pagemeta.menu1linksoverride;
+	if (menu1_links === undefined || menu1_links == null)
+		menu1_links = modes[pagemode].menulinks;
+	if (menu1_links !== undefined && menu1_links !== null) {
+		menu1_links.forEach((link) => {
+			if (link.href === currenturl)
+				menu1links = `${menu1links}<a href="${link.href}" class="active">${link.name}</a>`;
+			else menu1links = `${menu1links}<a href="${link.href}">${link.name}</a>`;
+		});
+	}
+	debuglog("Menu links 2");
+	let menu2links = "";
+	if (
+		pagemeta.menu2linkoverride === undefined ||
+		pagemeta.menu2linkoverride == null ||
+		pagemeta.menu2linkoverride.length === 0
+	)
+		menu2_links = modes[pagemode].menu2links;
+	else menu2_links = pagemeta.menu2linksoverride;
+	if (menu2_links !== undefined && menu2_links !== null) {
+		menu2_links.forEach((link) => {
+			if (link.href === currenturl)
+				menu2links = `${menu2links}<a href="${link.href}" class="active">${link.name}</a>`;
+			else menu2links = `${menu2links}<a href="${link.href}">${link.name}</a>`;
+		});
+	}
 	// Load stylesheet and head contents
+	debuglog("Head construction");
+
 	stylesheet = fs.readFileSync(
 		path.join(__dirname, "/cynthia_config/styles", modes[pagemode].stylefile),
 		{
@@ -329,8 +351,11 @@ async function ReturnPage(id, currenturl) {
 	`;
 	// Run body modifier plugins.
 	cynthiabase.modifyBodyHTML.forEach((modifier) => {
+		debuglog(`Body modifier: ${modifier}`);
 		pagecontent = modifier(pagecontent);
 	});
+
+	debuglog("Body is ready, going to unitor now.");
 
 	// Unite the template with it's content and return it to the server
 	let page = `<!-- Generated and hosted through Cynthia v${
@@ -343,7 +368,8 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 		{
 			head: headstuff,
 			content: pagecontent,
-			menulinks: menulinks,
+			menu1: menu1links,
+			menu2: menu2links,
 		}
 	)}`;
 	cynthiabase.modifyOutputHTML.forEach((modifier) => {
