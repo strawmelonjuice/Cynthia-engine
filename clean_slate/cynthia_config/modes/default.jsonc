@@ -12,7 +12,7 @@
 			{ "name": "Another page", "href": "/p/2" },
 			{
 				"name": "About Cynthia",
-				"href": "https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD"
+				"href": "/p/about"
 			}
 		]
 	}

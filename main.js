@@ -33,7 +33,7 @@ class logging {
 	logfile;
 	constructor(logfile) {
 		this.logfile = logfile;
-		this.info(`Logging to "${logfilename}".`);
+		this.info(`🖊 Logging to "${logfilename}".`);
 	}
 	logtofile(cat, msg) {
 		fs.writeFileSync(
@@ -116,7 +116,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			tell.log(
 				0,
 				chalk.reset.hex("5787b8").italic("Plugins"),
-				`⬅️➕ Linking ${chalk.dim.magentaBright(
+				`🧩 Linking ${chalk.dim.magentaBright(
 					plugin_package_json.name
 				)}.${displaylinkedfat} to ${chalk.dim.yellowBright(
 					"cynthiacms"
@@ -132,7 +132,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 		tell.log(
 			0,
 			chalk.reset.hex("5787b8").italic("Plugins"),
-			`⬅️➕ Loading plugin: ${chalk.dim.magentaBright(
+			`🧩 Loading plugin: ${chalk.dim.magentaBright(
 				plugin_package_json.name
 			)}...`
 		);
@@ -199,7 +199,7 @@ if (!fs.existsSync(path.join(__dirname, "./.env")) || devel) {
 	tell.log(
 		1,
 		"CONFIG",
-		`Loading configuration from "${path.join(__dirname, "./.env")}".`
+		`🤔 Loading configuration from "${path.join(__dirname, "./.env")}".`
 	);
 }
 dotenv.config();
@@ -222,7 +222,7 @@ const modes = (() => {
 			tell.log(
 				0,
 				chalk.reset.cyanBright("Modes"),
-				`↘️➕ Loaded mode: '${b[0]}'.`
+				`💡 Loaded mode: '${b[0]}'.`
 			);
 			d[b[0]] = b[1];
 		}
@@ -396,10 +396,10 @@ async function CynthiaRespond(id, req, res) {
 		anyerrors = true;
 	}
 	if (anyerrors) {
-		tell.log(0, "GET / 500", `➡️❌		"${req.url}"`);
+		tell.log(0, "GET / 500", `❎: "${req.url}"`);
 		res.sendStatus(500);
 	} else {
-		tell.log(0, "GET / 200", `➡️✔️		"${req.url}"`);
+		tell.log(0, "GET / 200", `✅: "${req.url}"`);
 	}
 }
 const app = express();
@@ -428,6 +428,6 @@ if (process.argv[2] === "--short") {
 	process.exit(0);
 } else {
 	app.listen(process.env.PORT, () => {
-		tell.info(`⚡️ Running at http://localhost:${process.env.PORT}/`);
+		tell.info(`🆙 Running at http://localhost:${process.env.PORT}/`);
 	});
 }
