@@ -22,7 +22,10 @@ const md = new MarkdownIt({
 	typographer: true,
 });
 const Axios = require("axios");
-const pjson = require("./package.json");
+// doesn't work in ts: const pjson = require("./package.json");
+// so:
+const pjsonstring = fs.readFileSync(path.join(__dirname, "../package.json"), { encoding: "utf8", flag: "r" });
+const pjson = JSON.parse(pjsonstring);
 const stripAnsiCodes = (str) =>
 	str.replace(
 		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
@@ -83,6 +86,7 @@ let starttime;
 if (!fs.existsSync("./logs")) {
 	fs.mkdirSync("./logs");
 }
+let lt: logging;
 if (verbose) lt = new tslog.Logger();
 else lt = new logging(logfilename);
 const tell = lt;
@@ -112,7 +116,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 	.forEach((pluginfolder) => {
 		if (pluginfolder.endsWith("-disabled")) return;
 		function linklog(displaylinked) {
-			displaylinkedfat = chalk.bold(displaylinked);
+			const displaylinkedfat = chalk.bold(displaylinked);
 			tell.log(
 				0,
 				chalk.reset.hex("5787b8").italic("Plugins"),
@@ -124,7 +128,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			);
 		}
 		const plugin_package_json = require(path.join(
-			__dirname,
+			__dirname,"/../",
 			"plugins/",
 			pluginfolder,
 			"/package.json"
@@ -137,7 +141,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			)}...`
 		);
 		const plugin = require(path.join(
-			__dirname,
+			__dirname,"/../",
 			"plugins/",
 			pluginfolder,
 			plugin_package_json.main
@@ -166,22 +170,22 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			cynthiabase.modifyBodyHTML.push(plugin.modifyBodyHTML);
 		}
 	});
-function parseBool(bool) {
+function parseBool(bool: string | number | boolean) {
 	if (bool === "true" || bool === "1" || bool === 1 || bool === true)
 		return true;
 	else return false;
 }
-if (!fs.existsSync(path.join(__dirname, "./.env")) || devel) {
+if (!fs.existsSync(path.join(__dirname,"/../", "./.env")) || devel) {
 	tell.warn(
 		`${path.join(
-			__dirname,
+			__dirname,"/../",
 			"./.env"
 		)} does not exist. Writing a clean CynthiaConfig.`
 	);
 	try {
 		tar.extract({
-			file: path.join(__dirname, "./clean-cyn.tar.gz"),
-			cwd: path.join(__dirname),
+			file: path.join(__dirname,"/../", "./clean-cyn.tar.gz"),
+			cwd: path.join(__dirname,"/../"),
 			sync: true,
 		});
 	} catch (err) {
@@ -199,7 +203,7 @@ if (!fs.existsSync(path.join(__dirname, "./.env")) || devel) {
 	tell.log(
 		1,
 		"CONFIG",
-		`🤔 Loading configuration from "${path.join(__dirname, "./.env")}".`
+		`🤔 Loading configuration from "${path.join(__dirname,"/../", "./.env")}".`
 	);
 }
 dotenv.config();
@@ -212,10 +216,10 @@ function HandlebarsAsHTML(file, variables) {
 }
 const modes = (() => {
 	const d = {};
-	fs.readdirSync(path.join(__dirname, "./cynthia_config/modes")).forEach(
+	fs.readdirSync(path.join(__dirname,"/../", "./cynthia_config/modes")).forEach(
 		(file) => {
 			const b = parse(
-				fs.readFileSync(path.join(__dirname, "./cynthia_config/modes", file), {
+				fs.readFileSync(path.join(__dirname,"/../", "./cynthia_config/modes", file), {
 					encoding: "utf8",
 				})
 			);
@@ -232,7 +236,7 @@ const modes = (() => {
 function returnpagemeta(id) {
 	let d;
 	parse(
-		fs.readFileSync(path.join(__dirname, "/site/published.jsonc"), {
+		fs.readFileSync(path.join(__dirname,"/../", "/site/published.jsonc"), {
 			encoding: "utf8",
 		})
 	).forEach((page) => {
@@ -245,6 +249,7 @@ function returnpagemeta(id) {
 async function ReturnPage(id, currenturl) {
 	// Get page meta info
 	const pagemeta = returnpagemeta(id);
+	let pagemode: string;
 	// Get info about what template to use
 	if (
 		pagemeta.mode === undefined ||
@@ -253,11 +258,12 @@ async function ReturnPage(id, currenturl) {
 	)
 		pagemode = "default";
 	else pagemode = pagemeta.mode;
+	let pagetype: string;
 	if (pagemeta.type === "post") pagetype = "post";
 	else pagetype = "page";
 	const handlebarsfile = modes[pagemode].handlebar[pagetype];
 	// Get actual page content
-	let rawpagecontent;
+	let rawpagecontent: { replaceAll: (arg0: string, arg1: string) => { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): any; new(): any; }; }; new(): any; }; }; new(): any; }; }; new(): any; }; }; };
 	switch (pagemeta.content.location) {
 		case "inline":
 			rawpagecontent = pagemeta.content.raw;
@@ -272,7 +278,7 @@ async function ReturnPage(id, currenturl) {
 			return { do: "relocation", url: pagemeta.content.url };
 		default:
 			rawpagecontent = fs.readFileSync(
-				path.join(__dirname, "/site/pages/", pagemeta.content.path),
+				path.join(__dirname,"/../", "/site/pages/", pagemeta.content.path),
 				{
 					encoding: "utf8",
 				}
@@ -297,8 +303,9 @@ async function ReturnPage(id, currenturl) {
 			break;
 	}
 	// Prepare menu links
-	debuglog("Menu links 1");
+	// debuglog("Menu links 1");
 	let menu1links = "";
+	let menu1_links;
 	if (
 		pagemeta.menu1linkoverride === undefined ||
 		pagemeta.menu1linkoverride == null ||
@@ -315,8 +322,9 @@ async function ReturnPage(id, currenturl) {
 			else menu1links = `${menu1links}<a href="${link.href}">${link.name}</a>`;
 		});
 	}
-	debuglog("Menu links 2");
+	// debuglog("Menu links 2");
 	let menu2links = "";
+	let menu2_links;
 	if (
 		pagemeta.menu2linkoverride === undefined ||
 		pagemeta.menu2linkoverride == null ||
@@ -332,10 +340,10 @@ async function ReturnPage(id, currenturl) {
 		});
 	}
 	// Load stylesheet and head contents
-	debuglog("Head construction");
+	// debuglog("Head construction");
 
-	stylesheet = fs.readFileSync(
-		path.join(__dirname, "/cynthia_config/styles", modes[pagemode].stylefile),
+	const stylesheet = fs.readFileSync(
+		path.join(__dirname,"/../", "/cynthia_config/styles", modes[pagemode].stylefile),
 		{
 			encoding: "utf8",
 		}
@@ -351,11 +359,11 @@ async function ReturnPage(id, currenturl) {
 	`;
 	// Run body modifier plugins.
 	cynthiabase.modifyBodyHTML.forEach((modifier) => {
-		debuglog(`Body modifier: ${modifier}`);
+		// debuglog(`Body modifier: ${modifier}`);
 		pagecontent = modifier(pagecontent);
 	});
 
-	debuglog("Body is ready, going to unitor now.");
+	// debuglog("Body is ready, going to unitor now.");
 
 	// Unite the template with it's content and return it to the server
 	let page = `<!-- Generated and hosted through Cynthia v${
@@ -422,7 +430,7 @@ app.get("/p/:id", async (req, res) => {
 	const id = req.params.id;
 	CynthiaRespond(id, req, res);
 });
-app.use("/assets", express.static(path.join(__dirname, "/site/assets/")));
+app.use("/assets", express.static(path.join(__dirname,"/../", "/site/assets/")));
 if (process.argv[2] === "--short") {
 	tell.info("So far so good! Closing now because Cynthia is in CI mode.");
 	process.exit(0);

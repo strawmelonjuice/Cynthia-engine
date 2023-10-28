@@ -2,12 +2,14 @@
     "name": "@cynthiacms/cynthiacms",
     "version": "0.3.0-alpha",
     "description": "",
-    "main": "./main.js",
+    "main": "./dist/main.js",
     "scripts": {
-        "start": "nodemon --delay 3000ms ./main.js -w ./cynthia_config/modes -e jsonc",
-        "dev": "nodemon ./main.js --dev -e gz,js,json",
-        "pretest": "npx only-allow npm",
+        "prestart": "npx tsc",
+        "start": "nodemon --delay 3000ms ./dist/main.js -w ./cynthia_config/modes -e jsonc",
+        "dev": "concurrently \"npx tsc --watch\" \"nodemon ./dist/main.js --dev -e gz,js,json\"",
+        "pretest": "npx only-allow npm && npx tsc",
         "test": "node ./main.js --short"
+        ,"prepack": "npx tsc"
     },
     "keywords": [],
     "author": "Strawmelonjuice Mar",
@@ -29,7 +31,12 @@
     },
     "devDependencies": {
         "@biomejs/biome": "^1.1.2",
+        "@types/node": "^20.8.9",
         "eslint": "^8.51.0",
-        "nodemon": "^3.0.1"
+        "nodemon": "^3.0.1",
+        "@types/express": "^4.17.19",
+        "@types/markdown-it": "^13.0.2",
+        "concurrently": "^8.2.1",
+        "typescript": "^5.2.2"
     }
 }
