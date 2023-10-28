@@ -28,7 +28,8 @@ const pjsonstring = fs.readFileSync(path.join(__dirname, "../package.json"), { e
 const pjson = JSON.parse(pjsonstring);
 const stripAnsiCodes = (str) =>
 	str.replace(
-		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+		// biome-ignore lint/suspicious/noControlCharactersInRegex: 
+/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
 		""
 	);
 // Logger
@@ -113,7 +114,7 @@ const cynthiabase = {
 fs.readdirSync("./plugins", { withFileTypes: true })
 	.filter((dirent) => dirent.isDirectory())
 	.map((dirent) => dirent.name)
-	.forEach((pluginfolder) => {
+	.forEach((pluginfolder: string) => {
 		if (pluginfolder.endsWith("-disabled")) return;
 		function linklog(displaylinked) {
 			const displaylinkedfat = chalk.bold(displaylinked);

@@ -1,5 +1,8 @@
 # Cynthia
 
+[![Node.js CI](https://github.com/strawmelonjuice/CynthiaCMS-JS/actions/workflows/node.js.yml/badge.svg)](https://github.com/strawmelonjuice/CynthiaCMS-JS/actions/workflows/node.js.yml)
+
+
 <font style="color: red"><b>
 
 Cynthia is in active development, but not ready for full production usage! It has some releases for testing, but none are marked as 'ready' at the moment.
