@@ -13,7 +13,7 @@
     },
     "keywords": [],
     "author": "Strawmelonjuice Mar",
-    "license": "ISC",
+    "license": "GPL-3.0",
     "dependencies": {
         "axios": "^1.5.1",
         "biome": "^0.2.2",
