@@ -8,7 +8,7 @@
         "start": "nodemon --delay 3000ms ./dist/main.js -w ./cynthia_config/modes -e jsonc",
         "dev": "concurrently \"npx tsc --watch\" \"nodemon ./dist/main.js --dev -e gz,js,json\"",
         "pretest": "npx only-allow npm && npx tsc",
-        "test": "node ./main.js --short"
+        "test": "node ./dist/main.js --short"
         ,"prepack": "npx tsc"
     },
     "keywords": [],
