@@ -8,15 +8,14 @@
         "start": "nodemon --delay 3000ms ./dist/main.js -w ./cynthia_config/modes -e jsonc",
         "dev": "concurrently \"npx tsc --watch\" \"nodemon ./dist/main.js --dev -e gz,js,json\"",
         "pretest": "npx only-allow npm && npx tsc",
-        "test": "node ./dist/main.js --short"
-        ,"prepack": "npx tsc"
+        "test": "node ./dist/main.js --short",
+        "prepack": "npx tsc"
     },
     "keywords": [],
     "author": "Strawmelonjuice Mar",
     "license": "GPL-3.0",
     "dependencies": {
         "axios": "^1.5.1",
-        "biome": "^0.2.2",
         "body-parser": "^1.20.2",
         "chalk": "^4",
         "comment-json": "^4.2.3",
@@ -25,18 +24,18 @@
         "handlebars": "^4.7.8",
         "markdown-it": "^13.0.2",
         "path": "^0.12.7",
-        "php-server": "^1.0.0",
         "tar": "^6.2.0",
-        "tslog": "^4.9.2"
+        "tslog": "^4.9.2",
+        "nodemon": "^3.0.1"
     },
     "devDependencies": {
         "@biomejs/biome": "^1.1.2",
         "@types/node": "^20.8.9",
-        "eslint": "^8.51.0",
-        "nodemon": "^3.0.1",
         "@types/express": "^4.17.19",
         "@types/markdown-it": "^13.0.2",
         "concurrently": "^8.2.1",
-        "typescript": "^5.2.2"
+        "typescript": "^5.2.2",
+        "@cynthiacms/hlimg-cynthia": "1.0.0",
+        "@cynthiacms/htmx-cynthia": "1.0.0"
     }
 }
