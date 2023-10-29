@@ -2,5 +2,9 @@
     {
         "id": "hlimg",
         "version": "latest"
+    },
+    {
+        "id": "htmx",
+        "version": "latest"
     }
 ]
