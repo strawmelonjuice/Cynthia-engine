@@ -10,12 +10,22 @@
 		"type": "page",
 		"mode": "default"
 	},
+	// {
+	// 	"id": "getting-started",
+	// 	"title": "Getting started with CynthiaCMS",
+	// 	"content": {
+	// 		"location": "external-direct",
+	// 		"url": "https://cynthia-docs.strawmelonjuice.com/p/getting-started/"
+	// 	},
+	// 	"mode": "strawmelonjuice-cynthia"
+	// },
 	{
 		"id": "getting-started",
 		"title": "Getting started with CynthiaCMS",
 		"content": {
-			"location": "external-direct",
-			"url": "https://cynthia-docs.strawmelonjuice.com/p/getting-started/"
+			"type": "markdown",
+			"location": "external",
+			"url": "https://raw.githubusercontent.com/strawmelonjuice/cynthiadocs/main/site/pages/guide.md"
 		},
 		"mode": "strawmelonjuice-cynthia"
 	},
@@ -38,5 +48,14 @@
 		},
 		"mode": "strawmelonjuice-cynthia",
 		"type": "page"
+	},
+	{
+		"id": "changelog",
+		"title": "Cynthia -> Changelog"
+		, "content": {
+			"type":"markdown",
+			"location":"local",
+			"path":"../../changelog.md"
+		}
 	}
 ]

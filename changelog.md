@@ -4,7 +4,8 @@
 
 ## Unreleased changes
             
-No unreleased changes.
+-  **<span style="color: #0033cc">Update</span>**: The default getting started page now just embeds the markdown found on GitHub (this used to be impossible, as the repo was private.)
+
 
 ## Releases
 
