@@ -24,20 +24,20 @@ const configjson = readFileSync(join(__dirname, "config.json"), { encoding: "utf
 const config = JSON.parse(configjson);
 module.exports = {
 	CyntiaPluginCompat: 1,
-    modifyOutputHTML (htmlin) {
+    modifyOutputHTML(htmlin) {
 		return `${htmlin}
         <!-- This website has my beautiful plugin installed! --!>
         `;
 	},
-    modifyBodHTML (htmlin) {
+    modifyBodyHTML(htmlin) {
 		return `<a href="/amazing">You will see hello world if you click this link!</a>
         ${htmlin}`;
 	},
     expressActions(expressapp) {
-        expressappapp.('/amazing', (req, res) => {
+        expressapp.get('/amazing', (req, res) => {
   res.send('Hello World!')
 })
-    }
+    },
     LogReader(type, msg) {
         if (msg.contains("amazing")) {
             console.log("^ That message contained amazing.")
