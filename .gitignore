@@ -132,3 +132,4 @@ plugins/hlimg
 /reset.sublime-workspace
 /.vs
 /.vscode
+plugins/*
