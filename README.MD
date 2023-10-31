@@ -22,8 +22,4 @@ But if you like thinkering about with configuration files and like writing your 
 
 ## Getting started
 
-Unpack the latest Cynthia to your folder of choice.
-
-
-
-See <https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/clean_slate/GETTINGSTARTED.MD>.
+_The docs for this will come, when cynthia is ready for usage!_
