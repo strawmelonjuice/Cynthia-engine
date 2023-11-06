@@ -4,9 +4,10 @@
     "description": "",
     "main": "./dist/main.js",
     "scripts": {
-        "prestart": "npx tsc",
+        "build": "npx tsc",
         "start": "nodemon --delay 3000ms ./dist/main.js -w ./cynthia_config/modes -e jsonc,json",
         "dev": "concurrently \"npx tsc --watch\" \"nodemon ./dist/main.js --dev -e gz,js,json\"",
+        "devs": "concurrently \"npx tsc --watch\" \"nodemon ./dist/main.js -e gz,js,json\"",
         "pretest": "npx only-allow npm && npx tsc",
         "test": "node ./dist/main.js --short",
         "prepack": "npx tsc"

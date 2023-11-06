@@ -24,14 +24,34 @@ const md = new MarkdownIt({
 const Axios = require("axios");
 // doesn't work in ts: const pjson = require("./package.json");
 // so:
-const pjsonstring = fs.readFileSync(path.join(__dirname, "../package.json"), { encoding: "utf8", flag: "r" });
+const pjsonstring = fs.readFileSync(path.join(__dirname, "../package.json"), {
+	encoding: "utf8",
+	flag: "r",
+});
 const pjson = JSON.parse(pjsonstring);
 const stripAnsiCodes = (str) =>
 	str.replace(
-		// biome-ignore lint/suspicious/noControlCharactersInRegex: 
-/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
-		""
+		// biome-ignore lint/suspicious/noControlCharactersInRegex:
+		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+		"",
 	);
+// Pre plugin loader
+const cynthiabase = {
+	modifyOutputHTML: [
+		(htmlin) => {
+			// Make no changes. Return unchanged.
+			return htmlin;
+		},
+	],
+	modifyBodyHTML: [
+		(htmlin) => {
+			// Make no changes. Return unchanged.
+			return htmlin;
+		},
+	],
+	expressActions: [(expressapp: typeof express) => {}],
+	LogReader: [(type: string, msg: string) => {}],
+};
 // Logger
 class logging {
 	logfile;
@@ -43,7 +63,7 @@ class logging {
 		fs.writeFileSync(
 			this.logfile,
 			`\n[${cat} ${new Date().toLocaleTimeString()}] ${msg}`,
-			{ flag: "a" }
+			{ flag: "a" },
 		);
 	}
 	connsola2(chalkedname, message) {
@@ -51,6 +71,9 @@ class logging {
 		let spaces = " ".repeat(numberofspaces);
 		if (stripAnsiCodes(chalkedname).length > 15) spaces = " ".repeat(5);
 		console.log(chalkedname + spaces + message);
+		cynthiabase.LogReader.forEach((action) => {
+			action(stripAnsiCodes(chalkedname), message);
+		});
 	}
 	log(errorlevel, name, content) {
 		this.logtofile(name, content);
@@ -96,21 +119,7 @@ let debuglog = (a) => {};
 if (verbose)
 	debuglog = (a) => {
 		tell.log(0, "DEBUG:", a);
-	};
-// Plugin loader
-const cynthiabase = {
-	modifyOutputHTML: [
-		(htmlin) => {
-			return htmlin;
-		},
-	],
-	modifyBodyHTML: [
-		(htmlin) => {
-			return htmlin;
-		},
-	],
-	expressActions: [(expressapp) => {}],
-};
+	};// Plugin loader
 fs.readdirSync("./plugins", { withFileTypes: true })
 	.filter((dirent) => dirent.isDirectory())
 	.map((dirent) => dirent.name)
@@ -122,42 +131,44 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 				0,
 				chalk.reset.hex("5787b8").italic("Plugins"),
 				`🧩 Linking ${chalk.dim.magentaBright(
-					plugin_package_json.name
+					plugin_package_json.name,
 				)}.${displaylinkedfat} to ${chalk.dim.yellowBright(
-					"cynthiacms"
-				)}.${displaylinkedfat}...`
+					"cynthiacms",
+				)}.${displaylinkedfat}...`,
 			);
 		}
 		const plugin_package_json = require(path.join(
-			__dirname,"/../",
+			__dirname,
+			"/../",
 			"plugins/",
 			pluginfolder,
-			"/package.json"
+			"/package.json",
 		));
 		tell.log(
 			0,
 			chalk.reset.hex("5787b8").italic("Plugins"),
 			`🧩 Loading plugin: ${chalk.dim.magentaBright(
-				plugin_package_json.name
-			)}...`
+				plugin_package_json.name,
+			)}...`,
 		);
 		const plugin = require(path.join(
-			__dirname,"/../",
+			__dirname,
+			"/../",
 			"plugins/",
 			pluginfolder,
-			plugin_package_json.main
+			plugin_package_json.main,
 		));
 		if (plugin.CyntiaPluginCompat !== CynthiaPluginLoaderVersion) {
 			tell.error(
-				`${plugin_package_json.name}: This plugin was written for a different`
+				`${plugin_package_json.name}: This plugin was written for a different`,
 			);
 			tell.error(
 				`Cynthia Plugin Loader. (Plugin: ${chalk.bold.italic(
-					plugin.CyntiaPluginCompat
-				)}, Cynthia: ${chalk.bold.italic(CynthiaPluginLoaderVersion)})`
+					plugin.CyntiaPluginCompat,
+				)}, Cynthia: ${chalk.bold.italic(CynthiaPluginLoaderVersion)})`,
 			);
 			return;
-		}
+			}
 		if (typeof plugin.modifyOutputHTML === "function") {
 			linklog(chalk.greenBright("modifyOutputHTML"));
 			cynthiabase.modifyOutputHTML.push(plugin.modifyOutputHTML);
@@ -170,23 +181,26 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 			linklog(chalk.green("modifyBodyHTML"));
 			cynthiabase.modifyBodyHTML.push(plugin.modifyBodyHTML);
 		}
+		if (typeof plugin.LogReader === "function") {
+			linklog(chalk.yellowBright("LogReader"));
+			cynthiabase.LogReader.push(plugin.LogReader);
+		}
 	});
 function parseBool(bool: string | number | boolean) {
-	if (bool === "true" || bool === "1" || bool === 1 || bool === true)
-		return true;
-	else return false;
+	return bool === "true" || bool === "1" || bool === 1 || bool === true;
 }
-if (!fs.existsSync(path.join(__dirname,"/../", "./.env")) || devel) {
+if (!fs.existsSync(path.join(__dirname, "/../", "./.env")) || devel) {
 	tell.warn(
 		`${path.join(
-			__dirname,"/../",
-			"./.env"
-		)} does not exist. Writing a clean CynthiaConfig.`
+			__dirname,
+			"/../",
+			"./.env",
+		)} does not exist. Writing a clean CynthiaConfig.`,
 	);
 	try {
 		tar.extract({
-			file: path.join(__dirname,"/../", "./clean-cyn.tar.gz"),
-			cwd: path.join(__dirname,"/../"),
+			file: path.join(__dirname, "/../", "./clean-cyn.tar.gz"),
+			cwd: path.join(__dirname, "/../"),
 			sync: true,
 		});
 	} catch (err) {
@@ -198,13 +212,17 @@ if (!fs.existsSync(path.join(__dirname,"/../", "./.env")) || devel) {
 	if (!devel) process.exit(0);
 	else
 		tell.warn(
-			"Not exiting because Cynthia is in dev mode! Do not make any changes to root CynthiaConfig in dev mode as they will not be recorded."
+			"Not exiting because Cynthia is in dev mode! Do not make any changes to root CynthiaConfig in dev mode as they will not be recorded.",
 		);
 } else {
 	tell.log(
 		1,
 		"CONFIG",
-		`🤔 Loading configuration from "${path.join(__dirname,"/../", "./.env")}".`
+		`🤔 Loading configuration from "${path.join(
+			__dirname,
+			"/../",
+			"./.env",
+		)}".`,
 	);
 }
 dotenv.config();
@@ -217,29 +235,28 @@ function HandlebarsAsHTML(file, variables) {
 }
 const modes = (() => {
 	const d = {};
-	fs.readdirSync(path.join(__dirname,"/../", "./cynthia_config/modes")).forEach(
-		(file) => {
-			const b = parse(
-				fs.readFileSync(path.join(__dirname,"/../", "./cynthia_config/modes", file), {
+	fs.readdirSync(
+		path.join(__dirname, "/../", "./cynthia_config/modes"),
+	).forEach((file) => {
+		const b = parse(
+			fs.readFileSync(
+				path.join(__dirname, "/../", "./cynthia_config/modes", file),
+				{
 					encoding: "utf8",
-				})
-			);
-			tell.log(
-				0,
-				chalk.reset.cyanBright("Modes"),
-				`💡 Loaded mode: '${b[0]}'.`
-			);
-			d[b[0]] = b[1];
-		}
-	);
+				},
+			),
+		);
+		tell.log(0, chalk.reset.cyanBright("Modes"), `💡 Loaded mode: '${b[0]}'.`);
+		d[b[0]] = b[1];
+	});
 	return d;
 })();
 function returnpagemeta(id) {
 	let d;
 	parse(
-		fs.readFileSync(path.join(__dirname,"/../", "/site/published.jsonc"), {
+		fs.readFileSync(path.join(__dirname, "/../", "/site/published.jsonc"), {
 			encoding: "utf8",
-		})
+		}),
 	).forEach((page) => {
 		if (page.id === id) {
 			d = page;
@@ -264,7 +281,7 @@ async function ReturnPage(id, currenturl) {
 	else pagetype = "page";
 	const handlebarsfile = modes[pagemode].handlebar[pagetype];
 	// Get actual page content
-	let rawpagecontent: { replaceAll: (arg0: string, arg1: string) => { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): { (): any; new(): any; replaceAll: { (arg0: string, arg1: string): any; new(): any; }; }; new(): any; }; }; new(): any; }; }; new(): any; }; }; };
+	let rawpagecontent;
 	switch (pagemeta.content.location) {
 		case "inline":
 			rawpagecontent = pagemeta.content.raw;
@@ -279,10 +296,10 @@ async function ReturnPage(id, currenturl) {
 			return { do: "relocation", url: pagemeta.content.url };
 		default:
 			rawpagecontent = fs.readFileSync(
-				path.join(__dirname,"/../", "/site/pages/", pagemeta.content.path),
+				path.join(__dirname, "/../", "/site/pages/", pagemeta.content.path),
 				{
 					encoding: "utf8",
-				}
+				},
 			);
 			break;
 	}
@@ -344,10 +361,15 @@ async function ReturnPage(id, currenturl) {
 	// debuglog("Head construction");
 
 	const stylesheet = fs.readFileSync(
-		path.join(__dirname,"/../", "/cynthia_config/styles", modes[pagemode].stylefile),
+		path.join(
+			__dirname,
+			"/../",
+			"/cynthia_config/styles",
+			modes[pagemode].stylefile,
+		),
 		{
 			encoding: "utf8",
-		}
+		},
 	);
 	// console.log(stylesheet);
 	const headstuff = `<style>
@@ -367,9 +389,7 @@ async function ReturnPage(id, currenturl) {
 	// debuglog("Body is ready, going to unitor now.");
 
 	// Unite the template with it's content and return it to the server
-	let page = `<!-- Generated and hosted through Cynthia v${
-		pjson.version
-	}, by Strawmelonjuice. 
+	let page = `<!-- Generated and hosted through Cynthia v${pjson.version}, by Strawmelonjuice. 
 Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 -->
 	${HandlebarsAsHTML(
@@ -379,7 +399,7 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 			content: pagecontent,
 			menu1: menu1links,
 			menu2: menu2links,
-		}
+		},
 	)}`;
 	cynthiabase.modifyOutputHTML.forEach((modifier) => {
 		page = modifier(page);
@@ -431,7 +451,10 @@ app.get("/p/:id", async (req, res) => {
 	const id = req.params.id;
 	CynthiaRespond(id, req, res);
 });
-app.use("/assets", express.static(path.join(__dirname,"/../", "/site/assets/")));
+app.use(
+	"/assets",
+	express.static(path.join(__dirname, "/../", "/site/assets/")),
+);
 if (process.argv[2] === "--short") {
 	tell.info("So far so good! Closing now because Cynthia is in CI mode.");
 	process.exit(0);

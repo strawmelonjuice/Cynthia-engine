@@ -39,7 +39,7 @@ module.exports = {
 })
     },
     LogReader(type, msg) {
-        if (msg.contains("amazing")) {
+        if (msg.includes("amazing")) {
             console.log("^ That message contained amazing.")
         }
     }
