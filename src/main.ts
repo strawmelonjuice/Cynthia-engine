@@ -38,13 +38,13 @@ const stripAnsiCodes = (str) =>
 // Pre plugin loader
 const cynthiabase = {
 	modifyOutputHTML: [
-		(htmlin) => {
+		(htmlin: String) => {
 			// Make no changes. Return unchanged.
 			return htmlin;
 		},
 	],
 	modifyBodyHTML: [
-		(htmlin) => {
+		(htmlin: String) => {
 			// Make no changes. Return unchanged.
 			return htmlin;
 		},
@@ -54,19 +54,19 @@ const cynthiabase = {
 };
 // Logger
 class logging {
-	logfile;
-	constructor(logfile) {
+	logfile: string;
+	constructor(logfile: string) {
 		this.logfile = logfile;
 		this.info(`🖊 Logging to "${logfilename}".`);
 	}
-	logtofile(cat, msg) {
+	logtofile(cat: string, msg: string) {
 		fs.writeFileSync(
 			this.logfile,
 			`\n[${cat} ${new Date().toLocaleTimeString()}] ${msg}`,
 			{ flag: "a" },
 		);
 	}
-	connsola2(chalkedname, message) {
+	connsola2(chalkedname: string, message: string) {
 		const numberofspaces = 20 - stripAnsiCodes(chalkedname).length;
 		let spaces = " ".repeat(numberofspaces);
 		if (stripAnsiCodes(chalkedname).length > 15) spaces = " ".repeat(5);
@@ -377,7 +377,7 @@ async function ReturnPage(id, currenturl) {
 	</style>
 	<title>${pagemeta.title} ﹘ ${modes[pagemode].sitename}</title>
 	<script>
-		const pagemetainfo = JSON.parse(${JSON.stringify(pagemeta)});
+		const pagemetainfo = "\`" + JSON.parse(${JSON.stringify(pagemeta)}) + "\`";
 	</script>
 	`;
 	// Run body modifier plugins.
