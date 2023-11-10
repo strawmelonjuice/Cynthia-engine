@@ -38,7 +38,7 @@ const stripAnsiCodes = (str) =>
 // Pre plugin loader
 const cynthiabase = {
 	modifyOutputHTML: [
-		(htmlin: String) => {
+		(htmlin: string) => {
 			// Make no changes. Return unchanged.
 			return htmlin;
 		},
@@ -75,34 +75,34 @@ class logging {
 			action(stripAnsiCodes(chalkedname), message);
 		});
 	}
-	log(errorlevel, name, content) {
+	log(_errorlevel: number, name:string, content:string) {
 		this.logtofile(name, content);
 		this.connsola2(`[${name}]`, content);
 	}
-	warn(content) {
+	warn(content: string) {
 		this.logtofile("WARN", content);
 		this.connsola2(`[${chalk.hex("#c25700")("WARN")}]`, content);
 	}
-	error(content) {
+	error(content: string) {
 		this.logtofile("ERROR", content);
 		this.connsola2(`[${chalk.redBright("ERROR")}]`, chalk.bgBlack.red(content));
 	}
-	info(content) {
+	info(content: string) {
 		this.logtofile("INFO", content);
 		this.connsola2(`[${chalk.hex("#6699ff")("INFO")}]`, content);
 	}
-	silly(content) {
+	silly(content: string) {
 		this.logtofile("SILLY", content);
 		this.connsola2(`[${chalk.white("SILLY :3")}]`, chalk.bgBlack.red(content));
 	}
-	fatal(content) {
+	fatal(content:string) {
 		this.logtofile("FATAL", content);
 		this.connsola2(`[${chalk.bgBlack.red("FATAL")}]`, content);
 	}
 }
 
-let logfilename;
-let starttime;
+let logfilename: string;
+let starttime: Date;
 {
 	starttime = new Date(Date.now());
 	logfilename = `./logs/log_${starttime.getDate()}-${starttime.getMonth()}-${starttime.getFullYear()}.log`;
@@ -202,10 +202,10 @@ if (!fs.existsSync(path.join(__dirname, "/../", "./.env")) || devel) {
 			file: path.join(__dirname, "/../", "./clean-cyn.tar.gz"),
 			cwd: path.join(__dirname, "/../"),
 			sync: true,
+			keep: false
 		});
 	} catch (err) {
 		tell.warn("Could not create clean CynthiaConfig. Exiting.");
-		tell.error(err);
 		process.exit(1);
 	}
 	tell.warn("Clean CynthiaConfig written! Please adjust then restart Cynthia!");
@@ -377,7 +377,7 @@ async function ReturnPage(id, currenturl) {
 	</style>
 	<title>${pagemeta.title} ﹘ ${modes[pagemode].sitename}</title>
 	<script>
-		const pagemetainfo = "\`" + JSON.parse(${JSON.stringify(pagemeta)}) + "\`";
+		const pagemetainfo = JSON.parse(\`${JSON.stringify(pagemeta)}\`);
 	</script>
 	`;
 	// Run body modifier plugins.
@@ -387,6 +387,8 @@ async function ReturnPage(id, currenturl) {
 	});
 
 	// debuglog("Body is ready, going to unitor now.");
+
+	const pageinfoshow = '<div id="cynthiapageinfoshowdummyelem">Working...</div>';
 
 	// Unite the template with it's content and return it to the server
 	let page = `<!-- Generated and hosted through Cynthia v${pjson.version}, by Strawmelonjuice. 
@@ -399,13 +401,18 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 			content: pagecontent,
 			menu1: menu1links,
 			menu2: menu2links,
+			infoshow: pageinfoshow
 		},
 	)}`;
 	cynthiabase.modifyOutputHTML.forEach((modifier) => {
 		page = modifier(page);
 	});
 	// console.log("HTML:" + page);
-	return `<!DOCTYPE html>${page}</html>`;
+
+	return `<!DOCTYPE html>${page}<script>${fs.readFileSync(path.join(__dirname, "../src/client.js"), {
+	encoding: "utf8",
+	flag: "r",
+})}</script></html>`;
 }
 async function CynthiaRespond(id, req, res) {
 	let anyerrors = true;
@@ -431,7 +438,7 @@ async function CynthiaRespond(id, req, res) {
 		tell.log(0, "GET / 200", `✅: "${req.url}"`);
 	}
 }
-const app = express();
+const app = express();	
 app.get("/", async (req, res) => {
 	let pid = "";
 	if (typeof req.query.p !== "undefined") pid = req.query.p;
