@@ -375,6 +375,7 @@ async function ReturnPage(id, currenturl) {
 	const headstuff = `<style>
 	${stylesheet}
 	</style>
+	<script src="/jquery/jquery.min.js"></script>
 	<title>${pagemeta.title} ﹘ ${modes[pagemode].sitename}</title>
 	<script>
 		const pagemetainfo = JSON.parse(\`${JSON.stringify(pagemeta)}\`);
@@ -388,7 +389,9 @@ async function ReturnPage(id, currenturl) {
 
 	// debuglog("Body is ready, going to unitor now.");
 
-	const pageinfoshow = '<div id="cynthiapageinfoshowdummyelem">Working...</div>';
+	const pageinfoshow = `
+	<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
+	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>`;
 
 	// Unite the template with it's content and return it to the server
 	let page = `<!-- Generated and hosted through Cynthia v${pjson.version}, by Strawmelonjuice. 
@@ -461,6 +464,16 @@ app.get("/p/:id", async (req, res) => {
 app.use(
 	"/assets",
 	express.static(path.join(__dirname, "/../", "/site/assets/")),
+);
+app.use(
+  "/jquery",
+  express.static(
+    path.join(
+      __dirname,
+      "/../",
+      "node_modules/jquery/dist/"
+    )
+  )
 );
 if (process.argv[2] === "--short") {
 	tell.info("So far so good! Closing now because Cynthia is in CI mode.");

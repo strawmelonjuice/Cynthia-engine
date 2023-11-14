@@ -2,6 +2,11 @@
 	{
 		"id": "root",
 		"title": "An empty home",
+		"short": "Great things may be created here!",
+		"author": {
+			"name": "Mar (@strawmelonjuice)",
+			"thumbnail": "https://avatars.githubusercontent.com/u/101558380?s=400&u=aa8f776b3e11f02130575d1b46851cca05a0c981&v=4"
+		},
 		"content": {
 			"type": "markdown",
 			"location": "local",
@@ -26,6 +31,13 @@
 	{
 		"id": "getting-started",
 		"title": "Getting started with CynthiaCMS",
+		"short": "1",
+		"author": {
+			"name":"Mar (@strawmelonjuice)"
+		},
+		"dates": {
+			"published":1689023804
+		},
 		"content": {
 			"type": "markdown",
 			"location": "external",
@@ -45,6 +57,11 @@
 	{
 		"id": "about",
 		"title": "About Cynthia",
+		"short": "",
+		"author": {
+			"name":"Mar (@strawmelonjuice)"
+		}
+		,"dates":{"published":1689023804},
 		"content": {
 			"type": "markdown",
 			"location": "external",
