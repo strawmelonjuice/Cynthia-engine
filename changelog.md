@@ -4,7 +4,9 @@
 
 ## Unreleased changes
             
--  **<span style="color: #0033cc">Update</span>**: The default getting started page now just embeds the markdown found on GitHub (this used to be impossible, as the repo was private.)
+-  **<span style="color: #0033cc">Update</span>**: Add default plugin 'Gfontsproxy', allowing for Google Fonts to be proxied automatically through CynthiaCMS.
+-  **<span style="color: #336600">Addition</span>**: Add pageinfo sideshower --yes, it can be removed or even edited by editing the templates and CSS
+-  **<span style="color: #0033cc">Update</span>**: The default getting started page now just embeds the markdown found on GitHub (this used to be impossible, as the repo was private.)
 
 
 ## Releases

@@ -1,9 +1,19 @@
 const CynthiaPluginLoaderVersion = 1;
-const devel = process.argv[2] === "--dev" || process.argv[2] === "--short";
+const devel =
+  process.argv[2] === "--dev" ||
+  process.argv[2] === "--short" ||
+  process.argv[3] === "--dev" ||
+  process.argv[3] === "--short";
+if (devel) console.log("Development mode is on.");
 const verbose =
-	process.argv[2] === "--dev" ||
-	process.argv[2] === "--short" ||
-	process.argv[2] === "--verbose";
+  process.argv[2] === "--verbose" ||
+  process.argv[2] === "-v" ||
+  process.argv[2] === "--loud" ||
+  process.argv[3] === "--verbose" ||
+  process.argv[3] === "-v" ||
+  process.argv[3] === "--loud";
+// --loud was added because nodemon kept picking --verbose up.
+if (verbose) console.log("Verbose mode is on.");
 const express = require("express");
 const dotenv = require("dotenv");
 const fs = require("fs");
@@ -115,9 +125,9 @@ if (verbose) lt = new tslog.Logger();
 else lt = new logging(logfilename);
 const tell = lt;
 
-let debuglog = (a) => {};
+let debuglog = (a: string) => {void(a)};
 if (verbose)
-	debuglog = (a) => {
+	debuglog = (a: string) => {
 		tell.log(0, "DEBUG:", a);
 	};// Plugin loader
 fs.readdirSync("./plugins", { withFileTypes: true })
@@ -264,6 +274,14 @@ function returnpagemeta(id) {
 	});
 	return d;
 }
+
+function ReturnpostlistPage(postlistmetainfo: { filters: {} | undefined; }) {
+	if (!(postlistmetainfo.filters == undefined || postlistmetainfo.filters == null)) {
+		return ("Filtered page list.");
+	} else {
+		return ("Unfiltered page list.");
+	}
+}
 async function ReturnPage(id, currenturl) {
 	// Get page meta info
 	const pagemeta = returnpagemeta(id);
@@ -282,6 +300,9 @@ async function ReturnPage(id, currenturl) {
 	const handlebarsfile = modes[pagemode].handlebar[pagetype];
 	// Get actual page content
 	let rawpagecontent;
+	if (pagemeta.postlist != undefined) {
+		rawpagecontent = ReturnpostlistPage(pagemeta.postlist);
+	} else
 	switch (pagemeta.content.location) {
 		case "inline":
 			rawpagecontent = pagemeta.content.raw;
@@ -457,8 +478,12 @@ app.get("/", async (req, res) => {
 cynthiabase.expressActions.forEach((action) => {
 	action(app);
 });
-app.get("/p/:id", async (req, res) => {
-	const id = req.params.id;
+app.get("/p/*", async (req, res) => {
+	const id = (req.originalUrl.replace("/p/", "")).replace(/\/$/, "");
+	if (id == "") {
+		res.redirect("/");
+		return;
+	}
 	CynthiaRespond(id, req, res);
 });
 app.use(

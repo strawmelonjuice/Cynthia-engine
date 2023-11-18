@@ -19,19 +19,16 @@
 		"type": "page",
 		"mode": "default"
 	},
-	// {
-	// 	"id": "getting-started",
-	// 	"title": "Getting started with CynthiaCMS",
-	// 	"content": {
-	// 		"location": "external-direct",
-	// 		"url": "https://cynthia-docs.strawmelonjuice.com/p/getting-started/"
-	// 	},
-	// 	"mode": "strawmelonjuice-cynthia"
-	// },
 	{
-		"id": "getting-started",
+		"id": "posts",
+		"title": "Posts",
+		"blog": {},
+		"mode": "default"
+	},
+	{
+		"id": "getting/started",
 		"title": "Getting started with CynthiaCMS",
-		"short": "1",
+		"short": "Getting started, yeehaw.",
 		"author": {
 			"name":"Mar (@strawmelonjuice)"
 		},
