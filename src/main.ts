@@ -1,17 +1,17 @@
 const CynthiaPluginLoaderVersion = 1;
 const devel =
-  process.argv[2] === "--dev" ||
-  process.argv[2] === "--short" ||
-  process.argv[3] === "--dev" ||
-  process.argv[3] === "--short";
+	process.argv[2] === "--dev" ||
+	process.argv[2] === "--short" ||
+	process.argv[3] === "--dev" ||
+	process.argv[3] === "--short";
 if (devel) console.log("Development mode is on.");
 const verbose =
-  process.argv[2] === "--verbose" ||
-  process.argv[2] === "-v" ||
-  process.argv[2] === "--loud" ||
-  process.argv[3] === "--verbose" ||
-  process.argv[3] === "-v" ||
-  process.argv[3] === "--loud";
+	process.argv[2] === "--verbose" ||
+	process.argv[2] === "-v" ||
+	process.argv[2] === "--loud" ||
+	process.argv[3] === "--verbose" ||
+	process.argv[3] === "-v" ||
+	process.argv[3] === "--loud";
 // --loud was added because nodemon kept picking --verbose up.
 if (verbose) console.log("Verbose mode is on.");
 const express = require("express");
@@ -85,7 +85,7 @@ class logging {
 			action(stripAnsiCodes(chalkedname), message);
 		});
 	}
-	log(_errorlevel: number, name:string, content:string) {
+	log(_errorlevel: number, name: string, content: string) {
 		this.logtofile(name, content);
 		this.connsola2(`[${name}]`, content);
 	}
@@ -105,7 +105,7 @@ class logging {
 		this.logtofile("SILLY", content);
 		this.connsola2(`[${chalk.white("SILLY :3")}]`, chalk.bgBlack.red(content));
 	}
-	fatal(content:string) {
+	fatal(content: string) {
 		this.logtofile("FATAL", content);
 		this.connsola2(`[${chalk.bgBlack.red("FATAL")}]`, content);
 	}
@@ -125,11 +125,13 @@ if (verbose) lt = new tslog.Logger();
 else lt = new logging(logfilename);
 const tell = lt;
 
-let debuglog = (a: string) => {void(a)};
+let debuglog = (a: string) => {
+	void a;
+};
 if (verbose)
 	debuglog = (a: string) => {
 		tell.log(0, "DEBUG:", a);
-	};// Plugin loader
+	}; // Plugin loader
 fs.readdirSync("./plugins", { withFileTypes: true })
 	.filter((dirent) => dirent.isDirectory())
 	.map((dirent) => dirent.name)
@@ -147,13 +149,9 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 				)}.${displaylinkedfat}...`,
 			);
 		}
-		const plugin_package_json = require(path.join(
-			__dirname,
-			"/../",
-			"plugins/",
-			pluginfolder,
-			"/package.json",
-		));
+		const plugin_package_json = require(
+			path.join(__dirname, "/../", "plugins/", pluginfolder, "/package.json"),
+		);
 		tell.log(
 			0,
 			chalk.reset.hex("5787b8").italic("Plugins"),
@@ -161,13 +159,15 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 				plugin_package_json.name,
 			)}...`,
 		);
-		const plugin = require(path.join(
-			__dirname,
-			"/../",
-			"plugins/",
-			pluginfolder,
-			plugin_package_json.main,
-		));
+		const plugin = require(
+			path.join(
+				__dirname,
+				"/../",
+				"plugins/",
+				pluginfolder,
+				plugin_package_json.main,
+			),
+		);
 		if (plugin.CyntiaPluginCompat !== CynthiaPluginLoaderVersion) {
 			tell.error(
 				`${plugin_package_json.name}: This plugin was written for a different`,
@@ -178,7 +178,7 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 				)}, Cynthia: ${chalk.bold.italic(CynthiaPluginLoaderVersion)})`,
 			);
 			return;
-			}
+		}
 		if (typeof plugin.modifyOutputHTML === "function") {
 			linklog(chalk.greenBright("modifyOutputHTML"));
 			cynthiabase.modifyOutputHTML.push(plugin.modifyOutputHTML);
@@ -212,7 +212,7 @@ if (!fs.existsSync(path.join(__dirname, "/../", "./.env")) || devel) {
 			file: path.join(__dirname, "/../", "./clean-cyn.tar.gz"),
 			cwd: path.join(__dirname, "/../"),
 			sync: true,
-			keep: false
+			keep: false,
 		});
 	} catch (err) {
 		tell.warn("Could not create clean CynthiaConfig. Exiting.");
@@ -275,11 +275,13 @@ function returnpagemeta(id) {
 	return d;
 }
 
-function ReturnpostlistPage(postlistmetainfo: { filters: {} | undefined; }) {
-	if (!(postlistmetainfo.filters == undefined || postlistmetainfo.filters == null)) {
-		return ("Filtered page list.");
+function ReturnpostlistPage(postlistmetainfo: { filters: {} | undefined }) {
+	if (
+		!(postlistmetainfo.filters == undefined || postlistmetainfo.filters == null)
+	) {
+		return "Filtered page list.";
 	} else {
-		return ("Unfiltered page list.");
+		return "Unfiltered page list.";
 	}
 }
 async function ReturnPage(id, currenturl) {
@@ -303,27 +305,27 @@ async function ReturnPage(id, currenturl) {
 	if (pagemeta.postlist != undefined) {
 		rawpagecontent = ReturnpostlistPage(pagemeta.postlist);
 	} else
-	switch (pagemeta.content.location) {
-		case "inline":
-			rawpagecontent = pagemeta.content.raw;
-			break;
-		case "external":
-			rawpagecontent = (await Axios.default.get(pagemeta.content.url).then())
-				.data;
-			break;
-		case "external-direct":
-			return (await Axios.default.get(pagemeta.content.url).then()).data;
-		case "redirect":
-			return { do: "relocation", url: pagemeta.content.url };
-		default:
-			rawpagecontent = fs.readFileSync(
-				path.join(__dirname, "/../", "/site/pages/", pagemeta.content.path),
-				{
-					encoding: "utf8",
-				},
-			);
-			break;
-	}
+		switch (pagemeta.content.location) {
+			case "inline":
+				rawpagecontent = pagemeta.content.raw;
+				break;
+			case "external":
+				rawpagecontent = (await Axios.default.get(pagemeta.content.url).then())
+					.data;
+				break;
+			case "external-direct":
+				return (await Axios.default.get(pagemeta.content.url).then()).data;
+			case "redirect":
+				return { do: "relocation", url: pagemeta.content.url };
+			default:
+				rawpagecontent = fs.readFileSync(
+					path.join(__dirname, "/../", "/site/pages/", pagemeta.content.path),
+					{
+						encoding: "utf8",
+					},
+				);
+				break;
+		}
 	let pagecontent;
 	switch (pagemeta.content.type.toLowerCase()) {
 		case "html" || "webfile":
@@ -415,7 +417,9 @@ async function ReturnPage(id, currenturl) {
 	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>`;
 
 	// Unite the template with it's content and return it to the server
-	let page = `<!-- Generated and hosted through Cynthia v${pjson.version}, by Strawmelonjuice. 
+	let page = `<!-- Generated and hosted through Cynthia v${
+		pjson.version
+	}, by Strawmelonjuice. 
 Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 -->
 	${HandlebarsAsHTML(
@@ -425,7 +429,7 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 			content: pagecontent,
 			menu1: menu1links,
 			menu2: menu2links,
-			infoshow: pageinfoshow
+			infoshow: pageinfoshow,
 		},
 	)}`;
 	cynthiabase.modifyOutputHTML.forEach((modifier) => {
@@ -433,10 +437,13 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 	});
 	// console.log("HTML:" + page);
 
-	return `<!DOCTYPE html>${page}<script>${fs.readFileSync(path.join(__dirname, "../src/client.js"), {
-	encoding: "utf8",
-	flag: "r",
-})}</script></html>`;
+	return `<!DOCTYPE html>${page}<script>${fs.readFileSync(
+		path.join(__dirname, "../src/client.js"),
+		{
+			encoding: "utf8",
+			flag: "r",
+		},
+	)}</script></html>`;
 }
 async function CynthiaRespond(id, req, res) {
 	let anyerrors = true;
@@ -462,7 +469,7 @@ async function CynthiaRespond(id, req, res) {
 		tell.log(0, "GET / 200", `✅: "${req.url}"`);
 	}
 }
-const app = express();	
+const app = express();
 app.get("/", async (req, res) => {
 	let pid = "";
 	if (typeof req.query.p !== "undefined") pid = req.query.p;
@@ -479,7 +486,7 @@ cynthiabase.expressActions.forEach((action) => {
 	action(app);
 });
 app.get("/p/*", async (req, res) => {
-	const id = (req.originalUrl.replace("/p/", "")).replace(/\/$/, "");
+	const id = req.originalUrl.replace("/p/", "").replace(/\/$/, "");
 	if (id == "") {
 		res.redirect("/");
 		return;
@@ -491,14 +498,8 @@ app.use(
 	express.static(path.join(__dirname, "/../", "/site/assets/")),
 );
 app.use(
-  "/jquery",
-  express.static(
-    path.join(
-      __dirname,
-      "/../",
-      "node_modules/jquery/dist/"
-    )
-  )
+	"/jquery",
+	express.static(path.join(__dirname, "/../", "node_modules/jquery/dist/")),
 );
 if (process.argv[2] === "--short") {
 	tell.info("So far so good! Closing now because Cynthia is in CI mode.");
