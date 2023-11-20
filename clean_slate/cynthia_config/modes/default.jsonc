@@ -9,7 +9,7 @@
 		},
 		"menulinks": [
 			{ "name": "A home page!", "href": "/" },
-			{ "name": "Posts!", "href": "/" },
+			{ "name": "Posts!", "href": "/posts/" },
 			{ "name": "Another page", "href": "/p/2" },
 			{
 				"name": "About Cynthia",
