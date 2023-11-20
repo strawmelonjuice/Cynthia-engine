@@ -39,7 +39,7 @@ const pjsonstring = fs.readFileSync(path.join(__dirname, "../package.json"), {
 	flag: "r",
 });
 const pjson = JSON.parse(pjsonstring);
-const stripAnsiCodes = (str) =>
+const stripAnsiCodes = (str: string) =>
 	str.replace(
 		// biome-ignore lint/suspicious/noControlCharactersInRegex:
 		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
@@ -54,12 +54,16 @@ const cynthiabase = {
 		},
 	],
 	modifyBodyHTML: [
-		(htmlin: String) => {
+		(htmlin: string) => {
 			// Make no changes. Return unchanged.
 			return htmlin;
 		},
 	],
-	expressActions: [(expressapp: typeof express) => {}],
+	expressActions: [
+		(expressapp: typeof express) => {
+			void expressapp;
+		},
+	],
 	LogReader: [(type: string, msg: string) => {}],
 };
 // Logger
@@ -77,9 +81,9 @@ class logging {
 		);
 	}
 	connsola2(chalkedname: string, message: string) {
-		const numberofspaces = 20 - stripAnsiCodes(chalkedname).length;
+		const numberofspaces = 13 - stripAnsiCodes(chalkedname).length;
 		let spaces = " ".repeat(numberofspaces);
-		if (stripAnsiCodes(chalkedname).length > 15) spaces = " ".repeat(5);
+		if (stripAnsiCodes(chalkedname).length > 15) spaces = " ".repeat(4);
 		console.log(chalkedname + spaces + message);
 		cynthiabase.LogReader.forEach((action) => {
 			action(stripAnsiCodes(chalkedname), message);
@@ -149,9 +153,13 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 				)}.${displaylinkedfat}...`,
 			);
 		}
-		const plugin_package_json = require(
-			path.join(__dirname, "/../", "plugins/", pluginfolder, "/package.json"),
-		);
+		const plugin_package_json = require(path.join(
+			__dirname,
+			"/../",
+			"plugins/",
+			pluginfolder,
+			"/package.json",
+		));
 		tell.log(
 			0,
 			chalk.reset.hex("5787b8").italic("Plugins"),
@@ -159,15 +167,13 @@ fs.readdirSync("./plugins", { withFileTypes: true })
 				plugin_package_json.name,
 			)}...`,
 		);
-		const plugin = require(
-			path.join(
-				__dirname,
-				"/../",
-				"plugins/",
-				pluginfolder,
-				plugin_package_json.main,
-			),
-		);
+		const plugin = require(path.join(
+			__dirname,
+			"/../",
+			"plugins/",
+			pluginfolder,
+			plugin_package_json.main,
+		));
 		if (plugin.CyntiaPluginCompat !== CynthiaPluginLoaderVersion) {
 			tell.error(
 				`${plugin_package_json.name}: This plugin was written for a different`,
@@ -275,13 +281,62 @@ function returnpagemeta(id) {
 	return d;
 }
 
-function ReturnpostlistPage(postlistmetainfo: { filters: {} | undefined }) {
+function ReturnpostlistPage(postlistmetainfo: {
+	title: string;
+	postlist: {filters: { category: string | undefined; tag: [] | undefined } | undefined;
+}}) {
+	let arrayofallposts;
+	let lastdatestamp = 1;
+	// return "Hi!";
+	parse(
+		fs.readFileSync(path.join(__dirname, "/../", "/site/published.jsonc"), {
+			encoding: "utf8",
+		}),
+	).forEach((page) => {
+		if (page.type === "post") {
+			debuglog(`Found a post! It's '${chalk.greenBright(page.id)}'`);
+			if (lastdatestamp === 1) {
+				arrayofallposts = [page];
+				lastdatestamp = page.dates.published;
+			} else {
+				if (page.dates.published >= lastdatestamp) {
+					arrayofallposts.unshift(page);
+				} else {
+					arrayofallposts.push(page);
+				}
+			}
+			debuglog(JSON.stringify(arrayofallposts));
+			console.log("YEAH");
+		}
+	});
+
 	if (
-		!(postlistmetainfo.filters == undefined || postlistmetainfo.filters == null)
+		!(
+			postlistmetainfo.postlist.filters === undefined || postlistmetainfo.postlist.filters == null
+		)
 	) {
 		return "Filtered page list.";
 	} else {
-		return "Unfiltered page list.";
+		let output =
+			`<h1>${postlistmetainfo.title}</h1><table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>`;
+		debuglog("Returning an unfiltered post list.");
+		for (const i in arrayofallposts) {
+			const post = arrayofallposts[i];
+			const addition = `
+			<tr><td class="post-date"><span class="unparsedtimestamp post-date">${
+				post.dates.published
+			}</span></td><td><a href="/p/"><span class="post-title">${md.render(
+				post.title,
+			)}</span></a>
+			</td><td class="post-category"><a href="#?c=${post.category}">${
+				post.category
+			}</a></td></tr><tr><td></td><td class="post-desc"><p>${md.render(
+				post.short,
+			)}</p></td></tr>
+			`;
+			output = output + addition;
+		}
+		return output;
 	}
 }
 async function ReturnPage(id, currenturl) {
@@ -301,10 +356,11 @@ async function ReturnPage(id, currenturl) {
 	else pagetype = "page";
 	const handlebarsfile = modes[pagemode].handlebar[pagetype];
 	// Get actual page content
-	let rawpagecontent;
-	if (pagemeta.postlist != undefined) {
-		rawpagecontent = ReturnpostlistPage(pagemeta.postlist);
-	} else
+	let rawpagecontent: string;
+	let pagecontent: string;
+	if (pagemeta.postlist !== undefined) {
+		pagecontent = ReturnpostlistPage(pagemeta);
+	} else {
 		switch (pagemeta.content.location) {
 			case "inline":
 				rawpagecontent = pagemeta.content.raw;
@@ -326,22 +382,22 @@ async function ReturnPage(id, currenturl) {
 				);
 				break;
 		}
-	let pagecontent;
-	switch (pagemeta.content.type.toLowerCase()) {
-		case "html" || "webfile":
-			pagecontent = `<div>${rawpagecontent}</div>`;
-			break;
-		case "plain" || "text" || "plaintext" || "raw":
-			pagecontent = `<div><pre>${rawpagecontent
-				.replaceAll("&", "&amp;")
-				.replaceAll("<", "&lt;")
-				.replaceAll(">", "&gt;")
-				.replaceAll('"', "&quot;")
-				.replaceAll("'", "&#039;")}</pre></div>`;
-			break;
-		default:
-			pagecontent = `<div>${md.render(rawpagecontent)}</div>`;
-			break;
+		switch (pagemeta.content.markupType.toLowerCase()) {
+			case "html" || "webfile":
+				pagecontent = `<div>${rawpagecontent}</div>`;
+				break;
+			case "plain" || "text" || "plaintext" || "raw":
+				pagecontent = `<div><pre>${rawpagecontent
+					.replaceAll("&", "&amp;")
+					.replaceAll("<", "&lt;")
+					.replaceAll(">", "&gt;")
+					.replaceAll('"', "&quot;")
+					.replaceAll("'", "&#039;")}</pre></div>`;
+				break;
+			default:
+				pagecontent = `<div>${md.render(rawpagecontent)}</div>`;
+				break;
+		}
 	}
 	// Prepare menu links
 	// debuglog("Menu links 1");
@@ -417,9 +473,7 @@ async function ReturnPage(id, currenturl) {
 	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>`;
 
 	// Unite the template with it's content and return it to the server
-	let page = `<!-- Generated and hosted through Cynthia v${
-		pjson.version
-	}, by Strawmelonjuice. 
+	let page = `<!-- Generated and hosted through Cynthia v${pjson.version}, by Strawmelonjuice. 
 Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 -->
 	${HandlebarsAsHTML(
@@ -446,6 +500,7 @@ Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 	)}</script></html>`;
 }
 async function CynthiaRespond(id, req, res) {
+	debuglog(`CynthiaRespond() called with id: '${id}'`);
 	let anyerrors = true;
 	try {
 		const cynspon = await ReturnPage(id, req.url);
@@ -459,12 +514,13 @@ async function CynthiaRespond(id, req, res) {
 				anyerrors = false;
 			}
 		}
-	} catch {
+	} catch (error) {
+		debuglog(`ERROR:${error}`);
 		anyerrors = true;
 	}
 	if (anyerrors) {
-		tell.log(0, "GET / 500", `❎: "${req.url}"`);
-		res.sendStatus(500);
+		tell.log(0, "GET / 406", `❎: "${req.url}"`);
+		res.sendStatus(406);
 	} else {
 		tell.log(0, "GET / 200", `✅: "${req.url}"`);
 	}
@@ -487,7 +543,7 @@ cynthiabase.expressActions.forEach((action) => {
 });
 app.get("/p/*", async (req, res) => {
 	const id = req.originalUrl.replace("/p/", "").replace(/\/$/, "");
-	if (id == "") {
+	if (id === "") {
 		res.redirect("/");
 		return;
 	}

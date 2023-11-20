@@ -15,10 +15,11 @@ function mobileorientation() {
     return 0;
   }
   console.error(
-    "Could not determine 'mobilescreen()' from css value '" + csssays + "'."
+    `Could not determine 'mobilescreen()' from css value '${csssays}'.`
   );
 }
-if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
+try
+{if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
   let pageinfosidebarelem = document.getElementById(
     "cynthiapageinfoshowdummyelem"
   );
@@ -29,21 +30,29 @@ if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
   pageinfosidebarelem.id = "pageinfosidebar";
   pageinfosidebarelem = document.getElementById("pageinfosidebar");
   let authorthumbnail = "";
-  if (
-    typeof pagemetainfo.author.thumbnail !== "undefined"
-  ) {
+  if (typeof pagemetainfo.author.thumbnail !== "undefined") {
     authorthumbnail = `<img style="width: 2.5em" src="${pagemetainfo.author.thumbnail}">`;
   }
   let dates = "";
   if (typeof pagemetainfo.dates !== "undefined") {
-  if (pagemetainfo.dates.published == pagemetainfo.dates.altered || typeof pagemetainfo.dates.altered == "undefined") {
-      dates = `<li>Posted: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.published)*1000).toLocaleString())}</span></li>`
-} else {
-    dates = `
-    <li>Posted: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.published)*1000).toLocaleString())}</span></li>
-    <li>Edited: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.altered)*1000).toLocaleString())}</span></li>
-    `
-} }
+    if (
+      pagemetainfo.dates.published == pagemetainfo.dates.altered ||
+      typeof pagemetainfo.dates.altered == "undefined"
+    ) {
+      dates = `<li>Posted: <span >${new Date(
+        pagemetainfo.dates.published * 1000
+      ).toLocaleString()}</span></li>`;
+    } else {
+      dates = `
+    <li>Posted: <span >${new Date(
+      pagemetainfo.dates.published * 1000
+    ).toLocaleString()}</span></li>
+    <li>Edited: <span >${new Date(
+      pagemetainfo.dates.altered * 1000
+    ).toLocaleString()}</span></li>
+    `;
+    }
+  }
   pageinfosidebarelem.innerHTML = `
     <span class="not-on-mobile" style="position:absolute;right:0;top:0px;font-size: 3em; cursor: pointer; ">⇙</span>
     <p class="pageinfo-title">${pagemetainfo.title}</p>
@@ -101,4 +110,25 @@ if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
 
     pageinfosidebar_rollup();
   });
+}}
+catch {};
+function ParseTimestamps() {
+  const elements = document.getElementsByClassName("unparsedtimestamp");
+  if (elements !== undefined && elements.length !== 0) {
+    console.log("Parsing timestamps...");
+    for (const i in elements) {
+      const timestamp = elements[i].innerHTML;
+      const jstimestamp = timestamp * 1000;
+      const dateObject = new Date(jstimestamp);
+      const data = dateObject.toLocaleString();
+      const date = data.substring(0, data.length - 3);
+      elements[i].innerHTML = date;
+      elements[i].classList.remove("unparsedtimestamp");
+      break;
+    }
+  }
 }
+setInterval(() => {
+  ParseTimestamps();
+}, 250);
+ParseTimestamps();

@@ -1,14 +1,14 @@
 [
-    {
-        "id": "hlimg",
-        "version": "latest"
-    },
-    {
-        "id":"gfonts",
-        "version":"latest"
-    }
-    {
-        "id": "htmx",
-        "version": "latest"
-    }
+	{
+		"id": "hlimg",
+		"version": "latest"
+	},
+	{
+		"id": "gfonts",
+		"version": "latest"
+	},
+	{
+		"id": "htmx",
+		"version": "latest"
+	}
 ]

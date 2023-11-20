@@ -109,3 +109,39 @@ main {
     border-right: 4px groove var(--color-slot-03);
     border-bottom: 4px groove var(--color-slot-03); */
 }
+main > table.post-listpreview {
+    width: -webkit-fill-available;
+}
+/* .post-listpreview #post-listpreview-h {
+    border-bottom: solid 2px #000;
+} */
+.post-listpreview th {
+    /* text-decoration: underline; */
+    font-size: 22px;
+    border-bottom: solid 2px #000;
+    font-weight: 90;
+}
+.post-listpreview .post-category {
+  width: 25%;
+}
+.post-listpreview .post-date {
+    font-style: italic;
+    font-size: 16px;
+}
+
+.post-listpreview .post-title {
+    font-size: 16px;
+}
+
+td.post-date {
+  width: 10%;
+  /* width: min-content; */
+}
+
+.post-listpreview .post-desc {
+    font-size: 13px;
+    margin-bottom: 20px;
+    border-bottom: solid 2px #0000002a;
+    width: -webkit-fill-available;
+    display: block;
+}

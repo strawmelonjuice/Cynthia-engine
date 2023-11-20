@@ -8,7 +8,8 @@
 			"page": "default"
 		},
 		"menulinks": [
-			{"name": "A home page!", "href": "/"},
+			{ "name": "A home page!", "href": "/" },
+			{ "name": "Posts!", "href": "/" },
 			{ "name": "Another page", "href": "/p/2" },
 			{
 				"name": "About Cynthia",

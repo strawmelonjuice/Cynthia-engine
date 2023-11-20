@@ -8,7 +8,7 @@
 			"thumbnail": "https://avatars.githubusercontent.com/u/101558380?s=400&u=aa8f776b3e11f02130575d1b46851cca05a0c981&v=4"
 		},
 		"content": {
-			"type": "markdown",
+			"markupType": "markdown",
 			"location": "local",
 			"path": "index.md"
 		},
@@ -20,23 +20,59 @@
 		"mode": "default"
 	},
 	{
+		"title": "Example post 3",
+		"id": "example-post-3",
+		"short": "Just an example post!",
+		"mode": "default",
+		"type": "post",
+		"category": "Examples",
+		"author": { "name": "Mostly you..." },
+		"content": {
+			"markupType": "text",
+			"location": "inline",
+			"raw": "An example post!"
+		},
+		"dates": {
+			"published": 1700414697,
+			"altered": 1700414697
+		}
+	},
+	{
 		"id": "posts",
 		"title": "Posts",
-		"blog": {},
+		"postlist": {},
 		"mode": "default"
+	},
+	{
+		"title": "Example post 2",
+		"id": "example-post-2",
+		"short": "A future example post!",
+		"mode": "default",
+		"type": "post",
+		"category": "Example posts",
+		"author": { "name": "You & me" },
+		"content": {
+			"markupType": "text",
+			"location": "inline",
+			"raw": "An example post!"
+		},
+		"dates": {
+			"published": 1900414697,
+			"altered": 1700414697
+		}
 	},
 	{
 		"id": "getting/started",
 		"title": "Getting started with CynthiaCMS",
 		"short": "Getting started, yeehaw.",
 		"author": {
-			"name":"Mar (@strawmelonjuice)"
+			"name": "Mar (@strawmelonjuice)"
 		},
 		"dates": {
-			"published":1689023804
+			"published": 1689023804
 		},
 		"content": {
-			"type": "markdown",
+			"markupType": "markdown",
 			"location": "external",
 			"url": "https://raw.githubusercontent.com/strawmelonjuice/cynthiadocs/main/site/pages/guide.md"
 		},
@@ -46,7 +82,7 @@
 		"id": "2",
 		"title": "A second page!",
 		"content": {
-			"type": "text",
+			"markupType": "text",
 			"location": "inline",
 			"raw": "Hello, this is a second page on Cynthia!"
 		}
@@ -56,11 +92,11 @@
 		"title": "About Cynthia",
 		"short": "",
 		"author": {
-			"name":"Mar (@strawmelonjuice)"
-		}
-		,"dates":{"published":1689023804},
+			"name": "Mar (@strawmelonjuice)"
+		},
+		"dates": { "published": 1689023804 },
 		"content": {
-			"type": "markdown",
+			"markupType": "markdown",
 			"location": "external",
 			"url": "https://raw.githubusercontent.com/strawmelonjuice/CynthiaCMS-JS/main/README.MD"
 		},
@@ -69,11 +105,29 @@
 	},
 	{
 		"id": "changelog",
-		"title": "Cynthia -> Changelog"
-		, "content": {
-			"type":"markdown",
-			"location":"local",
-			"path":"../../changelog.md"
+		"title": "Cynthia -> Changelog",
+		"content": {
+			"markupType": "markdown",
+			"location": "local",
+			"path": "../../changelog.md"
+		}
+	},
+	{
+		"title": "Example post 1",
+		"id": "example-post-1",
+		"short": "An old example post!",
+		"mode": "default",
+		"type": "post",
+		"category": "Examples",
+		"author": { "name": "You & me" },
+		"content": {
+			"markupType": "text",
+			"location": "inline",
+			"raw": "An example post!"
+		},
+		"dates": {
+			"published": 1300114697,
+			"altered": 1700414697
 		}
 	}
 ]
