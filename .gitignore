@@ -123,9 +123,7 @@ dist
 /.env
 /reset.sh
 /GETTINGSTARTED.MD
-/cynthia_config
-/site
-plugins/hlimg
+/cynthiaFiles
 
 
 # Submlime (opened in sublime a time.)

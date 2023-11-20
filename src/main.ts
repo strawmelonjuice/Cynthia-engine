@@ -252,11 +252,11 @@ function HandlebarsAsHTML(file, variables) {
 const modes = (() => {
 	const d = {};
 	fs.readdirSync(
-		path.join(__dirname, "/../", "./cynthia_config/modes"),
+		path.join(__dirname, "/../", "./cynthiaFiles/modes"),
 	).forEach((file) => {
 		const b = parse(
 			fs.readFileSync(
-				path.join(__dirname, "/../", "./cynthia_config/modes", file),
+				path.join(__dirname, "/../", "./cynthiaFiles/modes", file),
 				{
 					encoding: "utf8",
 				},
@@ -270,7 +270,7 @@ const modes = (() => {
 function returnpagemeta(id) {
 	let d;
 	parse(
-		fs.readFileSync(path.join(__dirname, "/../", "/site/published.jsonc"), {
+		fs.readFileSync(path.join(__dirname, "/../", "/cynthiaFiles/published.jsonc"), {
 			encoding: "utf8",
 		}),
 	).forEach((page) => {
@@ -289,7 +289,7 @@ function ReturnpostlistPage(postlistmetainfo: {
 	let lastdatestamp = 1;
 	// return "Hi!";
 	parse(
-		fs.readFileSync(path.join(__dirname, "/../", "/site/published.jsonc"), {
+		fs.readFileSync(path.join(__dirname, "/../", "/cynthiaFiles/published.jsonc"), {
 			encoding: "utf8",
 		}),
 	).forEach((page) => {
@@ -375,7 +375,7 @@ async function ReturnPage(id, currenturl) {
 				return { do: "relocation", url: pagemeta.content.url };
 			default:
 				rawpagecontent = fs.readFileSync(
-					path.join(__dirname, "/../", "/site/pages/", pagemeta.content.path),
+					path.join(__dirname, "/../", "/cynthiaFiles/pages/", pagemeta.content.path),
 					{
 						encoding: "utf8",
 					},
@@ -443,7 +443,7 @@ async function ReturnPage(id, currenturl) {
 		path.join(
 			__dirname,
 			"/../",
-			"/cynthia_config/styles",
+			"/cynthiaFiles/styles",
 			modes[pagemode].stylefile,
 		),
 		{
@@ -477,7 +477,7 @@ async function ReturnPage(id, currenturl) {
 Also see: https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD
 -->
 	${HandlebarsAsHTML(
-		path.join("./cynthia_config/templates/", `${handlebarsfile}.handlebars`),
+		path.join("./cynthiaFiles/templates/", `${handlebarsfile}.handlebars`),
 		{
 			head: headstuff,
 			content: pagecontent,
@@ -551,7 +551,7 @@ app.get("/p/*", async (req, res) => {
 });
 app.use(
 	"/assets",
-	express.static(path.join(__dirname, "/../", "/site/assets/")),
+	express.static(path.join(__dirname, "/../", "/cynthiaFiles/assets/")),
 );
 app.use(
 	"/jquery",
