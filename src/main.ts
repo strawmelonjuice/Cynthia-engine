@@ -1,4 +1,5 @@
 const CynthiaPluginLoaderVersion = 1;
+// console.log(JSON.stringify(process.argv));
 const devel =
 	process.argv[2] === "--dev" ||
 	process.argv[2] === "--short" ||
@@ -557,11 +558,14 @@ app.use(
 	"/jquery",
 	express.static(path.join(__dirname, "/../", "node_modules/jquery/dist/")),
 );
+if (devel) console.log("Development mode is on.");
+if (devel) console.log("Development mode is on.");
 if (process.argv[2] === "--short") {
 	tell.info("So far so good! Closing now because Cynthia is in CI mode.");
 	process.exit(0);
 } else {
 	app.listen(process.env.PORT, () => {
 		tell.info(`🆙 Running at http://localhost:${process.env.PORT}/`);
+if (devel) console.log("Development mode is on.");
 	});
 }
