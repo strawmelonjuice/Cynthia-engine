@@ -46,13 +46,13 @@ const stripAnsiCodes = (str: string) =>
 		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
 		"",
 	);
-// Pre plugin loader
-const cynthiabase = {
-	modifyOutputHTML: [
-		(htmlin: string) => {
-			// Make no changes. Return unchanged.
-			return htmlin;
-		},
+	// Pre plugin loader
+	const cynthiabase = {
+		modifyOutputHTML: [
+			(htmlin: string) => {
+				// Make no changes. Return unchanged.
+				return htmlin;
+			},
 	],
 	modifyBodyHTML: [
 		(htmlin: string) => {
@@ -329,7 +329,7 @@ function ReturnpostlistPage(postlistmetainfo: {
 			}</span></td><td><a href="/p/"><span class="post-title">${md.render(
 				post.title,
 			)}</span></a>
-			</td><td class="post-category"><a href="#?c=${post.category}">${
+			</td><td class="post-category"><a href="/c/${post.category}">${
 				post.category
 			}</a></td></tr><tr><td></td><td class="post-desc"><p>${md.render(
 				post.short,
@@ -526,6 +526,35 @@ async function CynthiaRespond(id, req, res) {
 		tell.log(0, "GET / 200", `✅: "${req.url}"`);
 	}
 }
+
+async function BlogPagesRespond(filters, req, res) {
+	debuglog(`BlogPagesRespond() called with filters: '${JSON.stringify(filters)}'`);
+	let anyerrors = true;
+	try {
+		const cynspon = await ReturnpostlistPage(returnpagemeta("posts"),req.url);
+		if (typeof cynspon !== "object") {
+			res.send(cynspon);
+			anyerrors = false;
+		} else {
+			if (cynspon.do === "relocation") {
+				res.redirect(302, cynspon.url);
+				console.log(`Redirecting '${req.url}' to '${cynspon.url}'.`);
+				anyerrors = false;
+			}
+		}
+	} catch (error) {
+		debuglog(`ERROR:${error}`);
+		anyerrors = true;
+	}
+	if (anyerrors) {
+		tell.log(0, "GET / 500", `❎: "${req.url}"`);
+		res.sendStatus(500);
+	} else {
+		tell.log(0, "GET / 200", `✅: "${req.url}"`);
+	}
+}
+
+
 const app = express();
 app.get("/", async (req, res) => {
 	let pid = "";
@@ -550,6 +579,17 @@ app.get("/p/*", async (req, res) => {
 	}
 	CynthiaRespond(id, req, res);
 });
+
+app.get("/c/*", async (req, res) => {
+	const category = req.originalUrl.replace("/c/", "").replace(/\/$/, "");
+	if (category === "") {
+		res.redirect("/");
+		return;
+	}
+	BlogPagesRespond(["category", category], req, res);
+});
+
+
 app.use(
 	"/assets",
 	express.static(path.join(__dirname, "/../", "/cynthiaFiles/assets/")),
@@ -561,8 +601,6 @@ app.use(
 if (devel) console.log("Development mode is on.");
 if (devel) console.log("Development mode is on.");
 if (process.argv[2] === "--short") {
-	tell.info("So far so good! Closing now because Cynthia is in CI mode.");
-	process.exit(0);
 } else {
 	app.listen(process.env.PORT, () => {
 		tell.info(`🆙 Running at http://localhost:${process.env.PORT}/`);
