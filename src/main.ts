@@ -531,17 +531,17 @@ async function BlogPagesRespond(filters, req, res) {
 	debuglog(`BlogPagesRespond() called with filters: '${JSON.stringify(filters)}'`);
 	let anyerrors = true;
 	try {
-		const cynspon = await ReturnpostlistPage(returnpagemeta("posts"),req.url);
+		const cynspon = await ReturnpostlistPage(returnpagemeta("posts"));
 		if (typeof cynspon !== "object") {
 			res.send(cynspon);
 			anyerrors = false;
-		} else {
+		} /* else {
 			if (cynspon.do === "relocation") {
 				res.redirect(302, cynspon.url);
-				console.log(`Redirecting '${req.url}' to '${cynspon.url}'.`);
+				console.log(`Redirecting '${""}' to '${cynspon.url}'.`);
 				anyerrors = false;
 			}
-		}
+		}*/
 	} catch (error) {
 		debuglog(`ERROR:${error}`);
 		anyerrors = true;
