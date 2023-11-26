@@ -46,13 +46,13 @@ const stripAnsiCodes = (str: string) =>
 		/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
 		"",
 	);
-	// Pre plugin loader
-	const cynthiabase = {
-		modifyOutputHTML: [
-			(htmlin: string) => {
-				// Make no changes. Return unchanged.
-				return htmlin;
-			},
+// Pre plugin loader
+const cynthiabase = {
+	modifyOutputHTML: [
+		(htmlin: string) => {
+			// Make no changes. Return unchanged.
+			return htmlin;
+		},
 	],
 	modifyBodyHTML: [
 		(htmlin: string) => {
@@ -252,28 +252,35 @@ function HandlebarsAsHTML(file, variables) {
 }
 const modes = (() => {
 	const d = {};
-	fs.readdirSync(
-		path.join(__dirname, "/../", "./cynthiaFiles/modes"),
-	).forEach((file) => {
-		const b = parse(
-			fs.readFileSync(
-				path.join(__dirname, "/../", "./cynthiaFiles/modes", file),
-				{
-					encoding: "utf8",
-				},
-			),
-		);
-		tell.log(0, chalk.reset.cyanBright("Modes"), `💡 Loaded mode: '${b[0]}'.`);
-		d[b[0]] = b[1];
-	});
+	fs.readdirSync(path.join(__dirname, "/../", "./cynthiaFiles/modes")).forEach(
+		(file) => {
+			const b = parse(
+				fs.readFileSync(
+					path.join(__dirname, "/../", "./cynthiaFiles/modes", file),
+					{
+						encoding: "utf8",
+					},
+				),
+			);
+			tell.log(
+				0,
+				chalk.reset.cyanBright("Modes"),
+				`💡 Loaded mode: '${b[0]}'.`,
+			);
+			d[b[0]] = b[1];
+		},
+	);
 	return d;
 })();
 function returnpagemeta(id) {
 	let d;
 	parse(
-		fs.readFileSync(path.join(__dirname, "/../", "/cynthiaFiles/published.jsonc"), {
-			encoding: "utf8",
-		}),
+		fs.readFileSync(
+			path.join(__dirname, "/../", "/cynthiaFiles/published.jsonc"),
+			{
+				encoding: "utf8",
+			},
+		),
 	).forEach((page) => {
 		if (page.id === id) {
 			d = page;
@@ -284,15 +291,20 @@ function returnpagemeta(id) {
 
 function ReturnpostlistPage(postlistmetainfo: {
 	title: string;
-	postlist: {filters: { category: string | undefined; tag: [] | undefined } | undefined;
-}}) {
+	postlist: {
+		filters: { category: string | undefined; tag: [] | undefined } | undefined;
+	};
+}) {
 	let arrayofallposts;
 	let lastdatestamp = 1;
 	// return "Hi!";
 	parse(
-		fs.readFileSync(path.join(__dirname, "/../", "/cynthiaFiles/published.jsonc"), {
-			encoding: "utf8",
-		}),
+		fs.readFileSync(
+			path.join(__dirname, "/../", "/cynthiaFiles/published.jsonc"),
+			{
+				encoding: "utf8",
+			},
+		),
 	).forEach((page) => {
 		if (page.type === "post") {
 			debuglog(`Found a post! It's '${chalk.greenBright(page.id)}'`);
@@ -313,13 +325,13 @@ function ReturnpostlistPage(postlistmetainfo: {
 
 	if (
 		!(
-			postlistmetainfo.postlist.filters === undefined || postlistmetainfo.postlist.filters == null
+			postlistmetainfo.postlist.filters === undefined ||
+			postlistmetainfo.postlist.filters == null
 		)
 	) {
 		return "Filtered page list.";
 	} else {
-		let output =
-			`<h1>${postlistmetainfo.title}</h1><table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>`;
+		let output = `<h1>${postlistmetainfo.title}</h1><table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>`;
 		debuglog("Returning an unfiltered post list.");
 		for (const i in arrayofallposts) {
 			const post = arrayofallposts[i];
@@ -376,7 +388,12 @@ async function ReturnPage(id, currenturl) {
 				return { do: "relocation", url: pagemeta.content.url };
 			default:
 				rawpagecontent = fs.readFileSync(
-					path.join(__dirname, "/../", "/cynthiaFiles/pages/", pagemeta.content.path),
+					path.join(
+						__dirname,
+						"/../",
+						"/cynthiaFiles/pages/",
+						pagemeta.content.path,
+					),
 					{
 						encoding: "utf8",
 					},
@@ -528,7 +545,9 @@ async function CynthiaRespond(id, req, res) {
 }
 
 async function BlogPagesRespond(filters, req, res) {
-	debuglog(`BlogPagesRespond() called with filters: '${JSON.stringify(filters)}'`);
+	debuglog(
+		`BlogPagesRespond() called with filters: '${JSON.stringify(filters)}'`,
+	);
 	let anyerrors = true;
 	try {
 		const cynspon = await ReturnpostlistPage(returnpagemeta("posts"));
@@ -553,7 +572,6 @@ async function BlogPagesRespond(filters, req, res) {
 		tell.log(0, "GET / 200", `✅: "${req.url}"`);
 	}
 }
-
 
 const app = express();
 app.get("/", async (req, res) => {
@@ -589,7 +607,6 @@ app.get("/c/*", async (req, res) => {
 	BlogPagesRespond(["category", category], req, res);
 });
 
-
 app.use(
 	"/assets",
 	express.static(path.join(__dirname, "/../", "/cynthiaFiles/assets/")),
@@ -604,6 +621,6 @@ if (process.argv[2] === "--short") {
 } else {
 	app.listen(process.env.PORT, () => {
 		tell.info(`🆙 Running at http://localhost:${process.env.PORT}/`);
-if (devel) console.log("Development mode is on.");
+		if (devel) console.log("Development mode is on.");
 	});
 }
