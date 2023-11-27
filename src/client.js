@@ -4,6 +4,22 @@ Cynthia Client-side script.
 This script is embedded into any page Cynthia serves, always just before the closing </html>.
 */
 
+
+setInterval(() => {
+  var elements = document.getElementsByClassName('unparsedtimestamp');
+  for (let i = elements.length - 1; i >= 0; i--) {
+    let timestamp = elements[i].innerHTML;
+    console.log("Parsing timestamp.");
+    const jstimestamp = timestamp * 1000;
+    const dateObject = new Date(jstimestamp);
+    const data = dateObject.toLocaleString();
+    const date = data.substring(0, data.length - 3);
+    elements[i].innerHTML = date;
+    elements[i].classList.remove('unparsedtimestamp');
+  }
+}, 100);
+
+
 function mobileorientation() {
   const csssays = getComputedStyle(document.body).getPropertyValue(
     "--screen-type-orientation"
@@ -36,14 +52,15 @@ if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
   }
   let dates = "";
   if (typeof pagemetainfo.dates !== "undefined") {
-  if (pagemetainfo.dates.published == pagemetainfo.dates.altered || typeof pagemetainfo.dates.altered == "undefined") {
-      dates = `<li>Posted: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.published)*1000).toLocaleString())}</span></li>`
-} else {
-    dates = `
-    <li>Posted: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.published)*1000).toLocaleString())}</span></li>
-    <li>Edited: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.altered)*1000).toLocaleString())}</span></li>
+    if (pagemetainfo.dates.published == pagemetainfo.dates.altered || typeof pagemetainfo.dates.altered == "undefined") {
+      dates = `<li>Posted: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.published) * 1000).toLocaleString())}</span></li>`
+    } else {
+      dates = `
+    <li>Posted: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.published) * 1000).toLocaleString())}</span></li>
+    <li>Edited: <span class="unparsedtimestamp">${(new Date((pagemetainfo.dates.altered) * 1000).toLocaleString())}</span></li>
     `
-} }
+    }
+  }
   pageinfosidebarelem.innerHTML = `
     <span class="not-on-mobile" style="position:absolute;right:0;top:0px;font-size: 3em; cursor: pointer; ">⇙</span>
     <p class="pageinfo-title">${pagemetainfo.title}</p>
@@ -93,7 +110,7 @@ if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
       .getElementById("pageinfosidebar")
       .setAttribute("onmouseout", "this.style.opacity = '30%'");
   }
-  $("#pageinfosidebar").on("click", function (e) {
+  $("#pageinfosidebar").on("click", function(e) {
     if (e.target == document.getElementById("dummyauthorthumbnail")) {
       GhostAuthorThumbnailExpand();
       return;
@@ -102,3 +119,4 @@ if (document.getElementById("cynthiapageinfoshowdummyelem") != null) {
     pageinfosidebar_rollup();
   });
 }
+

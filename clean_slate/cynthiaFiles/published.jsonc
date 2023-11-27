@@ -26,6 +26,7 @@
 		"mode": "default",
 		"type": "post",
 		"category": "Examples",
+		"tags": ["three"],
 		"author": { "name": "Mostly you..." },
 		"content": {
 			"markupType": "text",
