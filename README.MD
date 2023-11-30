@@ -1,25 +1,7 @@
-# Cynthia
+# CynthiaCMS - Rust Version
 
-[![Node.js CI](https://github.com/strawmelonjuice/CynthiaCMS-JS/actions/workflows/node.js.yml/badge.svg)](https://github.com/strawmelonjuice/CynthiaCMS-JS/actions/workflows/node.js.yml)
+Rust version of <https://github.com/strawmelonjuice/CynthiaCMS>.
 
+CynthiaCMS was first written in TypeScript, which helped me create most of the file structure.  I personally am not sure if TypeScript would be the best language, so... I am going to rewrite existing Cynthia support in Rust (and some other languages, but Rust is the first 2nd language to *go* public) 
 
-<font style="color: red"><b>
-
-Cynthia is in active development, but not ready for full production usage! It has some releases for testing, but none are marked as 'ready' at the moment.
-
-</font></b>
-
-This page is either found on [/p/about/](/p/about/) in your fresh Cynthia install, or on <https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>.
-
-Cynthia is a NodeJS alternative to the engine I built to host <https://strawmelonjuice.com/>. (The original engine is built on a mix of PHP and javascript, Cynthia is pure TypeScript.)
-
-The philosophy?
-
-> Why use a database if your content is mostly static? Why use an admin panel if you have file access?
-
-Sure, WordPress can be useful, and can be the best way to set up your web site.
-But if you like thinkering about with configuration files and like writing your pages in markdown (yes, that's Cynthia's default format!), then join the Cynthia side (basically Jekyll but less... Jekyll, and no Ruby).
-
-## Getting started
-
-_The docs for this will come, when cynthia is ready for usage!_
+If determined superior (performance not per se, but developability), this Rust branch will take over the main branch. If not, it'll die.
