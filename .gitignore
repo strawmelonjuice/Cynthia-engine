@@ -1,1 +1,7 @@
+# Ignore builds
 /target
+# Ignore CynthiaConfig files
+/cynthiaFiles
+/.env
+/GETTINGSTARTED.MD
+/cynthiapmanifest.json
