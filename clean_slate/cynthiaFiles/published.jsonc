@@ -65,6 +65,7 @@
 	},
 	{
 		"id": "getting/started",
+		"type":"page",
 		"title": "Getting started with CynthiaCMS",
 		"short": "Getting started, yeehaw.",
 		"author": {
@@ -83,6 +84,7 @@
 	{
 		"id": "2",
 		"title": "A second page!",
+		"type":"page",
 		"content": {
 			"markupType": "text",
 			"location": "inline",
@@ -108,6 +110,7 @@
 	{
 		"id": "changelog",
 		"title": "Cynthia -> Changelog",
+		"type": "page",
 		"content": {
 			"markupType": "markdown",
 			"location": "local",

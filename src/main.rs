@@ -1,18 +1,11 @@
-use std::{path::{self, PathBuf}, process::{self, Command}};
-
+use std::fs as stdfs;
 use actix_files as fs;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use colored::Colorize;
 use dotenv::dotenv;
-use handlebars::Handlebars;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-use which;
-use std::path::Path;
-use jsonc_parser::{parse_to_value, parse_to_serde_value};
-use jsonc_parser::parse_to_ast;
-use jsonc_parser::CollectOptions;
-
+use jsonc_parser::parse_to_serde_value;
+use serde::{Serialize, Deserialize};
+use serde_json;
 fn logger(act: i8, msg: String) {
     /*
 
@@ -72,7 +65,8 @@ struct CynthiaUrlDataF {
 struct CynthiaPostData {
     id: String,
     title: String,
-    r#type: String,
+    #[serde(rename = "type")]
+    kind: String,
     #[serde(default = "empty_post_data_content_object")]
     content: CynthiaPostDataContentObject
 }
@@ -103,14 +97,19 @@ async fn root() -> impl Responder {
 }
 
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
-    let parse_json: Option<serde_json::Value> = parse_to_serde_value(r#"{ "test": 5 } // test"#, &Default::default()).unwrap();
-    let res : Vec<CynthiaPostData> = serde_json::from_value(parse_json.into()).unwrap();
+    let file = ("./cynthiaFiles/published.jsonc").to_owned();
+    let unparsed_json = stdfs::read_to_string(file).expect("Couldn't find or load that file.");
+    // println!("{}", unparsed_json);
+    let parsed_json: Option<serde_json::Value> = parse_to_serde_value(&unparsed_json.as_str(), &Default::default()).expect("Could not read published.jsonc.");
+    // println!("{:#?}", parsed_json);
+    let res: Vec<CynthiaPostData> = serde_json::from_value(parsed_json.into()).unwrap();
     return res;
 }
 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let published: Vec<CynthiaPostData> = read_published_jsonc();
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
         .expect("PORT must be set in the '.env' file.")
@@ -140,20 +139,21 @@ async fn main() -> std::io::Result<()> {
 }
 
 fn return_content_p(id: String, probableurl: String) -> String {
-    let mut post: &CynthiaPostData;
-    for i in &read_published_jsonc() {
+    let mut post: &CynthiaPostData = &CynthiaPostData { id: "unknown".to_string(), title: "unknown".to_string(), kind: "unknown".to_string(), content: empty_post_data_content_object() };
+    let published_jsonc = read_published_jsonc();
+    for i in &published_jsonc {
         if i.id == id {
             post = i;
             break;
         } else {continue;}
     }
     let postcontent_html: String;
-    if post.r#type == "postlist".to_string() { 
+    if post.kind == "postlist".to_string() { 
         return "Cynthia cannot handle post lists just yet!".to_owned().to_string() 
     };
     if post.content.location == "external".to_string() {
         return "Cynthia cannot handle external content yet!".to_owned().to_string() 
     };
-    
+    return "Wait for this".to_string();
 }
 fn wrap_content(post: CynthiaPostData, content: String) {}
