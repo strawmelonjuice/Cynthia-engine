@@ -1,13 +1,89 @@
-use handlebars::Handlebars;
-use std::collections::BTreeMap;
-use std::fs as stdfs;
 use actix_files as fs;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use colored::Colorize;
 use dotenv::dotenv;
+use handlebars::Handlebars;
 use jsonc_parser::parse_to_serde_value;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::BTreeMap;
+use std::fs as stdfs;
+
+
+#[derive(Deserialize, Debug, Serialize)]
+struct CynthiaUrlDataF {
+    fullurl: String,
+}
+
+pub type CynthiaModeObject = (String, Config);
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Config {
+    pub sitename: String,
+    pub stylefile: String,
+    pub handlebar: Handlebar,
+    pub menulinks: Vec<Menulink>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Handlebar {
+    pub post: String,
+    pub page: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Menulink {
+    pub name: String,
+    pub href: String,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+struct CynthiaPostData {
+    pub id: String,
+    pub title: String,
+    pub short: Option<String>,
+    pub author: Option<Author>,
+    #[serde(default = "empty_post_data_content_object")]
+    pub content: CynthiaPostDataContentObject,
+    pub dates: Option<Dates>,
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub mode: Option<String>,
+    pub category: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub postlist: Option<Postlist>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Author {
+    pub name: String,
+    pub thumbnail: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CynthiaPostDataContentObject {
+    pub markup_type: String,
+    pub location: String,
+    pub data: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Dates {
+    pub published: i64,
+    pub altered: Option<i64>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Postlist {}
+
 fn logger(act: i8, msg: String) {
     /*
 
@@ -58,86 +134,13 @@ fn logger(act: i8, msg: String) {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize)]
-struct CynthiaUrlDataF {
-    fullurl: String,
-}
-
-pub type CynthiaModeObject = (String, Config);
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Config {
-    pub sitename: String,
-    pub stylefile: String,
-    pub handlebar: Handlebar,
-    pub menulinks: Vec<Menulink>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Handlebar {
-    pub post: String,
-    pub page: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Menulink {
-    pub name: String,
-    pub href: String,
-}
-
-
-
-#[derive(Deserialize, Debug, Serialize)]
-struct CynthiaPostData {
-    pub id: String,
-    pub title: String,
-    pub short: Option<String>,
-    pub author: Option<Author>,
-    #[serde(default = "empty_post_data_content_object")]
-    pub content: CynthiaPostDataContentObject,
-    pub dates: Option<Dates>,
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub mode: Option<String>,
-    pub category: Option<String>,
-    #[serde(default)]
-    pub tags: Vec<String>,
-    pub postlist: Option<Postlist>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Author {
-    pub name: String,
-    pub thumbnail: Option<String>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CynthiaPostDataContentObject {
-    pub markup_type: String,
-    pub location: String,
-    pub data: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Dates {
-    pub published: i64,
-    pub altered: Option<i64>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Postlist {
-}
-
 
 fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
-    let n: CynthiaPostDataContentObject = CynthiaPostDataContentObject { markup_type: ("none".to_string()), data: ("none".to_string()), location: ("none".to_string()) };
+    let n: CynthiaPostDataContentObject = CynthiaPostDataContentObject {
+        markup_type: ("none".to_string()),
+        data: ("none".to_string()),
+        location: ("none".to_string()),
+    };
     return n;
 }
 
@@ -149,14 +152,19 @@ async fn serves_p(id: web::Path<String>) -> HttpResponse {
 
 async fn root() -> impl Responder {
     logger(2, "--> Home".to_string());
-    HttpResponse::Ok().body(wrap_content(,return_content_p("root".to_string(), "/".to_string())))
+    HttpResponse::Ok().body(wrap_content(
+        "root".to_string(),
+        return_content_p("root".to_string(), "/".to_string()),
+    ))
 }
 
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
     let file = ("./cynthiaFiles/published.jsonc").to_owned();
     let unparsed_json = stdfs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
-    let parsed_json: Option<serde_json::Value> = parse_to_serde_value(&unparsed_json.as_str(), &Default::default()).expect("Could not read published.jsonc.");
+    let parsed_json: Option<serde_json::Value> =
+        parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
+            .expect("Could not read published.jsonc.");
     // println!("{:#?}", parsed_json);
     let res: Vec<CynthiaPostData> = serde_json::from_value(parsed_json.into()).unwrap();
     return res;
@@ -165,7 +173,9 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
     let unparsed_json = stdfs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
-    let parsed_json: Option<serde_json::Value> = parse_to_serde_value(&unparsed_json.as_str(), &Default::default()).expect("Could not read published.jsonc.");
+    let parsed_json: Option<serde_json::Value> =
+        parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
+            .expect("Could not read published.jsonc.");
     // println!("{:#?}", parsed_json);
     let res: CynthiaModeObject = serde_json::from_value(parsed_json.into()).unwrap();
     return res;
@@ -173,7 +183,6 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let published: Vec<CynthiaPostData> = read_published_jsonc();
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
         .expect("PORT must be set in the '.env' file.")
@@ -202,36 +211,65 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-fn return_content_p(id: String, probableurl: String) -> String {
+fn return_content_p(postid: String, probableurl: String) -> String {
     let published_jsonc = read_published_jsonc();
     for i in &published_jsonc {
-        if i.id == id {
+        if i.id == postid {
             let post: &CynthiaPostData = i;
-let postcontent_html: String = r#"
+            let postcontent_html: String = r#"
     <div>
         <p>No content on this page</p>
     </div>
-    "#.to_string();
-    if post.kind == "postlist".to_string() { 
-        return "Cynthia cannot handle post lists just yet!".to_owned().to_string() 
-    };
-    let p = &post.content.location;
-    if p == &"external".to_string() {
-        return "Cynthia cannot handle external content yet!".to_owned().to_string() 
-    };
-    return postcontent_html;
-        } else {continue;}
+    "#
+            .to_string();
+            if post.kind == "postlist".to_string() {
+                return "Cynthia cannot handle post lists just yet!"
+                    .to_owned()
+                    .to_string();
+            };
+            let p = &post.content.location;
+            if p == &"external".to_string() {
+                return "Cynthia cannot handle external content yet!"
+                    .to_owned()
+                    .to_string();
+            };
+            return postcontent_html;
+        }
     }
     return "".to_string();
 }
-fn wrap_content(mut post: CynthiaPostData, content: String) -> String {
-    let mode_to_load = post.mode.get_or_insert_with(|| String::from("default")).to_string();
-    let currentmode = load_mode(mode_to_load).1;
-    let handlebarfile = format!("./cynthiaFiles/templates/{}.handlebars",(if post.kind == "post" { currentmode.handlebar.post } else { currentmode.handlebar.page })).to_owned();
-    let source = stdfs::read_to_string(handlebarfile).expect("Couldn't find or load handlebars file.");
-    let handlebars = Handlebars::new();
-    let mut data = BTreeMap::new();
-    data.insert("world".to_string(), "世界!".to_string());
-    let k = handlebars.render_template(&source.to_string(), &data).unwrap();
-    return k;
+struct CynthiaPageVars {
+    
+}
+
+fn wrap_content(postid: String, content: String) -> String {
+    let mut published_jsonc = read_published_jsonc();
+    for post in &mut published_jsonc {
+        if post.id == postid {
+            let mode_to_load = post
+                .mode
+                .get_or_insert_with(|| String::from("default"))
+                .to_string();
+            let currentmode = load_mode(mode_to_load).1;
+            let handlebarfile = format!(
+                "./cynthiaFiles/templates/{}.handlebars",
+                (if post.kind == "post" {
+                    currentmode.handlebar.post
+                } else {
+                    currentmode.handlebar.page
+                })
+            )
+            .to_owned();
+            let source = stdfs::read_to_string(handlebarfile)
+                .expect("Couldn't find or load handlebars file.");
+            let handlebars = Handlebars::new();
+            let mut data = BTreeMap::new();
+            data.insert("world".to_string(), "世界!".to_string());
+            let k = handlebars
+                .render_template(&source.to_string(), &data)
+                .unwrap();
+            return k;
+        }
+    }
+    return content;
 }
