@@ -9,7 +9,6 @@ use serde_json;
 use std::collections::BTreeMap;
 use std::fs as stdfs;
 
-
 #[derive(Deserialize, Debug, Serialize)]
 struct CynthiaUrlDataF {
     fullurl: String,
@@ -134,7 +133,6 @@ fn logger(act: i8, msg: String) {
     }
 }
 
-
 fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
     let n: CynthiaPostDataContentObject = CynthiaPostDataContentObject {
         markup_type: ("none".to_string()),
@@ -239,7 +237,11 @@ fn return_content_p(postid: String, probableurl: String) -> String {
     return "".to_string();
 }
 struct CynthiaPageVars {
-    
+    head: String,
+    content: String,
+    menu1: String,
+    menu2: String,
+    infoshow: String,
 }
 
 fn wrap_content(postid: String, content: String) -> String {
