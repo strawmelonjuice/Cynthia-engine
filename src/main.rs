@@ -249,7 +249,7 @@ fn return_content_p(pgid: String) -> String {
             let post: &CynthiaPostData = i;
             let postcontent_html: String = r#"
     <div>
-        <p>No content on this page</p>
+        <p>Cynthia's Rust version is not yet able to fetch page content!</p>
     </div>
     "#
             .to_string();
