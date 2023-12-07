@@ -1,5 +1,10 @@
 # Ignore builds
 /target
+
+# Ignore node modules
+/node_modules
+/pnpm-lock.yaml
+
 # Ignore CynthiaConfig files
 /cynthiaFiles
 /.env

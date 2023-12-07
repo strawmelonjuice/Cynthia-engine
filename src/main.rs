@@ -6,8 +6,7 @@ use handlebars::Handlebars;
 use jsonc_parser::parse_to_serde_value;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::BTreeMap;
-use std::fs as stdfs;
+use std::{fs as stdfs, path::Path};
 
 #[derive(Deserialize, Debug, Serialize)]
 struct CynthiaUrlDataF {
@@ -22,7 +21,14 @@ pub struct Config {
     pub sitename: String,
     pub stylefile: String,
     pub handlebar: Handlebar,
+    #[serde(default = "empty_menulist")]
     pub menulinks: Vec<Menulink>,
+    #[serde(default = "empty_menulist")]
+    pub menu2links: Vec<Menulink>,
+}
+fn empty_menulist () -> Vec<Menulink> {
+    let hi: Vec<Menulink> = Vec::new();
+    return hi;
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -145,15 +151,20 @@ fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
 #[get("/p/{id:.*}")]
 async fn serves_p(id: web::Path<String>) -> HttpResponse {
     logger(2, format!("--> ID: '{}' was requested.", id));
-    HttpResponse::Ok().body(format!("User detail: {}", id))
+    HttpResponse::Ok().body(returns_p(&id.to_string(), format!("/p/{}",id)))
 }
 
 async fn root() -> impl Responder {
-    logger(2, "--> Home".to_string());
-    HttpResponse::Ok().body(wrap_content(
-        "root".to_string(),
-        return_content_p("root".to_string(), "/".to_string()),
-    ))
+    HttpResponse::Ok().body(returns_p(&"root".to_string(), "/".to_string()))
+}
+
+fn returns_p (pgid: &String, probableurl: String) -> std::string::String {
+    logger(2, format!("--> {0} ({1})", pgid, probableurl));
+    return combine_content(
+        pgid.to_string(),
+        return_content_p(pgid.to_string()),
+        generate_menus(pgid.to_string(), probableurl),
+    );
 }
 
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
@@ -201,6 +212,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
+            .service(fs::Files::new("/jquery", "./node_modules/jquery").show_files_listing())
             .service(serves_p)
             .route("/", web::get().to(root))
     })
@@ -209,10 +221,10 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-fn return_content_p(postid: String, probableurl: String) -> String {
+fn return_content_p(pgid: String) -> String {
     let published_jsonc = read_published_jsonc();
     for i in &published_jsonc {
-        if i.id == postid {
+        if i.id == pgid {
             let post: &CynthiaPostData = i;
             let postcontent_html: String = r#"
     <div>
@@ -225,8 +237,7 @@ fn return_content_p(postid: String, probableurl: String) -> String {
                     .to_owned()
                     .to_string();
             };
-            let p = &post.content.location;
-            if p == &"external".to_string() {
+            if &post.content.location == &String::from("external") {
                 return "Cynthia cannot handle external content yet!"
                     .to_owned()
                     .to_string();
@@ -234,8 +245,10 @@ fn return_content_p(postid: String, probableurl: String) -> String {
             return postcontent_html;
         }
     }
-    return "".to_string();
+    return String::from("");
 }
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct CynthiaPageVars {
     head: String,
     content: String,
@@ -244,15 +257,18 @@ struct CynthiaPageVars {
     infoshow: String,
 }
 
-fn wrap_content(postid: String, content: String) -> String {
+fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
     let mut published_jsonc = read_published_jsonc();
     for post in &mut published_jsonc {
-        if post.id == postid {
+        if post.id == pgid {
             let mode_to_load = post
                 .mode
                 .get_or_insert_with(|| String::from("default"))
                 .to_string();
+            let pagemetainfojson = serde_json::to_string(&post).unwrap();
             let currentmode = load_mode(mode_to_load).1;
+            let stylesheet: String = stdfs::read_to_string( Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile) )
+                .expect("Couldn't find or load CSS file for this pages' mode.");
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 (if post.kind == "post" {
@@ -265,8 +281,27 @@ fn wrap_content(postid: String, content: String) -> String {
             let source = stdfs::read_to_string(handlebarfile)
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
-            let mut data = BTreeMap::new();
-            data.insert("world".to_string(), "世界!".to_string());
+            let data = CynthiaPageVars {
+                head: format!(r#"
+            <style>
+	{0}
+	</style>
+	<script src="/jquery/jquery.min.js"></script>
+	<title>{1} ﹘ {2}</title>
+	<script>
+		const pagemetainfo = JSON.parse(\`{3}\`);
+	</script>
+	"#,
+stylesheet,
+post.title,
+currentmode.sitename,
+pagemetainfojson
+),
+                content,
+                menu1: menus.menu1,
+                menu2: menus.menu2,
+                infoshow: String::from(""),
+            };
             let k = handlebars
                 .render_template(&source.to_string(), &data)
                 .unwrap();
@@ -274,4 +309,67 @@ fn wrap_content(postid: String, content: String) -> String {
         }
     }
     return content;
+}
+
+struct Menulist {
+    menu1: String,
+    menu2: String,
+}
+
+fn generate_menus(pgid: String, probableurl: String) -> Menulist {
+    let mut published_jsonc = read_published_jsonc();
+    for post in &mut published_jsonc {
+        if post.id == pgid {
+            let mode_to_load = post
+                .mode
+                .get_or_insert_with(|| String::from("default"))
+                .to_string();
+            let mode = load_mode(mode_to_load).1;
+            let mut mlist1 = String::from("");
+            match !mode.menulinks.is_empty() {
+                true => {
+                    for ele in mode.menulinks {
+                        let link: String = if ele.href == probableurl {
+                            format!(
+                                r#"<a href="{0}" class="active">{1}</a>"#,
+                                ele.href, ele.name
+                            )
+                        } else {
+                            format!(r#"<a href="{0}" class="">{1}</a>"#, ele.href, ele.name)
+                        };
+                        mlist1.push_str(link.as_str());
+                    }
+                }
+                false => (),
+            }
+            let mut mlist2 = String::from("");
+            match !mode.menu2links.is_empty() {
+                true => {
+                    for ele in mode.menu2links {
+                        let link: String = if ele.href == probableurl {
+                            format!(
+                                r#"<a href="{0}" class="active">{1}</a>"#,
+                                ele.href, ele.name
+                            )
+                        } else {
+                            format!(r#"<a href="{0}" class="">{1}</a>"#, ele.href, ele.name)
+                        };
+                        mlist2.push_str(link.as_str());
+                    }
+                }
+                false => (),
+            }
+            let menus: Menulist = Menulist {
+                menu1: String::from(mlist1),
+                menu2: String::from(mlist2),
+            };
+
+            return menus;
+        }
+    }
+    let menus: Menulist = Menulist {
+        menu1: String::from(""),
+        menu2: String::from(""),
+    };
+    return menus;
 }
