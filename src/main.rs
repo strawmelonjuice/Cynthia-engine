@@ -26,7 +26,7 @@ pub struct Config {
     #[serde(default = "empty_menulist")]
     pub menu2links: Vec<Menulink>,
 }
-fn empty_menulist () -> Vec<Menulink> {
+fn empty_menulist() -> Vec<Menulink> {
     let hi: Vec<Menulink> = Vec::new();
     return hi;
 }
@@ -89,7 +89,7 @@ pub struct Dates {
 #[serde(rename_all = "camelCase")]
 pub struct Postlist {}
 
-fn logger(act: i8, msg: String) {
+fn logger(act: i32, msg: String) {
     /*
 
     Acts:
@@ -115,7 +115,7 @@ fn logger(act: i8, msg: String) {
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
         println!("{0}{1}", preq, msg);
     }
-    if act == 2 {
+    if act == 200 || act == 2 {
         let name = "[CYNGET/OK] ✅";
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
@@ -126,8 +126,19 @@ fn logger(act: i8, msg: String) {
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
         println!("{0}{1}", preq, msg);
     }
+    if act == 3 || act == 404 {
+        let name = "[CYNGET/404] ❎";
+        let spaceleft = if name.chars().count() < spaces {
+            spaces - name.chars().count()
+        } else {
+            0
+        };
+        let title = format!("{}", name.bold().yellow());
+        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+        println!("{0}{1}", preq, msg);
+    }
     if act == 5 {
-        let name = "[ERROR] ✅";
+        let name = "[ERROR]";
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -150,21 +161,31 @@ fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
 
 #[get("/p/{id:.*}")]
 async fn serves_p(id: web::Path<String>) -> HttpResponse {
-    logger(2, format!("--> ID: '{}' was requested.", id));
-    HttpResponse::Ok().body(returns_p(&id.to_string(), format!("/p/{}",id)))
+    return p_server(&id.to_string(), format!("/p/{}", id));
 }
 
 async fn root() -> impl Responder {
-    HttpResponse::Ok().body(returns_p(&"root".to_string(), "/".to_string()))
+ return   p_server(&"root".to_string(), "/".to_string());
 }
 
-fn returns_p (pgid: &String, probableurl: String) -> std::string::String {
-    logger(2, format!("--> {0} ({1})", pgid, probableurl));
-    return combine_content(
+fn p_server(pgid: &String, probableurl: String) -> HttpResponse {
+    let cynres = combine_content(
         pgid.to_string(),
         return_content_p(pgid.to_string()),
-        generate_menus(pgid.to_string(), probableurl),
+        generate_menus(pgid.to_string(), &probableurl),
     );
+    if cynres == String::from("404error") {
+        logger(404, format!("--> {0} ({1})", pgid, probableurl));
+        return HttpResponse::NotFound().into();
+    }
+    if cynres == String::from("unknownexeception") {
+        logger(5, format!("--> {0} ({1})", pgid, probableurl));
+
+        return HttpResponse::ExpectationFailed().into();
+    }
+
+    logger(200, format!("--> {0} ({1})", pgid, probableurl));
+    return HttpResponse::Ok().body(cynres).into();
 }
 
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
@@ -232,20 +253,21 @@ fn return_content_p(pgid: String) -> String {
     </div>
     "#
             .to_string();
-            if post.kind == "postlist".to_string() {
+            if post.kind == "postlist" {
                 return "Cynthia cannot handle post lists just yet!"
                     .to_owned()
                     .to_string();
             };
-            if &post.content.location == &String::from("external") {
-                return "Cynthia cannot handle external content yet!"
-                    .to_owned()
-                    .to_string();
-            };
+            if &post.content.location ==
+                &String::from("external") {
+                    return "Cynthia cannot handle external content yet!"
+                        .to_owned()
+                        .to_string();
+            }
             return postcontent_html;
         }
     }
-    return String::from("");
+    return String::from("404error");
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -267,8 +289,10 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 .to_string();
             let pagemetainfojson = serde_json::to_string(&post).unwrap();
             let currentmode = load_mode(mode_to_load).1;
-            let stylesheet: String = stdfs::read_to_string( Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile) )
-                .expect("Couldn't find or load CSS file for this pages' mode.");
+            let stylesheet: String = stdfs::read_to_string(
+                Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
+            )
+            .expect("Couldn't find or load CSS file for this pages' mode.");
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 (if post.kind == "post" {
@@ -282,21 +306,19 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
             let data = CynthiaPageVars {
-                head: format!(r#"
+                head: format!(
+                    r#"
             <style>
 	{0}
 	</style>
 	<script src="/jquery/jquery.min.js"></script>
-	<title>{1} ﹘ {2}</title>
+	<title>{1} &ndash; {2}</title>
 	<script>
 		const pagemetainfo = JSON.parse(\`{3}\`);
 	</script>
 	"#,
-stylesheet,
-post.title,
-currentmode.sitename,
-pagemetainfojson
-),
+                    stylesheet, post.title, currentmode.sitename, pagemetainfojson
+                ),
                 content,
                 menu1: menus.menu1,
                 menu2: menus.menu2,
@@ -308,6 +330,7 @@ pagemetainfojson
             return k;
         }
     }
+    // logger(3, String::from("Can't find that page."));
     return content;
 }
 
@@ -316,7 +339,7 @@ struct Menulist {
     menu2: String,
 }
 
-fn generate_menus(pgid: String, probableurl: String) -> Menulist {
+fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
     let mut published_jsonc = read_published_jsonc();
     for post in &mut published_jsonc {
         if post.id == pgid {
@@ -329,7 +352,7 @@ fn generate_menus(pgid: String, probableurl: String) -> Menulist {
             match !mode.menulinks.is_empty() {
                 true => {
                     for ele in mode.menulinks {
-                        let link: String = if ele.href == probableurl {
+                        let link: String = if ele.href == String::from(probableurl) {
                             format!(
                                 r#"<a href="{0}" class="active">{1}</a>"#,
                                 ele.href, ele.name
@@ -343,21 +366,18 @@ fn generate_menus(pgid: String, probableurl: String) -> Menulist {
                 false => (),
             }
             let mut mlist2 = String::from("");
-            match !mode.menu2links.is_empty() {
-                true => {
-                    for ele in mode.menu2links {
-                        let link: String = if ele.href == probableurl {
-                            format!(
-                                r#"<a href="{0}" class="active">{1}</a>"#,
-                                ele.href, ele.name
-                            )
-                        } else {
-                            format!(r#"<a href="{0}" class="">{1}</a>"#, ele.href, ele.name)
-                        };
-                        mlist2.push_str(link.as_str());
-                    }
+            if !mode.menu2links.is_empty() {
+                for ele in mode.menu2links {
+                    let link: String = if ele.href == String::from(probableurl) {
+                        format!(
+                            r#"<a href="{0}" class="active">{1}</a>"#,
+                            ele.href, ele.name
+                        )
+                    } else {
+                        format!(r#"<a href="{0}" class="">{1}</a>"#, ele.href, ele.name)
+                    };
+                    mlist2.push_str(link.as_str());
                 }
-                false => (),
             }
             let menus: Menulist = Menulist {
                 menu1: String::from(mlist1),
