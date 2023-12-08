@@ -1,16 +1,65 @@
 use actix_files as fs;
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, guard::Options};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use colored::Colorize;
 use curl::easy::Easy;
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use jsonc_parser::parse_to_serde_value;
+use markdown::{to_html_with_options, CompileOptions, Options};
 use semver::{BuildMetadata, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use markdown::{to_html_with_options, CompileOptions, Options};
 
+#[cfg(windows)]
+pub const NODEJSR: &'static str = "node.exe";
+#[cfg(not(windows))]
+pub const NODEJSR: &'static str = "node";
+#[cfg(windows)]
+pub const BUNJSR: &'static str = "bash.exe bun";
+#[cfg(not(windows))]
+pub const BUNJSR: &'static str = "bun";
 
+fn noderunner(args: Vec<&str>) {
+    
+    let output = match std::process::Command::new(jsr())
+        .args(args)
+        .output() {
+            Ok(result) => result,
+            Err(_erro) => {
+                logger(5, String::from("Couldn't launch Javascript runtime."));
+                std::process::exit(1);
+            }
+        };
+    if output.status.success() {
+        println!("{}", String::from_utf8_lossy(&output.stdout).blue());
+    } else {
+        println!("Script failed.");
+    }
+}
+
+fn jsr() -> &'static str {
+    match std::process::Command::new(BUNJSR).arg("version").output() {
+        Ok(_t) => {
+            return BUNJSR;
+        }
+        Err(_err) => {
+            match std::process::Command::new(NODEJSR).arg("version").output() {
+                Ok(_t) => {
+                    return NODEJSR;
+                }
+                Err(_err) => {
+                    logger(
+                        5,
+                        String::from(
+                            "No supported (Node.JS or Bun) Javascript runtimes found on path!",
+                        ),
+                    );
+                    std::process::exit(1);
+                }
+            };
+        }
+    };
+}
 #[derive(Deserialize, Debug, Serialize)]
 struct CynthiaUrlDataF {
     fullurl: String,
@@ -240,23 +289,24 @@ async fn main() -> std::io::Result<()> {
     );
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
-        .expect("PORT must be set in the '.env' file.")
-        .parse::<u16>()
-        .unwrap();
-    logger(
-        1,
+    .expect("PORT must be set in the '.env' file.")
+    .parse::<u16>()
+    .unwrap();
+logger(
+    1,
+    format!(
+        "{}",
         format!(
-            "{}",
-            format!(
-                "Starting server on {0}{1}",
-                "http://localhost:".green(),
-                portnum.to_string().bold().green()
-            )
-            .italic()
-        ),
-    );
-    HttpServer::new(|| {
-        App::new()
+            "Starting server on {0}{1}",
+            "http://localhost:".green(),
+            portnum.to_string().bold().green()
+        )
+        .italic()
+    ),
+);
+noderunner(["./test.js","hi"].to_vec());
+HttpServer::new(|| {
+    App::new()
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
             .service(fs::Files::new("/jquery", "./node_modules/jquery").show_files_listing())
             .service(serves_p)
@@ -328,28 +378,43 @@ fn return_content_p(pgid: String) -> String {
                     return rawcontent;
                 }
                 "markdown" => {
-                    return to_html_with_options(&rawcontent, &Options {compile: CompileOptions {
-      allow_dangerous_html: true,
-      allow_dangerous_protocol: true,
-      ..CompileOptions::default()
-    },
-..Options::default()}).unwrap();
+                    return to_html_with_options(
+                        &rawcontent,
+                        &Options {
+                            compile: CompileOptions {
+                                allow_dangerous_html: true,
+                                ..CompileOptions::default()
+                            },
+                            ..Options::default()
+                        },
+                    )
+                    .unwrap();
                 }
                 "md" => {
-                    return to_html_with_options(&rawcontent, &Options {compile: CompileOptions {
-      allow_dangerous_html: true,
-      allow_dangerous_protocol: true,
-      ..CompileOptions::default()
-    },
-..Options::default()}).unwrap();
+                    return to_html_with_options(
+                        &rawcontent,
+                        &Options {
+                            compile: CompileOptions {
+                                allow_dangerous_html: true,
+                                ..CompileOptions::default()
+                            },
+                            ..Options::default()
+                        },
+                    )
+                    .unwrap();
                 }
                 "" => {
-                    return to_html_with_options(&rawcontent, &Options {compile: CompileOptions {
-      allow_dangerous_html: true,
-      allow_dangerous_protocol: true,
-      ..CompileOptions::default()
-    },
-..Options::default()}).unwrap();
+                    return to_html_with_options(
+                        &rawcontent,
+                        &Options {
+                            compile: CompileOptions {
+                                allow_dangerous_html: true,
+                                ..CompileOptions::default()
+                            },
+                            ..Options::default()
+                        },
+                    )
+                    .unwrap();
                 }
                 &_ => {
                     return "contenttypeerror".to_owned();
