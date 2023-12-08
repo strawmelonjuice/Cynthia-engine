@@ -1,12 +1,15 @@
 use actix_files as fs;
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, guard::Options};
 use colored::Colorize;
+use curl::easy::Easy;
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use jsonc_parser::parse_to_serde_value;
+use semver::{BuildMetadata, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::{fs as stdfs, path::Path};
+use markdown::{to_html_with_options, CompileOptions, Options};
+
 
 #[derive(Deserialize, Debug, Serialize)]
 struct CynthiaUrlDataF {
@@ -95,17 +98,18 @@ fn logger(act: i32, msg: String) {
     Acts:
     0: Debug log, only act if logging is set to verbose
     1: General log item -- '[log]'
-    2: Request that on Cynthia's part succeeded -- '[CYNGET/OK]'
+    2/200: Request that on Cynthia's part succeeded (and is so responded to) -- '[CYNGET/OK]'
+    3/404: Request for an item that does not exist Cynthia published.jsonc
 
     5: Error!
 
 
 
      */
-    let spaces: usize = 15;
+    let spaces: usize = 10;
     let tabs: String = "\t\t".to_string();
     if act == 1 {
-        let name = "[Log]".blue();
+        let name = "   [Log]".blue();
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -116,7 +120,7 @@ fn logger(act: i32, msg: String) {
         println!("{0}{1}", preq, msg);
     }
     if act == 200 || act == 2 {
-        let name = "[CYNGET/OK] ✅";
+        let name = "✅ [CYNGET/OK]";
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -127,7 +131,7 @@ fn logger(act: i32, msg: String) {
         println!("{0}{1}", preq, msg);
     }
     if act == 3 || act == 404 {
-        let name = "[CYNGET/404] ❎";
+        let name = "❎ [CYNGET/404]";
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -165,7 +169,7 @@ async fn serves_p(id: web::Path<String>) -> HttpResponse {
 }
 
 async fn root() -> impl Responder {
- return   p_server(&"root".to_string(), "/".to_string());
+    return p_server(&"root".to_string(), "/".to_string());
 }
 
 fn p_server(pgid: &String, probableurl: String) -> HttpResponse {
@@ -180,17 +184,22 @@ fn p_server(pgid: &String, probableurl: String) -> HttpResponse {
     }
     if cynres == String::from("unknownexeception") {
         logger(5, format!("--> {0} ({1})", pgid, probableurl));
-
         return HttpResponse::ExpectationFailed().into();
     }
-
+    if cynres == String::from("contentlocationerror") {
+        logger(
+            5,
+            format!("--> {0} ({1}) : Post location error", pgid, probableurl),
+        );
+        return HttpResponse::ExpectationFailed().into();
+    }
     logger(200, format!("--> {0} ({1})", pgid, probableurl));
     return HttpResponse::Ok().body(cynres).into();
 }
 
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
     let file = ("./cynthiaFiles/published.jsonc").to_owned();
-    let unparsed_json = stdfs::read_to_string(file).expect("Couldn't find or load that file.");
+    let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
@@ -201,7 +210,7 @@ fn read_published_jsonc() -> Vec<CynthiaPostData> {
 }
 fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
-    let unparsed_json = stdfs::read_to_string(file).expect("Couldn't find or load that file.");
+    let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
@@ -213,6 +222,22 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let cynthia_version: Version = Version {
+        major: 0,
+        minor: 0,
+        patch: 0,
+        pre: Prerelease::new("alpha.0").unwrap(),
+        build: BuildMetadata::EMPTY,
+    };
+    println!(
+        "{} - version {}\n by {}{}{} {}!",
+        "CynthiaCMS".bold().bright_purple(),
+        cynthia_version.to_string().green(),
+        "Straw".bright_red(),
+        "melon".green(),
+        "juice".bright_yellow(),
+        "Mar".magenta()
+    );
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
         .expect("PORT must be set in the '.env' file.")
@@ -247,27 +272,92 @@ fn return_content_p(pgid: String) -> String {
     for i in &published_jsonc {
         if i.id == pgid {
             let post: &CynthiaPostData = i;
-            let postcontent_html: String = r#"
-    <div>
-        <p>Cynthia's Rust version is not yet able to fetch page content!</p>
-    </div>
-    "#
-            .to_string();
             if post.kind == "postlist" {
                 return "Cynthia cannot handle post lists just yet!"
                     .to_owned()
                     .to_string();
             };
-            if &post.content.location ==
-                &String::from("external") {
-                    return "Cynthia cannot handle external content yet!"
-                        .to_owned()
-                        .to_string();
+            let rawcontent: String;
+            match (post.content.location).to_owned().as_str() {
+                "external" => {
+                    let mut data = Vec::new();
+                    let mut c = Easy::new();
+                    c.url(&(post.content.data)).unwrap();
+                    {
+                        let mut transfer = c.transfer();
+                        transfer
+                            .write_function(|new_data| {
+                                data.extend_from_slice(new_data);
+                                Ok(new_data.len())
+                            })
+                            .unwrap();
+                        transfer.perform().unwrap();
+                    }
+                    let resp = match std::str::from_utf8(&data) {
+                        Ok(v) => v,
+                        Err(_e) => {
+                            logger(5, String::from("Could not download external content!"));
+
+                            return "contentlocationerror".to_owned();
+                        }
+                    };
+                    rawcontent = resp.to_owned();
+                }
+                "local" => {
+                    let contentpath_ = std::path::Path::new("./clean_slate/cynthiaFiles/pages/");
+                    let contentpath = &contentpath_.join(post.content.data.to_owned().as_str());
+                    rawcontent =
+                        std::fs::read_to_string(contentpath).unwrap_or("contenterror".to_string());
+                }
+                "inline" => {
+                    rawcontent = post.content.data.to_owned();
+                }
+                &_ => {
+                    return "contentlocationerror".to_owned();
+                }
             }
-            return postcontent_html;
+            match (post.content.markup_type)
+                .to_owned()
+                .to_lowercase()
+                .as_str()
+            {
+                "raw" => {
+                    return rawcontent;
+                }
+                "text" => {
+                    return rawcontent;
+                }
+                "markdown" => {
+                    return to_html_with_options(&rawcontent, &Options {compile: CompileOptions {
+      allow_dangerous_html: true,
+      allow_dangerous_protocol: true,
+      ..CompileOptions::default()
+    },
+..Options::default()}).unwrap();
+                }
+                "md" => {
+                    return to_html_with_options(&rawcontent, &Options {compile: CompileOptions {
+      allow_dangerous_html: true,
+      allow_dangerous_protocol: true,
+      ..CompileOptions::default()
+    },
+..Options::default()}).unwrap();
+                }
+                "" => {
+                    return to_html_with_options(&rawcontent, &Options {compile: CompileOptions {
+      allow_dangerous_html: true,
+      allow_dangerous_protocol: true,
+      ..CompileOptions::default()
+    },
+..Options::default()}).unwrap();
+                }
+                &_ => {
+                    return "contenttypeerror".to_owned();
+                }
+            }
         }
     }
-    return String::from("404error");
+    String::from("404error")
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -280,6 +370,9 @@ struct CynthiaPageVars {
 }
 
 fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
+    if content == "contentlocationerror".to_string() || content == "contenttypeerror".to_string() {
+        return content;
+    }
     let mut published_jsonc = read_published_jsonc();
     for post in &mut published_jsonc {
         if post.id == pgid {
@@ -289,8 +382,8 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 .to_string();
             let pagemetainfojson = serde_json::to_string(&post).unwrap();
             let currentmode = load_mode(mode_to_load).1;
-            let stylesheet: String = stdfs::read_to_string(
-                Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
+            let stylesheet: String = std::fs::read_to_string(
+                std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
             )
             .expect("Couldn't find or load CSS file for this pages' mode.");
             let handlebarfile = format!(
@@ -302,7 +395,7 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 })
             )
             .to_owned();
-            let source = stdfs::read_to_string(handlebarfile)
+            let source = std::fs::read_to_string(handlebarfile)
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
             let data = CynthiaPageVars {
