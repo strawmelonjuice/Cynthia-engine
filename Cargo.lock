@@ -461,7 +461,6 @@ dependencies = [
  "jsonc-parser",
  "markdown",
  "regex",
- "semver",
  "serde",
  "serde_json",
  "which",

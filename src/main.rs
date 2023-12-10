@@ -6,7 +6,6 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use jsonc_parser::parse_to_serde_value;
 use markdown::{to_html_with_options, CompileOptions, Options};
-use semver::{BuildMetadata, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use serde_json;
 
@@ -19,7 +18,7 @@ pub const BUNJSR: &'static str = "bash.exe bun";
 #[cfg(not(windows))]
 pub const BUNJSR: &'static str = "bun";
 
-fn noderunner(args: Vec<&str>) {
+fn noderunner(args: Vec<&str>) -> String {
     
     let output = match std::process::Command::new(jsr())
         .args(args)
@@ -31,10 +30,11 @@ fn noderunner(args: Vec<&str>) {
             }
         };
     if output.status.success() {
-        println!("{}", String::from_utf8_lossy(&output.stdout).blue());
+        return String::from_utf8_lossy(&output.stdout).to_owned().to_string();
     } else {
         println!("Script failed.");
     }
+    return String::from("");
 }
 
 fn jsr() -> &'static str {
@@ -271,13 +271,7 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let cynthia_version: Version = Version {
-        major: 0,
-        minor: 0,
-        patch: 0,
-        pre: Prerelease::new("alpha.0").unwrap(),
-        build: BuildMetadata::EMPTY,
-    };
+    let cynthia_version:&str = env!("CARGO_PKG_VERSION");
     println!(
         "{} - version {}\n by {}{}{} {}!",
         "CynthiaCMS".bold().bright_purple(),
@@ -297,14 +291,14 @@ logger(
     format!(
         "{}",
         format!(
-            "Starting server on {0}{1}",
+            "Starting server on {0}{1}...",
             "http://localhost:".green(),
             portnum.to_string().bold().green()
         )
         .italic()
     ),
 );
-noderunner(["./test.js","hi"].to_vec());
+logger(1, noderunner(["./test.js","JS: hi"].to_vec()));
 HttpServer::new(|| {
     App::new()
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
