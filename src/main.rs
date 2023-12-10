@@ -6,10 +6,12 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use init::init;
 use jsonc_parser::parse_to_serde_value;
-use markdown::{to_html_with_options, CompileOptions, Options};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use markdown::{to_html_with_options, CompileOptions, Options};
 mod init;
+mod structs;
+use structs::*;
 
 #[cfg(windows)]
 pub const NODEJSR: &'static str = "node.exe";
@@ -21,7 +23,7 @@ pub const BUNJSR: &'static str = "bash.exe bun";
 pub const BUNJSR: &'static str = "bun";
 
 fn noderunner(args: Vec<&str>) -> String {
-    let output = match std::process::Command::new(jsr()).args(args).output() {
+    let output = match std::process::Command::new(jsr(false)).args(args).output() {
         Ok(result) => result,
         Err(_erro) => {
             logger(5, String::from("Couldn't launch Javascript runtime."));
@@ -38,7 +40,7 @@ fn noderunner(args: Vec<&str>) -> String {
     return String::from("");
 }
 
-fn jsr() -> &'static str {
+fn jsr(pop: bool) -> &'static str {
     match std::process::Command::new(BUNJSR).arg("version").output() {
         Ok(_t) => {
             return BUNJSR;
@@ -49,98 +51,22 @@ fn jsr() -> &'static str {
                     return NODEJSR;
                 }
                 Err(_err) => {
-                    logger(
-                        5,
-                        String::from(
-                            "No supported (Node.JS or Bun) Javascript runtimes found on path!",
-                        ),
-                    );
-                    std::process::exit(1);
+                    if !pop {
+                        logger(
+                            5,
+                            String::from(
+                                "No supported (Node.JS or Bun) Javascript runtimes found on path!",
+                            ),
+                        );
+                        std::process::exit(1);
+                    }
+                    return "";
                 }
             };
         }
     };
 }
-#[derive(Deserialize, Debug, Serialize)]
-struct CynthiaUrlDataF {
-    fullurl: String,
-}
 
-pub type CynthiaModeObject = (String, Config);
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Config {
-    pub sitename: String,
-    pub stylefile: String,
-    pub handlebar: Handlebar,
-    #[serde(default = "empty_menulist")]
-    pub menulinks: Vec<Menulink>,
-    #[serde(default = "empty_menulist")]
-    pub menu2links: Vec<Menulink>,
-}
-fn empty_menulist() -> Vec<Menulink> {
-    let hi: Vec<Menulink> = Vec::new();
-    return hi;
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Handlebar {
-    pub post: String,
-    pub page: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Menulink {
-    pub name: String,
-    pub href: String,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-struct CynthiaPostData {
-    pub id: String,
-    pub title: String,
-    pub short: Option<String>,
-    pub author: Option<Author>,
-    #[serde(default = "empty_post_data_content_object")]
-    pub content: CynthiaPostDataContentObject,
-    pub dates: Option<Dates>,
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub mode: Option<String>,
-    pub category: Option<String>,
-    #[serde(default)]
-    pub tags: Vec<String>,
-    pub postlist: Option<Postlist>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Author {
-    pub name: String,
-    pub thumbnail: Option<String>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CynthiaPostDataContentObject {
-    pub markup_type: String,
-    pub location: String,
-    pub data: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Dates {
-    pub published: i64,
-    pub altered: Option<i64>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Postlist {}
 
 fn logger(act: i32, msg: String) {
     /*
@@ -160,7 +86,7 @@ fn logger(act: i32, msg: String) {
     let spaces: usize = 10;
     let tabs: String = "\t\t".to_string();
     if act == 1 {
-        let name = "   [Log]".blue();
+        let name = "[Log]".blue();
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -314,7 +240,11 @@ async fn main() -> std::io::Result<()> {
             .italic()
         ),
     );
-    logger(1, noderunner(["./test.js", "JS: hi"].to_vec()));
+    match jsr(true) {
+        "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
+        g => logger(10, format!("Using JS runtime: '{}'!", g.bright_cyan().bold()))
+    }
+    
     HttpServer::new(|| {
         App::new()
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
@@ -364,7 +294,7 @@ fn return_content_p(pgid: String) -> String {
                     rawcontent = resp.to_owned();
                 }
                 "local" => {
-                    let contentpath_ = std::path::Path::new("./clean_slate/cynthiaFiles/pages/");
+                    let contentpath_ = std::path::Path::new("./cynthiaFiles/pages/");
                     let contentpath = &contentpath_.join(post.content.data.to_owned().as_str());
                     rawcontent =
                         std::fs::read_to_string(contentpath).unwrap_or("contenterror".to_string());
@@ -460,7 +390,11 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
             let stylesheet: String = std::fs::read_to_string(
                 std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
             )
-            .expect("Couldn't find or load CSS file for this pages' mode.");
+            .unwrap_or(String::from(""));
+        let clientjs: String = std::fs::read_to_string(
+                std::path::Path::new("./src/client.js")
+            )
+            .expect("Could not load src/client.js");
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 (if post.kind == "post" {
@@ -492,9 +426,10 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 menu2: menus.menu2,
                 infoshow: String::from(""),
             };
-            let k = handlebars
+            let k = format!("<html>\n{}\n\n\n\n<script>{}</script>\n\n</html>", handlebars
                 .render_template(&source.to_string(), &data)
-                .unwrap();
+                .unwrap(),
+                clientjs);
             return k;
         }
     }
