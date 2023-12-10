@@ -6,7 +6,6 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use init::init;
 use jsonc_parser::parse_to_serde_value;
-use serde::{Deserialize, Serialize};
 use serde_json;
 use markdown::{to_html_with_options, CompileOptions, Options};
 mod init;
@@ -365,14 +364,7 @@ fn return_content_p(pgid: String) -> String {
     String::from("404error")
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct CynthiaPageVars {
-    head: String,
-    content: String,
-    menu1: String,
-    menu2: String,
-    infoshow: String,
-}
+
 
 fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
     if content == "contentlocationerror".to_string() || content == "contenttypeerror".to_string() {
@@ -435,11 +427,6 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
     }
     // logger(3, String::from("Can't find that page."));
     return content;
-}
-
-struct Menulist {
-    menu1: String,
-    menu2: String,
 }
 
 fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
