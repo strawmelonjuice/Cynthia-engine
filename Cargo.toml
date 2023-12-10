@@ -18,3 +18,5 @@ regex = "1.10.2"
 jsonc-parser = { version = "0.23.0", features = ["serde"] }
 markdown = "1.0.0-alpha.16"
 curl = "0.4.44"
+flate2 = "1.0.28"
+tar = "0.4.40"

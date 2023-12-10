@@ -1,3 +1,6 @@
+
+use flate2::read::GzDecoder;
+use tar::Archive;
 use actix_files as fs;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use colored::Colorize;
@@ -152,6 +155,7 @@ fn logger(act: i32, msg: String) {
 
     5: Error!
 
+    10: Note
 
 
      */
@@ -200,6 +204,17 @@ fn logger(act: i32, msg: String) {
         let title = format!("{}", name.bold().black().on_bright_yellow());
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
         println!("{0}{1}", preq, msg.red());
+    }
+    if act == 10 {
+        let name = "[Note]";
+        let spaceleft = if name.chars().count() < spaces {
+            spaces - name.chars().count()
+        } else {
+            0
+        };
+        let title = format!("{}", name.bold().bright_magenta());
+        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+        println!("{0}{1}", preq, msg.bright_purple());
     }
 }
 
@@ -281,6 +296,21 @@ async fn main() -> std::io::Result<()> {
         "juice".bright_yellow(),
         "Mar".magenta()
     );
+    if std::env::args().nth(1).unwrap_or(String::from("")) == String::from("init") {
+        let tempdir = std::fs::canonicalize(std::path::Path::new("./.cynthiatemp")).unwrap();
+        let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
+        std::fs::create_dir_all(&tempdir).unwrap();
+        let mut f = std::fs::File::create("./.temp/cyn-clean.tar.gz")?;
+        std::io::Write::write_all(&mut f, tarfilecontent).unwrap();
+        let tar_gz = std::fs::File::open("./.temp/cyn-clean.tar.gz").expect("Could not unpack Cynthia.");
+        let tar = GzDecoder::new(tar_gz);
+        let mut archive = Archive::new(tar);
+        logger(10, format!("Unpacking new CynthiaConfig to {}...", std::fs::canonicalize(&tempdir.parent().unwrap()).unwrap().display().to_string().cyan()));
+        archive.unpack(&tempdir.parent().unwrap()).expect("Could not unpack Cynthia.");
+        std::fs::remove_dir_all(tempdir).unwrap_or_default();
+        logger(10, String::from("Clean CynthiaConfig written! Please adjust then restart Cynthia!"));
+        std::process::exit(0);
+    }
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
     .expect("PORT must be set in the '.env' file.")
