@@ -1,16 +1,15 @@
-
-use flate2::read::GzDecoder;
-use tar::Archive;
 use actix_files as fs;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use colored::Colorize;
 use curl::easy::Easy;
 use dotenv::dotenv;
 use handlebars::Handlebars;
+use init::init;
 use jsonc_parser::parse_to_serde_value;
 use markdown::{to_html_with_options, CompileOptions, Options};
 use serde::{Deserialize, Serialize};
 use serde_json;
+mod init;
 
 #[cfg(windows)]
 pub const NODEJSR: &'static str = "node.exe";
@@ -22,18 +21,17 @@ pub const BUNJSR: &'static str = "bash.exe bun";
 pub const BUNJSR: &'static str = "bun";
 
 fn noderunner(args: Vec<&str>) -> String {
-    
-    let output = match std::process::Command::new(jsr())
-        .args(args)
-        .output() {
-            Ok(result) => result,
-            Err(_erro) => {
-                logger(5, String::from("Couldn't launch Javascript runtime."));
-                std::process::exit(1);
-            }
-        };
+    let output = match std::process::Command::new(jsr()).args(args).output() {
+        Ok(result) => result,
+        Err(_erro) => {
+            logger(5, String::from("Couldn't launch Javascript runtime."));
+            std::process::exit(1);
+        }
+    };
     if output.status.success() {
-        return String::from_utf8_lossy(&output.stdout).to_owned().to_string();
+        return String::from_utf8_lossy(&output.stdout)
+            .to_owned()
+            .to_string();
     } else {
         println!("Script failed.");
     }
@@ -203,7 +201,7 @@ fn logger(act: i32, msg: String) {
         };
         let title = format!("{}", name.bold().black().on_bright_yellow());
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg.red());
+        println!("{0}{1}", preq, msg.bright_red());
     }
     if act == 10 {
         let name = "[Note]";
@@ -286,7 +284,7 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let cynthia_version:&str = env!("CARGO_PKG_VERSION");
+    let cynthia_version: &str = env!("CARGO_PKG_VERSION");
     println!(
         "{} - version {}\n by {}{}{} {}!",
         "CynthiaCMS".bold().bright_purple(),
@@ -297,40 +295,28 @@ async fn main() -> std::io::Result<()> {
         "Mar".magenta()
     );
     if std::env::args().nth(1).unwrap_or(String::from("")) == String::from("init") {
-        let tempdir = std::fs::canonicalize(std::path::Path::new("./.cynthiatemp")).unwrap();
-        let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
-        std::fs::create_dir_all(&tempdir).unwrap();
-        let mut f = std::fs::File::create("./.temp/cyn-clean.tar.gz")?;
-        std::io::Write::write_all(&mut f, tarfilecontent).unwrap();
-        let tar_gz = std::fs::File::open("./.temp/cyn-clean.tar.gz").expect("Could not unpack Cynthia.");
-        let tar = GzDecoder::new(tar_gz);
-        let mut archive = Archive::new(tar);
-        logger(10, format!("Unpacking new CynthiaConfig to {}...", std::fs::canonicalize(&tempdir.parent().unwrap()).unwrap().display().to_string().cyan()));
-        archive.unpack(&tempdir.parent().unwrap()).expect("Could not unpack Cynthia.");
-        std::fs::remove_dir_all(tempdir).unwrap_or_default();
-        logger(10, String::from("Clean CynthiaConfig written! Please adjust then restart Cynthia!"));
-        std::process::exit(0);
+        init();
     }
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
-    .expect("PORT must be set in the '.env' file.")
-    .parse::<u16>()
-    .unwrap();
-logger(
-    1,
-    format!(
-        "{}",
+        .expect("PORT must be set in the '.env' file.")
+        .parse::<u16>()
+        .unwrap();
+    logger(
+        1,
         format!(
-            "Starting server on {0}{1}...",
-            "http://localhost:".green(),
-            portnum.to_string().bold().green()
-        )
-        .italic()
-    ),
-);
-logger(1, noderunner(["./test.js","JS: hi"].to_vec()));
-HttpServer::new(|| {
-    App::new()
+            "{}",
+            format!(
+                "Starting server on {0}{1}...",
+                "http://localhost:".green(),
+                portnum.to_string().bold().green()
+            )
+            .italic()
+        ),
+    );
+    logger(1, noderunner(["./test.js", "JS: hi"].to_vec()));
+    HttpServer::new(|| {
+        App::new()
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
             .service(fs::Files::new("/jquery", "./node_modules/jquery").show_files_listing())
             .service(serves_p)
