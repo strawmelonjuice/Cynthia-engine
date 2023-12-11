@@ -3,3 +3,4 @@
     - Should be working through just running the plugin with specified arguments, then parsing the output (through stdout) as JSON. Will (indeed) be preeetty prone to error.
     - [x] Make Javascript RE available as a function
     
+- [ ] Reimplement postlist pages and filters
