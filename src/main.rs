@@ -30,7 +30,8 @@ fn noderunner(args: Vec<&str>) -> String {
         }
     };
     if output.status.success() {
-        return String::from_utf8_lossy(&output.stdout).into_owned()
+        return String::from_utf8_lossy(&output.stdout)
+            .into_owned()
             .to_string();
     } else {
         println!("Script failed.");
@@ -39,12 +40,12 @@ fn noderunner(args: Vec<&str>) -> String {
 }
 
 fn jsr(pop: bool) -> &'static str {
-    match std::process::Command::new(BUNJSR).arg("version").output() {
+    match std::process::Command::new(BUNJSR).arg("-v").output() {
         Ok(_t) => {
             return BUNJSR;
         }
         Err(_err) => {
-            match std::process::Command::new(NODEJSR).arg("version").output() {
+            match std::process::Command::new(NODEJSR).arg("-v").output() {
                 Ok(_t) => {
                     return NODEJSR;
                 }
@@ -64,7 +65,6 @@ fn jsr(pop: bool) -> &'static str {
         }
     };
 }
-
 
 fn logger(act: i32, msg: String) {
     /*
@@ -240,9 +240,23 @@ async fn main() -> std::io::Result<()> {
     );
     match jsr(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
-        g => logger(10, format!("Using JS runtime: '{}'!", g.bright_cyan().bold()))
+        g => {logger(10, format!("Using JS runtime: '{}' version {}!", 
+        g.bright_cyan().bold(),
+        str::replace(
+        str::replace(
+            str::replace(
+                noderunner(
+                    ["-v"].to_vec()
+                )
+                .as_str(),"v","")
+            .as_str(),"\n","").as_str(),
+        "\r","")
+            .cyan()
+            )
+        );
+        logger(10, String::from("The JS runtime is important for plugin compatibility."));}
     }
-    
+
     HttpServer::new(|| {
         App::new()
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
@@ -363,8 +377,6 @@ fn return_content_p(pgid: String) -> String {
     String::from("404error")
 }
 
-
-
 fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
     if content == "contentlocationerror".to_string() || content == "contenttypeerror".to_string() {
         return content;
@@ -382,10 +394,8 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
             )
             .unwrap_or(String::from(""));
-        let clientjs: String = std::fs::read_to_string(
-                std::path::Path::new("./src/client.js")
-            )
-            .expect("Could not load src/client.js");
+            let clientjs: String = std::fs::read_to_string(std::path::Path::new("./src/client.js"))
+                .expect("Could not load src/client.js");
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 (if post.kind == "post" {
@@ -417,10 +427,13 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
                 menu2: menus.menu2,
                 infoshow: String::from(""),
             };
-            let k = format!("<html>\n{}\n\n\n\n<script>{}</script>\n\n</html>", handlebars
-                .render_template(&source.to_string(), &data)
-                .unwrap(),
-                clientjs);
+            let k = format!(
+                "<html>\n{}\n\n\n\n<script>{}</script>\n\n</html>",
+                handlebars
+                    .render_template(&source.to_string(), &data)
+                    .unwrap(),
+                clientjs
+            );
             return k;
         }
     }
