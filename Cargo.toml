@@ -1,5 +1,5 @@
 [package]
-name = "cynthia_rs"
+name = "cynthia_cms"
 version = "0.0.1-alpha.0"
 edition = "2021"
 
