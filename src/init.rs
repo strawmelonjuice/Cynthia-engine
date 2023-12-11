@@ -61,7 +61,7 @@ pub(crate) fn init() {
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
     logger(
-        10,
+        1,
         format!(
             "Unpacking new CynthiaConfig to {}...",
             std::fs::canonicalize(&ctempdir.parent().unwrap())
@@ -78,12 +78,17 @@ pub(crate) fn init() {
             std::process::exit(1);
         }
     };
-    println!("{}", ctempdir.join("./CynthiaCMS-cleanConfig-main/").display());
+    // println!("{}", ctempdir.join("./CynthiaCMS-cleanConfig-main/").display());
     // std::fs::remove_file(ctempdir.join("/CynthiaCMS-cleanConfig-main").join("README.MD")).unwrap_or_default();
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
     options.content_only = true;
-    fs_extra::dir::copy(ctempdir.join("./CynthiaCMS-cleanConfig-main/"), ctempdir.parent().unwrap(), &options).expect("Could not create target files.");
+    fs_extra::dir::copy(
+        ctempdir.join("./CynthiaCMS-cleanConfig-main/"),
+        ctempdir.parent().unwrap(),
+        &options,
+    )
+    .expect("Could not create target files.");
     std::fs::remove_dir_all(ctempdir).unwrap_or_default();
     logger(
         10,

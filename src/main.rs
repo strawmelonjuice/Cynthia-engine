@@ -6,18 +6,18 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use init::init;
 use jsonc_parser::parse_to_serde_value;
-use serde_json;
+
 use markdown::{to_html_with_options, CompileOptions, Options};
 mod init;
 mod structs;
 use structs::*;
 
 #[cfg(windows)]
-pub const NODEJSR: &'static str = "node.exe";
+pub const NODEJSR: &str = "node.exe";
 #[cfg(not(windows))]
 pub const NODEJSR: &'static str = "node";
 #[cfg(windows)]
-pub const BUNJSR: &'static str = "bash.exe bun";
+pub const BUNJSR: &str = "bash.exe bun";
 #[cfg(not(windows))]
 pub const BUNJSR: &'static str = "bun";
 
@@ -30,13 +30,12 @@ fn noderunner(args: Vec<&str>) -> String {
         }
     };
     if output.status.success() {
-        return String::from_utf8_lossy(&output.stdout)
-            .to_owned()
+        return String::from_utf8_lossy(&output.stdout).into_owned()
             .to_string();
     } else {
         println!("Script failed.");
     }
-    return String::from("");
+    String::from("")
 }
 
 fn jsr(pop: bool) -> &'static str {
@@ -219,7 +218,7 @@ async fn main() -> std::io::Result<()> {
         "juice".bright_yellow(),
         "Mar".magenta()
     );
-    if std::env::args().nth(1).unwrap_or(String::from("")) == String::from("init") {
+    if std::env::args().nth(1).unwrap_or(String::from("")) == *"init" {
         init();
     }
     dotenv().ok();
