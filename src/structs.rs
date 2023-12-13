@@ -92,12 +92,20 @@ pub(crate) struct Dates {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct Postlist {}
-
+pub(crate) struct Postlist {
+    filters: Option<PostListFilter>
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PostListFilter {
+    pub category: Option<String>,
+    pub tag: Option<String>,
+    pub searchline: Option<String>,
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PluginMeta {
+pub(crate) struct PluginMeta {
     #[serde(rename = "CyntiaPluginCompat")]
     pub cyntia_plugin_compat: String,
     pub runners: PluginRunners,
@@ -108,7 +116,7 @@ fn nonestring()-> std::string::String {String::from("none")}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PluginRunners {
+pub(crate) struct PluginRunners {
     #[serde(rename = "modifyBodyHTML")]
     pub modify_body_html: Option<ModifyBodyHtml>,
     #[serde(rename = "modifyHeadHTML")]
@@ -122,7 +130,7 @@ pub struct PluginRunners {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModifyBodyHtml {
+pub(crate) struct ModifyBodyHtml {
     #[serde(rename = "type")]
     pub type_field: String,
     pub execute: String,
@@ -130,7 +138,7 @@ pub struct ModifyBodyHtml {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PluginChildExecute {
+pub(crate) struct PluginChildExecute {
     #[serde(rename = "type")]
     pub type_field: String,
     pub execute: String,
@@ -138,7 +146,7 @@ pub struct PluginChildExecute {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModifyHeadHtml {
+pub(crate) struct ModifyHeadHtml {
     #[serde(rename = "type")]
     pub type_field: String,
     pub execute: String,
@@ -146,7 +154,7 @@ pub struct ModifyHeadHtml {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModifyOutputHtml {
+pub(crate) struct ModifyOutputHtml {
     #[serde(rename = "type")]
     pub type_field: String,
     pub execute: String,
