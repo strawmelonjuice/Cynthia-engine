@@ -93,3 +93,61 @@ pub(crate) struct Dates {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Postlist {}
+
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginMeta {
+    #[serde(rename = "CyntiaPluginCompat")]
+    pub cyntia_plugin_compat: String,
+    pub runners: PluginRunners,
+    #[serde(default = "nonestring")]
+    pub name: String
+}
+fn nonestring()-> std::string::String {String::from("none")}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginRunners {
+    #[serde(rename = "modifyBodyHTML")]
+    pub modify_body_html: Option<ModifyBodyHtml>,
+    #[serde(rename = "modifyHeadHTML")]
+    pub modify_head_html: Option<ModifyHeadHtml>,
+    #[serde(rename = "modifyOutputHTML")]
+    pub modify_output_html: Option<ModifyOutputHtml>,
+    #[serde(rename = "pluginChildExecute")]
+    pub plugin_children: Option<PluginChildExecute>,
+    pub hostedfolders: Option<Vec<Vec<String>>>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModifyBodyHtml {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub execute: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginChildExecute {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub execute: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModifyHeadHtml {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub execute: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModifyOutputHtml {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub execute: String,
+}

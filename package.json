@@ -1,8 +1,0 @@
-{
-  "scripts": {
-    "preinstall": "npx only-allow pnpm"
-  },
-  "dependencies": {
-    "jquery": "^3.7.1"
-  }
-}

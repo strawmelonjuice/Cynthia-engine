@@ -1,28 +1,64 @@
-use actix_files as fs;
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use std::sync::Mutex;
+
+use actix_web::{
+    get,
+    http::header::ContentType,
+    web::{self, Data},
+    App, HttpResponse, HttpServer, Responder,
+};
 use colored::Colorize;
 use curl::easy::Easy;
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use init::init;
 use jsonc_parser::parse_to_serde_value;
-
 use markdown::{to_html_with_options, CompileOptions, Options};
+use mime::Mime;
 mod init;
 mod structs;
 use structs::*;
 
+const CYNTHIAPLUGINCOMPAT: &str = "2";
+
+// Javascript runtimes:
+//     NodeJS:
 #[cfg(windows)]
 pub const NODEJSR: &str = "node.exe";
 #[cfg(not(windows))]
 pub const NODEJSR: &'static str = "node";
+//     Bun:
 #[cfg(windows)]
 pub const BUNJSR: &str = "bash.exe bun";
 #[cfg(not(windows))]
 pub const BUNJSR: &'static str = "bun";
 
-fn noderunner(args: Vec<&str>) -> String {
-    let output = match std::process::Command::new(jsr(false)).args(args).output() {
+// Javascript package managers:
+//     NPM:
+#[cfg(windows)]
+pub const NODE_NPM: &str = "node";
+#[cfg(not(windows))]
+pub const NODE_NPM: &str = "node";
+//     PNPM:
+#[cfg(windows)]
+pub const PNPM: &str = "pnpm.exe";
+#[cfg(not(windows))]
+pub const PNPM: &str = "pnpm";
+//     Bun:
+#[cfg(windows)]
+pub const BUN_NPM: &str = "bash.exe bun";
+#[cfg(not(windows))]
+pub const BUN_NPM: &'static str = "bun";
+
+fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
+    if args[0] == "returndirect" {
+        logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
+        return args[1].to_string();
+    }
+    let output = match std::process::Command::new(jsr(false))
+        .args(args.clone())
+        .current_dir(cwd)
+        .output()
+    {
         Ok(result) => result,
         Err(_erro) => {
             logger(5, String::from("Couldn't launch Javascript runtime."));
@@ -35,6 +71,7 @@ fn noderunner(args: Vec<&str>) -> String {
             .to_string();
     } else {
         println!("Script failed.");
+        logger(12, String::from_utf8_lossy(&output.stderr).to_string());
     }
     String::from("")
 }
@@ -77,8 +114,10 @@ fn logger(act: i32, msg: String) {
 
     5: Error!
 
+
     10: Note
 
+    12: Error in JSR
 
      */
     let spaces: usize = 10;
@@ -127,6 +166,17 @@ fn logger(act: i32, msg: String) {
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
         println!("{0}{1}", preq, msg.bright_red());
     }
+    if act == 12 {
+        let name = "[JS/ERROR]";
+        let spaceleft = if name.chars().count() < spaces {
+            spaces - name.chars().count()
+        } else {
+            0
+        };
+        let title = format!("{}", name.bold().black().on_bright_yellow());
+        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+        println!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
+    }
     if act == 10 {
         let name = "[Note]";
         let spaceleft = if name.chars().count() < spaces {
@@ -150,19 +200,70 @@ fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
 }
 
 #[get("/p/{id:.*}")]
-async fn serves_p(id: web::Path<String>) -> HttpResponse {
-    return p_server(&id.to_string(), format!("/p/{}", id));
+async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    return p_server(&id.to_string(), format!("/p/{}", id), plugins);
+}
+fn find_mimetype(filename_: &String) -> Mime {
+    let filename = filename_.replace("\"", "");
+    let parts: Vec<&str> = filename.split('.').collect();
+
+    let res = match parts.last() {
+        Some(v) => match *v {
+            "png" => mime::IMAGE_PNG,
+            "jpg" => mime::IMAGE_JPEG,
+            "json" => mime::APPLICATION_JSON,
+            "js" => mime::TEXT_JAVASCRIPT,
+            &_ => mime::TEXT_PLAIN,
+        },
+        None => mime::TEXT_PLAIN,
+    };
+    // println!("{filename}: {res}");
+    return res;
+}
+#[get("/e/{id:.*}")]
+async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let mut body = String::new();
+    let mut mime = find_mimetype(&String::from("hello.html"));
+    for plugin in plugins {
+        match &plugin.runners.hostedfolders {
+            Some(p) => {
+                for s in p {
+                    let z = format!("{}/", s[1]);
+                    let l = match s[1].ends_with("/") {
+                        true => &s[1],
+                        false => &z,
+                    };
+                    if id.starts_with(&*l) {
+                        let fid = id.replace(&*l, "");
+                        let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
+                        let file = std::path::Path::new(&fileb);
+                        mime = find_mimetype(&format!("{:?}", file.file_name().unwrap()));
+                        body = std::fs::read_to_string(file)
+                            .unwrap_or(String::from("Couldn't serve file."));
+                    };
+                }
+            }
+            None => {}
+        }
+    }
+
+    return HttpResponse::Ok()
+        .append_header(ContentType(mime))
+        .body(body);
+}
+async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    return p_server(&"root".to_string(), "/".to_string(), plugins);
 }
 
-async fn root() -> impl Responder {
-    return p_server(&"root".to_string(), "/".to_string());
-}
-
-fn p_server(pgid: &String, probableurl: String) -> HttpResponse {
+fn p_server(pgid: &String, probableurl: String, plugins: Vec<PluginMeta>) -> HttpResponse {
     let cynres = combine_content(
         pgid.to_string(),
         return_content_p(pgid.to_string()),
         generate_menus(pgid.to_string(), &probableurl),
+        plugins.clone(),
     );
     if cynres == String::from("404error") {
         logger(404, format!("--> {0} ({1})", pgid, probableurl));
@@ -190,7 +291,6 @@ fn read_published_jsonc() -> Vec<CynthiaPostData> {
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
             .expect("Could not read published.jsonc.");
-    // println!("{:#?}", parsed_json);
     let res: Vec<CynthiaPostData> = serde_json::from_value(parsed_json.into()).unwrap();
     return res;
 }
@@ -201,18 +301,16 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
             .expect("Could not read published.jsonc.");
-    // println!("{:#?}", parsed_json);
     let res: CynthiaModeObject = serde_json::from_value(parsed_json.into()).unwrap();
     return res;
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let cynthia_version: &str = env!("CARGO_PKG_VERSION");
     println!(
         "{} - version {}\n by {}{}{} {}!",
         "CynthiaCMS".bold().bright_purple(),
-        cynthia_version.to_string().green(),
+        env!("CARGO_PKG_VERSION").to_string().green(),
         "Straw".bright_red(),
         "melon".green(),
         "juice".bright_yellow(),
@@ -246,7 +344,7 @@ async fn main() -> std::io::Result<()> {
         str::replace(
             str::replace(
                 noderunner(
-                    ["-v"].to_vec()
+                    ["-v"].to_vec(), "./".into()
                 )
                 .as_str(),"v","")
             .as_str(),"\n","").as_str(),
@@ -256,13 +354,108 @@ async fn main() -> std::io::Result<()> {
         );
         logger(10, String::from("The JS runtime is important for plugin compatibility."));}
     }
-
-    HttpServer::new(|| {
-        App::new()
-            .service(fs::Files::new("/assets", "./assets").show_files_listing())
-            .service(fs::Files::new("/jquery", "./node_modules/jquery").show_files_listing())
+    let mut pluginlist: Vec<PluginMeta> = [].to_vec();
+    if std::path::Path::new("./plugins").exists() {
+        for entry in std::fs::read_dir("./plugins").unwrap() {
+            if !entry.is_err() {
+                let name = entry.unwrap().file_name().to_string_lossy().into_owned();
+                let p = format!("./plugins/{}/cynthiaplugin.json", name);
+                let pluginmetafile = std::path::Path::new(&p);
+                match std::fs::read_to_string(pluginmetafile) {
+                    Ok(e) => {
+                        let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
+                        if f.cyntia_plugin_compat != CYNTHIAPLUGINCOMPAT {
+                            logger(
+                    5,
+                    format!(
+                        "Plugin '{}' (for CynthiaPluginLoader v{}) isn't compatible with current Cynthia version (PL v{})!",
+                        name,
+                        f.cyntia_plugin_compat.yellow(),
+                        CYNTHIAPLUGINCOMPAT.bright_yellow()
+                    ))
+                        } else {
+                            logger(
+                                1,
+                                format!("Plugin '{}' loaded!", name.italic().bright_green()),
+                            );
+                            f.name = name;
+                            match &f.runners.plugin_children {
+                                Some(p) => {
+                                    let cmdjson: String = p.execute.clone();
+                                    let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str())
+                                        .unwrap_or(
+                                            ["returndirect".to_string().to_string()].to_vec(),
+                                        );
+                                    let mut cmd: Vec<&str> = vec![];
+                                    for com in &cmds {
+                                        cmd.push(com.as_str());
+                                    }
+                                    if p.type_field == String::from("js") {
+                                        logger(
+                                            1,
+                                            format!(
+                                                "JSR: Running child script for plugin '{}'",
+                                                f.name.italic().bright_green()
+                                            ),
+                                        );
+                                        {
+                                            if cmd[0] == "returndirect" {
+                                                logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
+                                            }
+                                            match std::process::Command::new(jsr(false))
+                                                .args(cmd.clone())
+                                                .current_dir(
+                                                    format!("./plugins/{}/", f.name).as_str(),
+                                                )
+                                                .spawn()
+                                            {
+                                                Ok(_) => {}
+                                                Err(_erro) => {
+                                                    logger(
+                                                        5,
+                                                        String::from(
+                                                            "Couldn't launch Javascript runtime.",
+                                                        ),
+                                                    );
+                                                }
+                                            };
+                                        }
+                                    } else if p.type_field == String::from("bin") {
+                                    } else {
+                                        logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",f.name,p.type_field))
+                                    }
+                                }
+                                None => {}
+                            }
+                            pluginlist.push(f);
+                        }
+                    }
+                    Err(_) => logger(
+                        5,
+                        format!(
+                            "Plugin '{}' doesn't have a CynthiaPlugin.json manifest!",
+                            name
+                        ),
+                    ),
+                };
+            }
+        }
+    }
+    let data: Data<std::sync::Mutex<Vec<PluginMeta>>> =
+        web::Data::new(std::sync::Mutex::new(pluginlist));
+    HttpServer::new(move || {
+        let app = App::new()
+            .service(
+                actix_files::Files::new("/assets", "./cynthiaFiles/assets").show_files_listing(),
+            )
+            .service(
+                actix_files::Files::new("/jquery", "./node_modules/jquery").show_files_listing(),
+            )
             .service(serves_p)
+            .service(serves_e)
             .route("/", web::get().to(root))
+            .app_data(web::Data::clone(&data));
+        return app;
     })
     .bind(("127.0.0.1", portnum))?
     .run()
@@ -287,13 +480,25 @@ fn return_content_p(pgid: String) -> String {
                     c.url(&(post.content.data)).unwrap();
                     {
                         let mut transfer = c.transfer();
-                        transfer
+                        match transfer
                             .write_function(|new_data| {
                                 data.extend_from_slice(new_data);
                                 Ok(new_data.len())
-                            })
-                            .unwrap();
-                        transfer.perform().unwrap();
+                            }) {
+                        Ok(v) => v,
+                        Err(_e) => {
+                            logger(5, String::from("Could not download external content!"));
+
+                            return "contentlocationerror".to_owned();
+                        }};
+                        match transfer.perform() {
+                        Ok(v) => v,
+                        Err(_e) => {
+                            logger(5, String::from("Could not download external content!"));
+
+                            return "contentlocationerror".to_owned();
+                        }
+                    };
                     }
                     let resp = match std::str::from_utf8(&data) {
                         Ok(v) => v,
@@ -323,37 +528,35 @@ fn return_content_p(pgid: String) -> String {
                 .to_lowercase()
                 .as_str()
             {
-                "raw" => {
-                    return rawcontent;
+                "html" | "webfile" => {
+                    return format!(
+                        "<div><pre>{}</pre></div>",
+                        rawcontent
+                            .replace("&", "&amp;")
+                            .replace("<", "&lt;")
+                            .replace(">", "&gt;")
+                            .replace('"', "&quot;")
+                            .replace("'", "&#039;")
+                    );
                 }
-                "text" => {
-                    return rawcontent;
+                "text" | "raw" => {
+                    return format!("<div>{rawcontent}</div>");
                 }
-                "markdown" => {
-                    return to_html_with_options(
-                        &rawcontent,
-                        &Options {
-                            compile: CompileOptions {
-                                allow_dangerous_html: true,
-                                ..CompileOptions::default()
+                "markdown" | "md" => {
+                    return format!(
+                        "<div>{}</div>",
+                        to_html_with_options(
+                            &rawcontent,
+                            &Options {
+                                compile: CompileOptions {
+                                    allow_dangerous_html: true,
+                                    ..CompileOptions::default()
+                                },
+                                ..Options::default()
                             },
-                            ..Options::default()
-                        },
-                    )
-                    .unwrap();
-                }
-                "md" => {
-                    return to_html_with_options(
-                        &rawcontent,
-                        &Options {
-                            compile: CompileOptions {
-                                allow_dangerous_html: true,
-                                ..CompileOptions::default()
-                            },
-                            ..Options::default()
-                        },
-                    )
-                    .unwrap();
+                        )
+                        .unwrap()
+                    );
                 }
                 "" => {
                     return to_html_with_options(
@@ -376,10 +579,74 @@ fn return_content_p(pgid: String) -> String {
     }
     String::from("404error")
 }
-
-fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
-    if content == "contentlocationerror".to_string() || content == "contenttypeerror".to_string() {
-        return content;
+fn escape_json(src: &str) -> String {
+    // Thank you https://www.reddit.com/r/rust/comments/i4bg0q/comment/g0hl58g/
+    use std::fmt::Write;
+    let mut escaped = String::with_capacity(src.len());
+    let mut utf16_buf = [0u16; 2];
+    for c in src.chars() {
+        match c {
+            '\x08' => escaped += "\\b",
+            '\x0c' => escaped += "\\f",
+            '\n' => escaped += "\\n",
+            '\r' => escaped += "\\r",
+            '\t' => escaped += "\\t",
+            '"' => escaped += "\\\"",
+            '\\' => escaped += "\\",
+            c if c.is_ascii_graphic() => escaped.push(c),
+            c => {
+                let encoded = c.encode_utf16(&mut utf16_buf);
+                for utf16 in encoded {
+                    write!(&mut escaped, "\\u{:04X}", utf16).unwrap();
+                }
+            }
+        }
+    }
+    escaped
+}
+fn combine_content(
+    pgid: String,
+    content: String,
+    menus: Menulist,
+    plugins: Vec<PluginMeta>,
+) -> String {
+    match content.as_str() {
+        "contentlocationerror" | "404error" | "contenttypeerror" => return content,
+        &_ => {}
+    }
+    let mut contents = content;
+    for plugin in plugins.clone() {
+        match &plugin.runners.modify_body_html {
+            Some(p) => {
+                let handlebars = Handlebars::new();
+                let mut data = std::collections::BTreeMap::new();
+                data.insert("input".to_string(), "kamkdxcvjgCVJGVvdbvcgcvgdvd");
+                let cmdjson: String = handlebars
+                    .render_template(&p.execute, &data)
+                    .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", contents));
+                let path = "cmdjson.json";
+                if false {
+                    use std::io::Write;
+                    let mut output = std::fs::File::create(path).unwrap();
+                    write!(output, "{}", cmdjson.as_str()).unwrap();
+                }
+                let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap();
+                // .unwrap_or(["returndirect", contents.as_str()].to_vec());
+                let mut cmd: Vec<&str> = vec![];
+                for com in &cmds {
+                    cmd.push(match com.as_str() {
+                        "kamkdxcvjgCVJGVvdbvcgcvgdvd" => contents.as_str(),
+                        a => a,
+                    });
+                }
+                if p.type_field == String::from("js") {
+                    contents = noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
+                } else {
+                    logger(5, format!("{} is using a '{}' type allternator, which is not supported by this version of cynthia",plugin.name,p.type_field))
+                }
+            }
+            None => {}
+        }
     }
     let mut published_jsonc = read_published_jsonc();
     for post in &mut published_jsonc {
@@ -408,37 +675,110 @@ fn combine_content(pgid: String, content: String, menus: Menulist) -> String {
             let source = std::fs::read_to_string(handlebarfile)
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
-            let data = CynthiaPageVars {
-                head: format!(
-                    r#"
+            let mut head = format!(
+                r#"
             <style>
 	{0}
 	</style>
 	<script src="/jquery/jquery.min.js"></script>
 	<title>{1} &ndash; {2}</title>
-	<script>
-		const pagemetainfo = JSON.parse(\`{3}\`);
-	</script>
 	"#,
-                    stylesheet, post.title, currentmode.sitename, pagemetainfojson
-                ),
-                content,
+                stylesheet, post.title, currentmode.sitename
+            );
+            for plugin in plugins.clone() {
+                match &plugin.runners.modify_head_html {
+                    Some(p) => {
+                        let handlebars = Handlebars::new();
+                        let mut data = std::collections::BTreeMap::new();
+                        data.insert("input".to_string(), escape_json(&head));
+                        let cmdjson: String = handlebars
+                            .render_template(&p.execute, &data)
+                            .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", head));
+                        let path = "cmdjson.json";
+                        if false {
+                            use std::io::Write;
+                            let mut output = std::fs::File::create(path).unwrap();
+                            write!(output, "{}", cmdjson.as_str()).unwrap();
+                        }
+                        let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap_or(
+                            ["returndirect".to_string(), escape_json(&head).to_string()].to_vec(),
+                        );
+                        let mut cmd: Vec<&str> = vec![];
+                        for com in &cmds {
+                            cmd.push(com.as_str());
+                        }
+                        if p.type_field == String::from("js") {
+                            head = noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
+                        } else {
+                            logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",plugin.name,p.type_field))
+                        }
+                    }
+                    None => {}
+                }
+            }
+            head.push_str(
+                format!(
+                    r#"<script>
+		const pagemetainfo = JSON.parse(\`{0}\`);
+	</script>"#,
+                    pagemetainfojson
+                )
+                .as_str(),
+            );
+            let data = CynthiaPageVars {
+                head,
+                content: contents,
                 menu1: menus.menu1,
                 menu2: menus.menu2,
                 infoshow: String::from(""),
             };
-            let k = format!(
+            let mut k = format!(
                 "<html>\n{}\n\n\n\n<script>{}</script>\n\n</html>",
                 handlebars
                     .render_template(&source.to_string(), &data)
                     .unwrap(),
                 clientjs
             );
-            return k;
+            for plugin in plugins.clone() {
+                match &plugin.runners.modify_output_html {
+                    Some(p) => {
+                        let handlebars = Handlebars::new();
+                        let mut data = std::collections::BTreeMap::new();
+                        data.insert("input".to_string(), "kamdlnjnjnsjkanj");
+                        let cmdjson: String = handlebars
+                            .render_template(&p.execute, &data)
+                            .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", k));
+                        let path = "cmdjson.json";
+                        if false {
+                            use std::io::Write;
+                            let mut output = std::fs::File::create(path).unwrap();
+                            write!(output, "{}", cmdjson.as_str()).unwrap();
+                        }
+                        let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap();
+                        // .unwrap_or(["returndirect".to_string(), escape_json(&k).to_string()].to_vec());
+                        let mut cmd: Vec<&str> = vec![];
+                        for com in &cmds {
+                            cmd.push(match com.as_str() {
+                                // See? We support templating :')
+                                "kamdlnjnjnsjkanj" => k.as_str(),
+                                a => a,
+                            });
+                        }
+                        // let cmd = ["append.js", "output", k.as_str()].to_vec();
+                        if p.type_field == String::from("js") {
+                            k = noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
+                        } else {
+                            logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",plugin.name,p.type_field))
+                        }
+                    }
+                    None => {}
+                }
+            }
+            return format!("<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>\n\n-->\n\n\n\n\r{k}", env!("CARGO_PKG_VERSION"));
         }
     }
     // logger(3, String::from("Can't find that page."));
-    return content;
+    return contents;
 }
 
 fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
