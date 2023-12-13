@@ -145,7 +145,7 @@ async fn main() -> std::io::Result<()> {
                 "http://{}:{}/",
                 "localhost".green(),
                 portnum.to_string().bold().green()
-            ).blue()
+            ).yellow()
             .italic()
         ),
     );
