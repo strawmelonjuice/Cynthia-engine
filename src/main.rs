@@ -16,8 +16,8 @@ mod structs;
 use structs::*;
 mod logger;
 use crate::logger::logger;
-mod jsr;
 mod contentservers;
+mod jsr;
 
 const CYNTHIAPLUGINCOMPAT: &str = "2";
 
@@ -95,8 +95,6 @@ async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     return contentservers::p_server(&"root".to_string(), "/".to_string(), plugins);
 }
 
-
-
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
     let file = ("./cynthiaFiles/published.jsonc").to_owned();
     let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
@@ -137,18 +135,6 @@ async fn main() -> std::io::Result<()> {
         .expect("PORT must be set in the '.env' file.")
         .parse::<u16>()
         .unwrap();
-    logger(
-        1,
-        format!(
-            "Starting server on {} ...",
-            format!(
-                "http://{}:{}/",
-                "localhost".green(),
-                portnum.to_string().bold().green()
-            ).yellow()
-            .italic()
-        ),
-    );
     match jsr::jsruntime(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
         g => {logger(10, format!("Using JS runtime: '{}' version {}!", 
@@ -256,19 +242,29 @@ async fn main() -> std::io::Result<()> {
     }
     let data: Data<std::sync::Mutex<Vec<PluginMeta>>> =
         web::Data::new(std::sync::Mutex::new(pluginlist));
+    logger(
+        1,
+        format!(
+            "🆙  Running at {} ...",
+            format!(
+                "http://{}:{}/",
+                "localhost".green(),
+                portnum.to_string().bold().green()
+            )
+            .yellow()
+            .italic()
+        ),
+    );
     HttpServer::new(move || {
         let app = App::new()
             .service(
                 actix_files::Files::new("/assets", "./cynthiaFiles/assets").show_files_listing(),
             )
-            .service(
-                actix_files::Files::new("/jquery", "./node_modules/jquery").show_files_listing(),
-            )
             .service(serves_p)
             .service(serves_e)
             .route("/", web::get().to(root))
             .app_data(web::Data::clone(&data));
-        return app;
+        app
     })
     .bind(("127.0.0.1", portnum))?
     .run()
@@ -300,3 +296,4 @@ fn escape_json(src: &str) -> String {
     }
     escaped
 }
+
