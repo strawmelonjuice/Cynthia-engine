@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use actix_web::{
     get,
     http::header::ContentType,
@@ -11,6 +9,7 @@ use dotenv::dotenv;
 use init::init;
 use jsonc_parser::parse_to_serde_value;
 use mime::Mime;
+use std::{path::Path, sync::Mutex};
 mod init;
 mod structs;
 use structs::*;
@@ -39,7 +38,7 @@ async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
     } else {
         s
     };
-    return contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins);
+    contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins)
 }
 fn find_mimetype(filename_: &String) -> Mime {
     let filename = filename_.replace("\"", "");
@@ -130,6 +129,20 @@ async fn main() -> std::io::Result<()> {
     if std::env::args().nth(1).unwrap_or(String::from("")) == *"init" {
         init();
     }
+    logger(
+        1,
+        format!(
+            "🤔 Loading configuration from '{}'!",
+            Path::new("./.env")
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string()
+                .replace("\\\\?\\", "")
+                .bright_purple()
+                .italic()
+        ),
+    );
     dotenv().ok();
     let portnum: u16 = std::env::var("PORT")
         .expect("PORT must be set in the '.env' file.")
@@ -137,7 +150,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     match jsr::jsruntime(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
-        g => {logger(10, format!("Using JS runtime: '{}' version {}!", 
+        g => {logger(1, format!("Using JS runtime: '{}' version {}!", 
         g.bright_cyan().bold(),
         str::replace(
         str::replace(
@@ -175,7 +188,7 @@ async fn main() -> std::io::Result<()> {
                         } else {
                             logger(
                                 1,
-                                format!("Plugin '{}' loaded!", name.italic().bright_green()),
+                                format!("🧩  Plugin '{}' loaded!", name.italic().bright_green()),
                             );
                             f.name = name;
                             match &f.runners.plugin_children {
@@ -189,7 +202,7 @@ async fn main() -> std::io::Result<()> {
                                     for com in &cmds {
                                         cmd.push(com.as_str());
                                     }
-                                    if p.type_field == String::from("js") {
+                                    if p.type_field == *"js" {
                                         logger(
                                             1,
                                             format!(

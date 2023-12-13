@@ -68,6 +68,7 @@ pub(crate) fn init() {
                 .unwrap()
                 .display()
                 .to_string()
+                .replace("\\\\?\\", "")
                 .cyan()
         ),
     );
@@ -96,3 +97,4 @@ pub(crate) fn init() {
     );
     std::process::exit(0);
 }
+
