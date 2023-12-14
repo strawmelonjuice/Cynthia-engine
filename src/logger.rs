@@ -1,5 +1,8 @@
 use colored::Colorize;
+use std::time::SystemTime;
+use time::{format_description, OffsetDateTime};
 
+const DATE_FORMAT_STR: &'static str = "[year]-[month]-[day]-[hour]:[minute]:[second]:[subsecond digits:3]";
 pub(crate) fn logger(act: i32, msg: String) {
     /*
 
@@ -19,8 +22,11 @@ pub(crate) fn logger(act: i32, msg: String) {
      */
     let spaces: usize = 10;
     let tabs: String = "\t\t".to_string();
+    let dt1: OffsetDateTime = SystemTime::now().into();
+    let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
+    let times = dt1.format(&dt_fmt).unwrap();
     if act == 1 {
-        let name = "[Log]".blue();
+        let name = format!("[{} - Log]", times).blue();
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
