@@ -1,4 +1,3 @@
-
 use crate::logger::logger;
 
 // Javascript runtimes:
@@ -29,8 +28,6 @@ pub const PNPM: &str = "pnpm";
 pub const BUN_NPM: &str = "bash.exe bun";
 #[cfg(not(windows))]
 pub const BUN_NPM: &'static str = "bun";
-
-
 
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     if args[0] == "returndirect" {

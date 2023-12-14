@@ -1,8 +1,8 @@
 use handlebars::Handlebars;
 
-use crate::{structs::*, jsr, logger::logger};
+use crate::{jsr, logger::logger, structs::*};
 
-pub(crate)fn combine_content(
+pub(crate) fn combine_content(
     pgid: String,
     content: String,
     menus: Menulist,
@@ -37,7 +37,7 @@ pub(crate)fn combine_content(
                         a => a,
                     });
                 }
-                if p.type_field == String::from("js") {
+                if p.type_field == *"js" {
                     contents = jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
                 } else {
                     logger(5, format!("{} is using a '{}' type allternator, which is not supported by this version of cynthia",plugin.name,p.type_field))
@@ -99,14 +99,19 @@ pub(crate)fn combine_content(
                             write!(output, "{}", cmdjson.as_str()).unwrap();
                         }
                         let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap_or(
-                            ["returndirect".to_string(), crate::escape_json(&head).to_string()].to_vec(),
+                            [
+                                "returndirect".to_string(),
+                                crate::escape_json(&head).to_string(),
+                            ]
+                            .to_vec(),
                         );
                         let mut cmd: Vec<&str> = vec![];
                         for com in &cmds {
                             cmd.push(com.as_str());
                         }
-                        if p.type_field == String::from("js") {
-                            head = jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
+                        if p.type_field == *"js" {
+                            head =
+                                jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
                         } else {
                             logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",plugin.name,p.type_field))
                         }
@@ -163,7 +168,7 @@ pub(crate)fn combine_content(
                             });
                         }
                         // let cmd = ["append.js", "output", k.as_str()].to_vec();
-                        if p.type_field == String::from("js") {
+                        if p.type_field == *"js" {
                             k = jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
                         } else {
                             logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",plugin.name,p.type_field))
@@ -176,6 +181,5 @@ pub(crate)fn combine_content(
         }
     }
     // logger(3, String::from("Can't find that page."));
-    return contents;
+    contents
 }
-

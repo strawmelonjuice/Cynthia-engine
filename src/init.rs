@@ -47,7 +47,7 @@ pub(crate) fn init() {
     // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
     // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
     // println!("lots of bytes: {:#?}", tarfilecontent);
-    std::fs::create_dir_all(&tempdir).unwrap();
+    std::fs::create_dir_all(tempdir).unwrap();
     let ctempdir = std::fs::canonicalize(tempdir.clone()).unwrap();
     let mut f = std::fs::File::create(ctempdir.join("./cyn-clean.tar.gz")).unwrap();
     std::io::Write::write_all(&mut f, tarfilecontent).unwrap();
@@ -64,7 +64,7 @@ pub(crate) fn init() {
         1,
         format!(
             "Unpacking new CynthiaConfig to {}...",
-            std::fs::canonicalize(&ctempdir.parent().unwrap())
+            std::fs::canonicalize(ctempdir.parent().unwrap())
                 .unwrap()
                 .display()
                 .to_string()
@@ -72,7 +72,7 @@ pub(crate) fn init() {
                 .cyan()
         ),
     );
-    match archive.unpack(&tempdir) {
+    match archive.unpack(tempdir) {
         Ok(f) => f,
         Err(_) => {
             logger(5, String::from("Could not unpack clean CynthiaConfig!"));
@@ -97,4 +97,3 @@ pub(crate) fn init() {
     );
     std::process::exit(0);
 }
-

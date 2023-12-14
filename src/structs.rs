@@ -7,6 +7,13 @@ pub(crate) struct CynthiaUrlDataF {
 
 pub(crate) type CynthiaModeObject = (String, Config);
 
+pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
+    CynthiaPostDataContentObject {
+        markup_type: "none".to_string(),
+        data: "none".to_string(),
+        location: "none".to_string(),
+    }
+}
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Config {
@@ -19,8 +26,7 @@ pub(crate) struct Config {
     pub menu2links: Vec<Menulink>,
 }
 fn empty_menulist() -> Vec<Menulink> {
-    let hi: Vec<Menulink> = Vec::new();
-    return hi;
+    Vec::new()
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -56,7 +62,7 @@ pub(crate) struct CynthiaPostData {
     pub title: String,
     pub short: Option<String>,
     pub author: Option<Author>,
-    #[serde(default = "crate::empty_post_data_content_object")]
+    #[serde(default = "empty_post_data_content_object")]
     pub content: CynthiaPostDataContentObject,
     pub dates: Option<Dates>,
     #[serde(rename = "type")]
@@ -93,7 +99,7 @@ pub(crate) struct Dates {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Postlist {
-    filters: Option<PostListFilter>
+    filters: Option<PostListFilter>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -110,9 +116,11 @@ pub(crate) struct PluginMeta {
     pub cyntia_plugin_compat: String,
     pub runners: PluginRunners,
     #[serde(default = "nonestring")]
-    pub name: String
+    pub name: String,
 }
-fn nonestring()-> std::string::String {String::from("none")}
+fn nonestring() -> String {
+    String::from("none")
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

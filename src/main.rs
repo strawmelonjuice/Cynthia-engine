@@ -20,28 +20,19 @@ mod jsr;
 
 const CYNTHIAPLUGINCOMPAT: &str = "2";
 
-fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
-    let n: CynthiaPostDataContentObject = CynthiaPostDataContentObject {
-        markup_type: ("none".to_string()),
-        data: ("none".to_string()),
-        location: ("none".to_string()),
-    };
-    return n;
-}
-
 #[get("/p/{id:.*}")]
 async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     let s = id.as_str();
-    let pgid = if s.ends_with("/") {
-        &s[..s.len() - "/".len()]
+    let pgid = if s.ends_with('/') {
+        s.strip_suffix('/').unwrap()
     } else {
         s
     };
     contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins)
 }
-fn find_mimetype(filename_: &String) -> Mime {
-    let filename = filename_.replace("\"", "");
+fn find_mimetype(filename_: &str) -> Mime {
+    let filename = filename_.replace('"', "").to_lowercase();
     let parts: Vec<&str> = filename.split('.').collect();
 
     let res = match parts.last() {
@@ -50,12 +41,15 @@ fn find_mimetype(filename_: &String) -> Mime {
             "jpg" => mime::IMAGE_JPEG,
             "json" => mime::APPLICATION_JSON,
             "js" => mime::TEXT_JAVASCRIPT,
+            "ico" => "image/vnd.microsoft.icon".parse().unwrap(),
+            "svg" => mime::IMAGE_SVG,
+            "css" => mime::TEXT_CSS,
             &_ => mime::TEXT_PLAIN,
         },
         None => mime::TEXT_PLAIN,
     };
     // println!("{filename}: {res}");
-    return res;
+    res
 }
 #[get("/e/{id:.*}")]
 async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
@@ -67,14 +61,14 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
             Some(p) => {
                 for s in p {
                     let z = format!("{}/", s[1]);
-                    let l = match s[1].ends_with("/") {
+                    let l = match s[1].ends_with('/') {
                         true => &s[1],
                         false => &z,
                     };
-                    if id.starts_with(&*l) {
-                        let fid = id.replace(&*l, "");
+                    if id.starts_with(&**l) {
+                        let fid = id.replace(&**l, "");
                         let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
-                        let file = std::path::Path::new(&fileb);
+                        let file = Path::new(&fileb);
                         mime = find_mimetype(&format!("{:?}", file.file_name().unwrap()));
                         body = std::fs::read_to_string(file)
                             .unwrap_or(String::from("Couldn't serve file."));
@@ -91,28 +85,27 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
 }
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
-    return contentservers::p_server(&"root".to_string(), "/".to_string(), plugins);
+    contentservers::p_server(&"root".to_string(), "/".to_string(), plugins)
 }
 
 fn read_published_jsonc() -> Vec<CynthiaPostData> {
-    let file = ("./cynthiaFiles/published.jsonc").to_owned();
+    let file = "./cynthiaFiles/published.jsonc".to_owned();
     let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
-        parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
+        parse_to_serde_value(unparsed_json.as_str(), &Default::default())
             .expect("Could not read published.jsonc.");
     let res: Vec<CynthiaPostData> = serde_json::from_value(parsed_json.into()).unwrap();
-    return res;
+    res
 }
 fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
     let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
-        parse_to_serde_value(&unparsed_json.as_str(), &Default::default())
+        parse_to_serde_value(unparsed_json.as_str(), &Default::default())
             .expect("Could not read published.jsonc.");
-    let res: CynthiaModeObject = serde_json::from_value(parsed_json.into()).unwrap();
-    return res;
+    serde_json::from_value(parsed_json.into()).unwrap()
 }
 
 #[actix_web::main]
@@ -150,7 +143,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     match jsr::jsruntime(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
-        g => {logger(1, format!("Using JS runtime: '{}' version {}!", 
+        g => {logger(1, format!("💪 Using JS runtime: '{}' version {}!", 
         g.bright_cyan().bold(),
         str::replace(
         str::replace(
@@ -167,12 +160,12 @@ async fn main() -> std::io::Result<()> {
         logger(10, String::from("The JS runtime is important for plugin compatibility."));}
     }
     let mut pluginlist: Vec<PluginMeta> = [].to_vec();
-    if std::path::Path::new("./plugins").exists() {
+    if Path::new("./plugins").exists() {
         for entry in std::fs::read_dir("./plugins").unwrap() {
-            if !entry.is_err() {
+            if entry.is_ok() {
                 let name = entry.unwrap().file_name().to_string_lossy().into_owned();
                 let p = format!("./plugins/{}/cynthiaplugin.json", name);
-                let pluginmetafile = std::path::Path::new(&p);
+                let pluginmetafile = Path::new(&p);
                 match std::fs::read_to_string(pluginmetafile) {
                     Ok(e) => {
                         let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
@@ -232,7 +225,7 @@ async fn main() -> std::io::Result<()> {
                                                 }
                                             };
                                         }
-                                    } else if p.type_field == String::from("bin") {
+                                    } else if p.type_field == *"bin" {
                                     } else {
                                         logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",f.name,p.type_field))
                                     }
@@ -253,8 +246,8 @@ async fn main() -> std::io::Result<()> {
             }
         }
     }
-    let data: Data<std::sync::Mutex<Vec<PluginMeta>>> =
-        web::Data::new(std::sync::Mutex::new(pluginlist));
+    let data: Data<Mutex<Vec<PluginMeta>>> =
+        Data::new(Mutex::new(pluginlist));
     logger(
         1,
         format!(
@@ -269,15 +262,14 @@ async fn main() -> std::io::Result<()> {
         ),
     );
     HttpServer::new(move || {
-        let app = App::new()
+        App::new()
             .service(
                 actix_files::Files::new("/assets", "./cynthiaFiles/assets").show_files_listing(),
             )
             .service(serves_p)
             .service(serves_e)
             .route("/", web::get().to(root))
-            .app_data(web::Data::clone(&data));
-        app
+            .app_data(web::Data::clone(&data))
     })
     .bind(("127.0.0.1", portnum))?
     .run()
@@ -309,4 +301,3 @@ fn escape_json(src: &str) -> String {
     }
     escaped
 }
-
