@@ -1,20 +1,25 @@
+use std::{path::Path, sync::Mutex};
+
 use actix_web::{
+    App,
     get,
     http::header::ContentType,
-    web::{self, Data},
-    App, HttpResponse, HttpServer, Responder,
+    HttpResponse, HttpServer, Responder, web::{self, Data},
 };
 use colored::Colorize;
 use dotenv::dotenv;
-use init::init;
 use jsonc_parser::parse_to_serde_value;
 use mime::Mime;
-use std::{path::Path, sync::Mutex};
-mod init;
-mod structs;
+
 use structs::*;
-mod logger;
+
 use crate::logger::logger;
+
+mod subcommand;
+mod structs;
+
+mod logger;
+
 mod contentservers;
 mod jsr;
 
@@ -31,6 +36,7 @@ async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
     };
     contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins)
 }
+
 fn find_mimetype(filename_: &str) -> Mime {
     let filename = filename_.replace('"', "").to_lowercase();
     let parts: Vec<&str> = filename.split('.').collect();
@@ -51,6 +57,7 @@ fn find_mimetype(filename_: &str) -> Mime {
     // println!("{filename}: {res}");
     res
 }
+
 #[get("/e/{id:.*}")]
 async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
@@ -83,6 +90,7 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
         .append_header(ContentType(mime))
         .body(body);
 }
+
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     contentservers::p_server(&"root".to_string(), "/".to_string(), plugins)
@@ -98,6 +106,7 @@ fn read_published_jsonc() -> Vec<CynthiaPostData> {
     let res: Vec<CynthiaPostData> = serde_json::from_value(parsed_json.into()).unwrap();
     res
 }
+
 fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
     let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
@@ -120,7 +129,7 @@ async fn main() -> std::io::Result<()> {
         "Mar".magenta()
     );
     if std::env::args().nth(1).unwrap_or(String::from("")) == *"init" {
-        init();
+        subcommand::init();
     }
     logger(
         1,
@@ -143,21 +152,23 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     match jsr::jsruntime(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
-        g => {logger(1, format!("💪 Using JS runtime: '{}' version {}!", 
-        g.bright_cyan().bold(),
-        str::replace(
-        str::replace(
-            str::replace(
-                jsr::noderunner(
-                    ["-v"].to_vec(), "./".into()
-                )
-                .as_str(),"v","")
-            .as_str(),"\n","").as_str(),
-        "\r","")
-            .cyan()
-            )
-        );
-        logger(10, String::from("The JS runtime is important for plugin compatibility."));}
+        g => {
+            logger(1, format!("💪 Using JS runtime: '{}' version {}!",
+                              g.bright_cyan().bold(),
+                              str::replace(
+                                  str::replace(
+                                      str::replace(
+                                          jsr::noderunner(
+                                              ["-v"].to_vec(), "./".into(),
+                                          )
+                                              .as_str(), "v", "")
+                                          .as_str(), "\n", "").as_str(),
+                                  "\r", "")
+                                  .cyan()
+            ),
+            );
+            logger(10, String::from("The JS runtime is important for plugin compatibility."));
+        }
     }
     let mut pluginlist: Vec<PluginMeta> = [].to_vec();
     if Path::new("./plugins").exists() {
@@ -171,13 +182,13 @@ async fn main() -> std::io::Result<()> {
                         let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
                         if f.cyntia_plugin_compat != CYNTHIAPLUGINCOMPAT {
                             logger(
-                    5,
-                    format!(
-                        "Plugin '{}' (for CynthiaPluginLoader v{}) isn't compatible with current Cynthia version (PL v{})!",
-                        name,
-                        f.cyntia_plugin_compat.yellow(),
-                        CYNTHIAPLUGINCOMPAT.bright_yellow()
-                    ))
+                                5,
+                                format!(
+                                    "Plugin '{}' (for CynthiaPluginLoader v{}) isn't compatible with current Cynthia version (PL v{})!",
+                                    name,
+                                    f.cyntia_plugin_compat.yellow(),
+                                    CYNTHIAPLUGINCOMPAT.bright_yellow()
+                                ))
                         } else {
                             logger(
                                 1,
@@ -225,9 +236,8 @@ async fn main() -> std::io::Result<()> {
                                                 }
                                             };
                                         }
-                                    } else if p.type_field == *"bin" {
-                                    } else {
-                                        logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia",f.name,p.type_field))
+                                    } else if p.type_field == *"bin" {} else {
+                                        logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", f.name, p.type_field))
                                     }
                                 }
                                 None => {}
@@ -257,8 +267,8 @@ async fn main() -> std::io::Result<()> {
                 "localhost".green(),
                 portnum.to_string().bold().green()
             )
-            .yellow()
-            .italic()
+                .yellow()
+                .italic()
         ),
     );
     HttpServer::new(move || {
@@ -271,9 +281,9 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(root))
             .app_data(web::Data::clone(&data))
     })
-    .bind(("127.0.0.1", portnum))?
-    .run()
-    .await
+        .bind(("127.0.0.1", portnum))?
+        .run()
+        .await
 }
 
 fn escape_json(src: &str) -> String {

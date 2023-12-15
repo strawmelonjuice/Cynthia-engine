@@ -14,6 +14,7 @@ pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
         location: "none".to_string(),
     }
 }
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Config {
@@ -25,6 +26,7 @@ pub(crate) struct Config {
     #[serde(default = "empty_menulist")]
     pub menu2links: Vec<Menulink>,
 }
+
 fn empty_menulist() -> Vec<Menulink> {
     Vec::new()
 }
@@ -51,6 +53,7 @@ pub(crate) struct CynthiaPageVars {
     pub menu2: String,
     pub infoshow: String,
 }
+
 pub(crate) struct Menulist {
     pub menu1: String,
     pub menu2: String,
@@ -101,6 +104,7 @@ pub(crate) struct Dates {
 pub(crate) struct Postlist {
     filters: Option<PostListFilter>,
 }
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostListFilter {
@@ -118,6 +122,7 @@ pub(crate) struct PluginMeta {
     #[serde(default = "nonestring")]
     pub name: String,
 }
+
 fn nonestring() -> String {
     String::from("none")
 }

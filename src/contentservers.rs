@@ -1,9 +1,10 @@
-pub mod combiner;
-
-use crate::{logger::logger, structs::*};
 use actix_web::HttpResponse;
 use curl::easy::Easy;
-use markdown::{to_html_with_options, CompileOptions, Options};
+use markdown::{CompileOptions, Options, to_html_with_options};
+
+use crate::{logger::logger, structs::*};
+
+pub mod combiner;
 
 pub(crate) fn return_content_p(pgid: String) -> String {
     let published_jsonc = crate::read_published_jsonc();
@@ -117,7 +118,7 @@ pub(crate) fn return_content_p(pgid: String) -> String {
                 &_ => {
                     "contenttypeerror".to_owned()
                 }
-            }
+            };
         }
     }
     String::from("404error")

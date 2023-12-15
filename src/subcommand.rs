@@ -1,8 +1,9 @@
-use crate::logger;
 use colored::Colorize;
 use curl::easy::Easy;
 use flate2::read::GzDecoder;
 use tar::Archive;
+
+use crate::logger;
 
 pub(crate) fn init() {
     let tempdir = std::path::Path::new("./.cynthiatemp/");
@@ -89,7 +90,7 @@ pub(crate) fn init() {
         ctempdir.parent().unwrap(),
         &options,
     )
-    .expect("Could not create target files.");
+        .expect("Could not create target files.");
     std::fs::remove_dir_all(ctempdir).unwrap_or_default();
     logger(
         10,
