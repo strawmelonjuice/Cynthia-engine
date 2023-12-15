@@ -1,5 +1,20 @@
 use serde::{Deserialize, Serialize};
 
+
+#[derive(Deserialize, Debug, Serialize)]
+pub(crate) struct CynthiaPluginRepoItem {
+    pub(crate) id: String,
+    pub(crate) host: String,
+    pub(crate) referrer: String,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub(crate) struct CynthiaPluginManifestItem {
+    pub(crate) id: String,
+    pub(crate) version: String,
+}
+
+
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaUrlDataF {
     pub fullurl: String,

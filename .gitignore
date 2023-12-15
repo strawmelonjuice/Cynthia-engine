@@ -1,5 +1,6 @@
 # Ignore builds
 /target
+/.cynthiatemp
 
 # Ignore node modules
 /node_modules/

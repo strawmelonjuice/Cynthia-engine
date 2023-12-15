@@ -18,16 +18,15 @@ pub const BUNJSR: &'static str = "bun";
 pub const NODE_NPM: &str = "node";
 #[cfg(not(windows))]
 pub const NODE_NPM: &str = "node";
-//     PNPM:
-#[cfg(windows)]
-pub const PNPM: &str = "pnpm.exe";
-#[cfg(not(windows))]
-pub const PNPM: &str = "pnpm";
 //     Bun:
 #[cfg(windows)]
 pub const BUN_NPM: &str = "bash.exe bun";
+#[cfg(windows)]
+pub const BUN_NPM_EX: &str = "bash.exe bunx";
 #[cfg(not(windows))]
 pub const BUN_NPM: &'static str = "bun";
+#[cfg(not(windows))]
+pub const BUN_NPM_EX: &'static str = "bunx";
 
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     if args[0] == "returndirect" {
@@ -56,7 +55,7 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     String::from("")
 }
 
-pub(crate) fn jsruntime(pop: bool) -> &'static str {
+pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
     match std::process::Command::new(BUNJSR).arg("-v").output() {
         Ok(_t) => {
             return BUNJSR;
@@ -67,11 +66,37 @@ pub(crate) fn jsruntime(pop: bool) -> &'static str {
                     return NODEJSR;
                 }
                 Err(_err) => {
-                    if !pop {
+                    if !mayfail {
                         logger(
                             5,
                             String::from(
                                 "No supported (Node.JS or Bun) Javascript runtimes found on path!",
+                            ),
+                        );
+                        std::process::exit(1);
+                    }
+                    return "";
+                }
+            };
+        }
+    };
+}
+pub(crate) fn jspm(mayfail: bool) -> &'static str {
+    match std::process::Command::new(BUN_NPM).arg("-v").output() {
+        Ok(_t) => {
+            return BUN_NPM;
+        }
+        Err(_err) => {
+            match std::process::Command::new(NODE_NPM).arg("-v").output() {
+                Ok(_t) => {
+                    return NODE_NPM;
+                }
+                Err(_err) => {
+                    if !mayfail {
+                        logger(
+                            5,
+                            String::from(
+                                "No supported (Node.JS or Bun) Javascript package managers found on path!",
                             ),
                         );
                         std::process::exit(1);

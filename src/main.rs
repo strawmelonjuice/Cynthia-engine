@@ -23,7 +23,7 @@ mod logger;
 mod contentservers;
 mod jsr;
 
-const CYNTHIAPLUGINCOMPAT: &str = "2";
+pub(crate) const CYNTHIAPLUGINCOMPAT: &str = "2";
 
 #[get("/p/{id:.*}")]
 async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
@@ -130,6 +130,14 @@ async fn main() -> std::io::Result<()> {
     );
     if std::env::args().nth(1).unwrap_or(String::from("")) == *"init" {
         subcommand::init();
+    }
+    if std::env::args().nth(1).unwrap_or(String::from("")) == *"pm" {
+        subcommand::plugin_install(std::env::args().nth(2).unwrap_or(String::from("none")), std::env::args().nth(3).unwrap_or(String::from("latest")));
+    }
+    if !Path::new("./.env").exists() {
+        logger(5, String::from("No CynthiaConfig found."));
+        logger(10, format!("To set up a clean Cynthia config, run {}.", "cynthiacms init".blue()));
+        std::process::exit(1);
     }
     logger(
         1,
