@@ -9,7 +9,7 @@ use std::{
     process::{self, Command},
 };
 use tar::Archive;
-
+use urlencoding::encode;
 use crate::{
     jsr::{BUN_NPM, BUN_NPM_EX, NODE_NPM},
     logger,
@@ -139,14 +139,6 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
             std::process::exit(1);
         }
     };
-    let indexcontent = &indexdownload;
-    // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
-    // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
-    // println!("lots of bytes: {:#?}", tarfilecontent);
-    std::fs::create_dir_all(tempdir.clone()).unwrap();
-    let ctempdir = std::fs::canonicalize(tempdir.clone()).unwrap();
-    let mut f = std::fs::File::create(ctempdir.join("./plugin_index.json")).unwrap();
-    std::io::Write::write_all(&mut f, indexcontent).unwrap();
     {
         let mut transfer = c.transfer();
         transfer
@@ -167,7 +159,16 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
             }
         }
     }
-    let repositoryfile = tempdir.join("./plugin_index.json");
+    let indexcontent = &indexdownload;
+    // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
+    // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
+    // println!("lots of bytes: {:#?}", tarfilecontent);
+    std::fs::create_dir_all(tempdir.clone()).unwrap();
+    let ctempdir = std::fs::canonicalize(tempdir.clone()).unwrap();
+    let mut f = std::fs::File::create(ctempdir.join("./plugin_index.json")).unwrap();
+    std::io::Write::write_all(&mut f, indexcontent).unwrap();
+
+    let repositoryfile = ctempdir.join("./plugin_index.json");
 
     logger(1, String::from("Loading Cynthia Plugin Index..."));
 
@@ -175,7 +176,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     let mut contents = String::new();
     o.read_to_string(&mut contents)
         .expect("Could not read Cynthia Plugin Index.");
-    let unparsed: &str = &contents.as_str();
+    let unparsed: &str = contents.as_str();
     let cynplind: Vec<CynthiaPluginRepoItem> =
         serde_json::from_str(unparsed).expect("Could not read from Cynthia Plugin Index");
     logger(
@@ -196,12 +197,12 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         }
         // println!("{:#?}", cynplug);
     }
-    if wantedpkg.id.to_lowercase() == "none".to_string() {
-        logger(5, String::from("Found!").red().to_string());
+    if wantedpkg.id.to_lowercase() == *"none" {
+        logger(5, String::from("Not found!").red().to_string());
         process::exit(1);
     }
     let mut tarballurl = "unknown".to_string();
-    if wantedpkg.host.to_lowercase() == "npm".to_string() {
+    if wantedpkg.host.to_lowercase() == *"npm" {
         println!(
             " --> Cynthia Plugin Index: {0} is on NPM as {1}!",
             wantedplugin, wantedpkg.referrer
@@ -229,18 +230,16 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         };
 
         tarballurl = format!("{}", String::from_utf8_lossy(&output.stdout));
-        if format!("{}", output.status) == "exit code: 0".to_string() {
+        if output.status.success() {
             logger(10, format!("{} {}", "->".green(), tarballurl.blue()));
         } else {
-            if String::from_utf8_lossy(&output.stderr) != "".to_string() {
-                logger(5, String::from_utf8_lossy(&output.stderr).to_string());
-            }
+            logger(5, String::from_utf8_lossy(&output.stderr).to_string());
         }
     } else if wantedpkg.host.to_lowercase() == "direct-tar" {
         println!("Skipping step 5... Archive is not hosted on NPM.");
         tarballurl = wantedpkg.referrer.to_owned();
     }
-    if tarballurl == "none".to_string() {
+    if tarballurl == *"none" {
         print!("Error: Could not fetch tarball url for some reason.");
         process::exit(1);
     }
@@ -254,8 +253,12 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         ),
     );
     let mut tarfiledownload = Vec::new();
-    let mut c: Easy = Easy::new();
-    match c.url(&tarballurl) {
+    let mut curl: Easy = Easy::new();
+    let safetarballurl = {
+        encode(&tarballurl.replace("https://registry.npmjs.org/", "npmjsreg").replace('\n',"")).replace("%2F", "/").replace("npmjsreg", "https://registry.npmjs.org/")
+    };
+
+    match curl.url(&safetarballurl) {
         Ok(oki) => {
             logger(1, String::from("Downloading plugin archive..."));
             oki
@@ -266,24 +269,25 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         }
     };
     {
-        let mut transfer = c.transfer();
+        let mut transfer = curl.transfer();
         transfer
             .write_function(|new_data| {
                 tarfiledownload.extend_from_slice(new_data);
                 Ok(new_data.len())
             })
             .unwrap();
-        match transfer.perform() {
-            Ok(oki) => {
-                logger(1, String::from("Download success."));
-
-                oki
-            }
-            Err(_) => {
-                logger(5, String::from("Could not download plugin!"));
-                std::process::exit(1);
-            }
-        }
+        transfer.perform().unwrap();
+        // match transfer.perform() {
+        //     Ok(oki) => {
+        //         logger(1, String::from("Download success."));
+        //
+        //         oki
+        //     }
+        //     Err(_) => {
+        //         logger(5, String::from("Could not download plugin!"));
+        //         std::process::exit(1);
+        //     }
+        // }
     }
     let tarfilecontent = &tarfiledownload;
     let mut f = std::fs::File::create(tarballfilepath.clone()).unwrap();
@@ -318,4 +322,5 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         1,
         format!("{} Installed to {}", "Done!".bright_green(), pdp.display()),
     );
+    process::exit(0);
 }
