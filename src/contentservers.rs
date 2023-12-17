@@ -1,6 +1,6 @@
 use actix_web::HttpResponse;
 use curl::easy::Easy;
-use markdown::{CompileOptions, Options, to_html_with_options};
+use markdown::{to_html_with_options, CompileOptions, Options};
 
 use crate::{logger::logger, structs::*};
 
@@ -67,11 +67,7 @@ pub(crate) fn return_content_p(pgid: String) -> String {
                     return "contentlocationerror".to_owned();
                 }
             };
-            return match post.content.markup_type
-                .to_owned()
-                .to_lowercase()
-                .as_str()
-            {
+            return match post.content.markup_type.to_owned().to_lowercase().as_str() {
                 "html" | "webfile" => {
                     format!(
                         "<div><pre>{}</pre></div>",
@@ -99,25 +95,21 @@ pub(crate) fn return_content_p(pgid: String) -> String {
                                 ..Options::default()
                             },
                         )
-                            .unwrap()
-                    )
-                }
-                "" => {
-                    to_html_with_options(
-                        &rawcontent,
-                        &Options {
-                            compile: CompileOptions {
-                                allow_dangerous_html: true,
-                                ..CompileOptions::default()
-                            },
-                            ..Options::default()
-                        },
-                    )
                         .unwrap()
+                    )
                 }
-                &_ => {
-                    "contenttypeerror".to_owned()
-                }
+                "" => to_html_with_options(
+                    &rawcontent,
+                    &Options {
+                        compile: CompileOptions {
+                            allow_dangerous_html: true,
+                            ..CompileOptions::default()
+                        },
+                        ..Options::default()
+                    },
+                )
+                .unwrap(),
+                &_ => "contenttypeerror".to_owned(),
             };
         }
     }

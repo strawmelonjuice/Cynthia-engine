@@ -1,10 +1,10 @@
-use std::{path::Path, sync::Mutex};
+use std::{path::Path, process, sync::Mutex};
 
 use actix_web::{
-    App,
     get,
     http::header::ContentType,
-    HttpResponse, HttpServer, Responder, web::{self, Data},
+    web::{self, Data},
+    App, HttpResponse, HttpServer, Responder,
 };
 use colored::Colorize;
 use dotenv::dotenv;
@@ -15,8 +15,8 @@ use structs::*;
 
 use crate::logger::logger;
 
-mod subcommand;
 mod structs;
+mod subcommand;
 
 mod logger;
 
@@ -90,7 +90,6 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
         .append_header(ContentType(mime))
         .body(body);
 }
-
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     contentservers::p_server(&"root".to_string(), "/".to_string(), plugins)
@@ -128,16 +127,86 @@ async fn main() -> std::io::Result<()> {
         "juice".bright_yellow(),
         "Mar".magenta()
     );
-    if std::env::args().nth(1).unwrap_or(String::from("")) == *"init" {
+    if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"help" {
+        println!(
+            r#"{}Help
+
+{}
+{}
+
+As of now, Cynthia has only 4 commands:
+
+- {}
+    You are viewing this now. It just displays this and then exits!
+- {}
+    Creates a new CynthiaConfig in the folder you are currently in. You need to run this command before being able to host a Cynthia site from a new folder!
+- {} <{}> {{{}}}
+    Installs a new plugin as registered in the Cynthia Plugin Index.
+
+    Options:
+        - <{}>
+            Specifies the name of the plugin to install. Is required.
+        - {{{}}}
+            (Optional) Specifies the plugin version (this will not work if a plugin has a single-version channel)
+            If not specified, latest available will be used.
+- {}
+    Starts the Cynthia server!
+{}"#, "\r",
+            "Cynthia is a way to host stuff, but also a very extensible and structurised generator of stuff. And by stuff, I mean websites.".italic(),
+            format!("This help page helps you through the Cynthia {} only. For a guide on {}", "cli-options".cyan(), "the CynthiaConfig").blue(),
+            "Help".bold().yellow(),
+            "Init".bold().yellow(),
+            "PM-add".bold().yellow(), "plugin name".bright_yellow(), "plugin version".bright_purple(),
+            "plugin name".bright_yellow(),
+            "plugin version".bright_purple()       ,
+            "Start".bold().yellow(),
+"\n\r"
+        );
+        process::exit(0);
+    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"init" {
         subcommand::init();
-    }
-    if std::env::args().nth(1).unwrap_or(String::from("")) == *"pm" {
-        subcommand::plugin_install(std::env::args().nth(2).unwrap_or(String::from("none")), std::env::args().nth(3).unwrap_or(String::from("latest")));
+    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"pm-add" {
+        subcommand::plugin_install(
+            std::env::args().nth(2).unwrap_or(String::from("none")),
+            std::env::args().nth(3).unwrap_or(String::from("latest")),
+        );
+    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"" {
+        logger(
+            5,
+            format!(
+                "No command specified! Use '{} {}' for help.",
+                std::env::args()
+                    .next()
+                    .unwrap_or(String::from("cynthiacms"))
+                    .purple(),
+                "help".bright_yellow()
+            ),
+        );
+        process::exit(1);
+    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() != *"start" {
+        logger(
+            5,
+            format!(
+                "Unknown command! Use '{} {}' for help.",
+                std::env::args()
+                    .next()
+                    .unwrap_or(String::from("cynthiacms"))
+                    .purple(),
+                "help".bright_yellow()
+            ),
+        );
+        process::exit(1);
     }
     if !Path::new("./.env").exists() {
         logger(5, String::from("No CynthiaConfig found."));
-        logger(10, format!("To set up a clean Cynthia config, run {}.", "cynthiacms init".blue()));
-        std::process::exit(1);
+        logger(
+            10,
+            format!(
+                "To set up a clean Cynthia config, run {}.",
+                "cynthiacms init".blue()
+            ),
+        );
+        process::exit(1);
     }
     logger(
         1,
@@ -226,7 +295,7 @@ async fn main() -> std::io::Result<()> {
                                             if cmd[0] == "returndirect" {
                                                 logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
                                             }
-                                            match std::process::Command::new(jsr::jsruntime(false))
+                                            match process::Command::new(jsr::jsruntime(false))
                                                 .args(cmd.clone())
                                                 .current_dir(
                                                     format!("./plugins/{}/", f.name).as_str(),
@@ -244,7 +313,8 @@ async fn main() -> std::io::Result<()> {
                                                 }
                                             };
                                         }
-                                    } else if p.type_field == *"bin" {} else {
+                                    } else if p.type_field == *"bin" {
+                                    } else {
                                         logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", f.name, p.type_field))
                                     }
                                 }
@@ -264,8 +334,7 @@ async fn main() -> std::io::Result<()> {
             }
         }
     }
-    let data: Data<Mutex<Vec<PluginMeta>>> =
-        Data::new(Mutex::new(pluginlist));
+    let data: Data<Mutex<Vec<PluginMeta>>> = Data::new(Mutex::new(pluginlist));
     logger(
         1,
         format!(
@@ -275,8 +344,8 @@ async fn main() -> std::io::Result<()> {
                 "localhost".green(),
                 portnum.to_string().bold().green()
             )
-                .yellow()
-                .italic()
+            .yellow()
+            .italic()
         ),
     );
     HttpServer::new(move || {
@@ -289,9 +358,9 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(root))
             .app_data(web::Data::clone(&data))
     })
-        .bind(("127.0.0.1", portnum))?
-        .run()
-        .await
+    .bind(("127.0.0.1", portnum))?
+    .run()
+    .await
 }
 
 fn escape_json(src: &str) -> String {

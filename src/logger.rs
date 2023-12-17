@@ -3,7 +3,8 @@ use std::time::SystemTime;
 use colored::Colorize;
 use time::{format_description, OffsetDateTime};
 
-const DATE_FORMAT_STR: &'static str = "[year]-[month]-[day]-[hour]:[minute]:[second]:[subsecond digits:3]";
+const DATE_FORMAT_STR: &'static str =
+    "[year]-[month]-[day]-[hour]:[minute]:[second]:[subsecond digits:3]";
 
 pub(crate) fn logger(act: i32, msg: String) {
     /*

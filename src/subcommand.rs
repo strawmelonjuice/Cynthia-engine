@@ -1,3 +1,8 @@
+use crate::{
+    jsr::{BUN_NPM, BUN_NPM_EX, NODE_NPM},
+    logger,
+    structs::CynthiaPluginRepoItem,
+};
 use colored::Colorize;
 use curl::easy::Easy;
 use flate2::read::GzDecoder;
@@ -10,11 +15,6 @@ use std::{
 };
 use tar::Archive;
 use urlencoding::encode;
-use crate::{
-    jsr::{BUN_NPM, BUN_NPM_EX, NODE_NPM},
-    logger,
-    structs::CynthiaPluginRepoItem,
-};
 
 pub(crate) fn init() {
     let tempdir = std::path::Path::new("./.cynthiatemp/");
@@ -224,7 +224,12 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
                 .output()
                 .expect("Could not call NPM."),
             &_ => {
-                logger(5, String::from("Something went wrong while contacting the Javascript package manager."));
+                logger(
+                    5,
+                    String::from(
+                        "Something went wrong while contacting the Javascript package manager.",
+                    ),
+                );
                 process::exit(1);
             }
         };
@@ -255,7 +260,13 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     let mut tarfiledownload = Vec::new();
     let mut curl: Easy = Easy::new();
     let safetarballurl = {
-        encode(&tarballurl.replace("https://registry.npmjs.org/", "npmjsreg").replace('\n',"")).replace("%2F", "/").replace("npmjsreg", "https://registry.npmjs.org/")
+        encode(
+            &tarballurl
+                .replace("https://registry.npmjs.org/", "npmjsreg")
+                .replace('\n', ""),
+        )
+        .replace("%2F", "/")
+        .replace("npmjsreg", "https://registry.npmjs.org/")
     };
 
     match curl.url(&safetarballurl) {

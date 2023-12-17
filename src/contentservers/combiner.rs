@@ -58,7 +58,7 @@ pub(crate) fn combine_content(
             let stylesheet: String = std::fs::read_to_string(
                 std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
             )
-                .unwrap_or(String::from(""));
+            .unwrap_or(String::from(""));
             let clientjs: String = std::fs::read_to_string(std::path::Path::new("./src/client.js"))
                 .expect("Could not load src/client.js");
             let handlebarfile = format!(
@@ -69,7 +69,7 @@ pub(crate) fn combine_content(
                     currentmode.handlebar.page
                 })
             )
-                .to_owned();
+            .to_owned();
             let source = std::fs::read_to_string(handlebarfile)
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
@@ -103,7 +103,7 @@ pub(crate) fn combine_content(
                                 "returndirect".to_string(),
                                 crate::escape_json(&head).to_string(),
                             ]
-                                .to_vec(),
+                            .to_vec(),
                         );
                         let mut cmd: Vec<&str> = vec![];
                         for com in &cmds {
@@ -126,7 +126,7 @@ pub(crate) fn combine_content(
 	</script>"#,
                     pagemetainfojson
                 )
-                    .as_str(),
+                .as_str(),
             );
             let data = CynthiaPageVars {
                 head,

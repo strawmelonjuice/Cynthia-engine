@@ -15,9 +15,9 @@ pub const BUNJSR: &'static str = "bun";
 // Javascript package managers:
 //     NPM:
 #[cfg(windows)]
-pub const NODE_NPM: &str = "node";
+pub const NODE_NPM: &str = "npm.cmd";
 #[cfg(not(windows))]
-pub const NODE_NPM: &str = "node";
+pub const NODE_NPM: &str = "npm";
 //     Bun:
 #[cfg(windows)]
 pub const BUN_NPM: &str = "bash.exe bun";
