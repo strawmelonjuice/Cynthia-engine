@@ -17,7 +17,10 @@ use tar::Archive;
 use urlencoding::encode;
 
 pub(crate) fn init() {
-    let tempdir = Path::new("./.cynthiatemp/");
+    let tempdir = Path::new("./.cynthiatemp/").join(format!(
+        "{}_cyninittemp",
+        rand::thread_rng().gen_range(10000000..999999999)
+    ));
     let mut tarfiledownload = Vec::new();
     let mut c: Easy = Easy::new();
     match c.url(
@@ -59,8 +62,8 @@ pub(crate) fn init() {
     // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
     // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
     // println!("lots of bytes: {:#?}", tarfilecontent);
-    fs::create_dir_all(tempdir).unwrap();
-    let ctempdir = fs::canonicalize(tempdir).unwrap();
+    fs::create_dir_all(&tempdir).unwrap();
+    let ctempdir = fs::canonicalize(tempdir.clone()).unwrap();
     let mut f = fs::File::create(ctempdir.join("./cyn-clean.tar.gz")).unwrap();
     std::io::Write::write_all(&mut f, tarfilecontent).unwrap();
     let tar_gz = match fs::File::open(ctempdir.join("./cyn-clean.tar.gz")) {
@@ -76,7 +79,7 @@ pub(crate) fn init() {
         1,
         format!(
             "Unpacking new CynthiaConfig to {}...",
-            fs::canonicalize(ctempdir.parent().unwrap())
+            fs::canonicalize(Path::new("./"))
                 .unwrap()
                 .display()
                 .to_string()
@@ -98,15 +101,49 @@ pub(crate) fn init() {
     options.content_only = true;
     fs_extra::dir::copy(
         ctempdir.join("./CynthiaCMS-cleanConfig-main/"),
-        ctempdir.parent().unwrap(),
+        Path::new("./"),
         &options,
     )
     .expect("Could not create target files.");
     fs::remove_dir_all(ctempdir).unwrap_or_default();
+    let pluginmanjson = Path::new("./cynthiapluginmanifest.json");
     logger(
         10,
         String::from("Clean CynthiaConfig written! Please adjust then restart Cynthia!"),
     );
+    if pluginmanjson.exists() {
+        if choice(
+            String::from("Do you want to install recomended plugins"),
+            true,
+        ) {
+            logger(
+                1,
+                format!(
+                    "Installing plugins specified in '{0}' now...",
+                    pluginmanjson.display().to_string().blue()
+                ),
+            );
+            let mut o = fs::File::open(format!("{}", &pluginmanjson.display()).as_str())
+                .expect("Could not read Cynthia plugin manifest file.");
+            let mut contents = String::new();
+            o.read_to_string(&mut contents)
+                .expect("Could not read Cynthia plugin manifest file.");
+            let unparsed: &str = &contents.as_str();
+            let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
+                serde_json::from_str(unparsed)
+                    .expect("Could not read from Cynthia plugin manifest file.");
+            let totalplugins: &usize = &cynplmn.len();
+            let mut currentplugin: i32 = 1;
+            for plugin in cynplmn {
+                logger(10, format!(
+                    "Installing plugin {0}/{1}: {2}",
+                    currentplugin, totalplugins, plugin.id
+                ));
+                plugin_install(plugin.id, plugin.version);
+                currentplugin += 1;
+            }
+        }
+    };
     process::exit(0);
 }
 
@@ -332,5 +369,34 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         1,
         format!("{} Installed to {}", "Done!".bright_green(), pdp.display()),
     );
-    process::exit(0);
+}
+
+fn choice(m: String, d: bool) -> bool {
+    let mut result = d;
+    let mut input = String::new();
+    let mut waiting = true;
+    while waiting {
+        if d == true {
+        println!("{} (Y/n)", m);
+    } else {
+        println!("{} (y/N)", m);
+    };
+        input.clear();
+        std::io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+        if input == *"\r\n" {
+            waiting = false;
+        }
+        input = input.replace('\n', "").replace('\r', "");
+        if input.to_lowercase() == *"y" {
+            waiting = false;
+            result = true;
+        } else if input.to_lowercase() == *"n" {
+            result = false;
+            waiting = false;
+        }
+    }
+    print!("\n");
+    return result;
 }

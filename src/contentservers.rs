@@ -1,4 +1,5 @@
 use actix_web::HttpResponse;
+use colored::Colorize;
 use curl::easy::Easy;
 use markdown::{to_html_with_options, CompileOptions, Options};
 
@@ -9,6 +10,59 @@ use self::postlists::postlist_table_gen;
 pub mod combiner;
 mod postlists;
 
+pub(crate) fn e_server(
+    filter_t: bool,
+    filter_s: &String,
+    probableurl: String,
+    plugins: Vec<PluginMeta>,
+) -> HttpResponse {
+    let filtertype = if filter_t { "Category" } else { "Tag" };
+    let filters = if filter_t {
+        PostListFilter {
+            category: Some(filter_s.to_string()),
+            tag: None,
+            searchline: None,
+        }
+    } else {
+        PostListFilter {
+            category: None,
+            tag: Some(filter_s.to_string()),
+            searchline: None,
+        }
+    };
+    let cynres = combiner::combine_content(
+        String::from("root"),
+        postlist_table_gen(Postlist {
+            filters: Some(filters),
+        }),
+        generate_menus(String::from("root"), &probableurl),
+        plugins.clone(),
+    );
+
+    if cynres == *"unknownexeception" {
+        logger(
+            5,
+            format!(
+                "--> postlist: [{0} - {1}] ({2})",
+                filtertype,
+                filter_s,
+                probableurl.blue().underline()
+            ),
+        );
+        return HttpResponse::ExpectationFailed().into();
+    }
+    logger(
+        200,
+        format!(
+            "--> postlist: [{0} - {1}] ({2})",
+            filtertype,
+            filter_s,
+            probableurl.blue().underline()
+        ),
+    );
+    HttpResponse::Ok().body(cynres)
+}
+
 pub(crate) fn return_content_p(pgid: String) -> String {
     let published_jsonc = crate::read_published_jsonc();
     for i in &published_jsonc {
@@ -16,7 +70,13 @@ pub(crate) fn return_content_p(pgid: String) -> String {
             let post: &CynthiaContentMetaData = i;
             if post.kind == *"postlist" {
                 match &post.postlist {
-                    Some(list) => return format!("<h1>{}</h1>{}", post.title, postlist_table_gen(list.clone())),
+                    Some(list) => {
+                        return format!(
+                            "<h1>{}</h1>{}",
+                            post.title,
+                            postlist_table_gen(list.clone())
+                        )
+                    }
                     None => return String::from("unknownexeception"),
                 }
             };
@@ -132,21 +192,34 @@ pub(crate) fn p_server(
         plugins.clone(),
     );
     if cynres == *"404error" {
-        logger(404, format!("--> {0} ({1})", pgid, probableurl));
+        logger(
+            404,
+            format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+        );
         return HttpResponse::NotFound().into();
     }
     if cynres == *"unknownexeception" {
-        logger(5, format!("--> {0} ({1})", pgid, probableurl));
+        logger(
+            5,
+            format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+        );
         return HttpResponse::ExpectationFailed().into();
     }
     if cynres == *"contentlocationerror" {
         logger(
             5,
-            format!("--> {0} ({1}) : Post location error", pgid, probableurl),
+            format!(
+                "--> {0} ({1}) : Post location error",
+                pgid,
+                probableurl.blue().underline()
+            ),
         );
         return HttpResponse::ExpectationFailed().into();
     }
-    logger(200, format!("--> {0} ({1})", pgid, probableurl));
+    logger(
+        200,
+        format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+    );
     HttpResponse::Ok().body(cynres)
 }
 
@@ -203,4 +276,41 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
         menu2: String::from(""),
     };
     menus
+}
+
+pub(crate) fn fetcher(uri: String) -> String {
+    let mut data = Vec::new();
+    let mut c = Easy::new();
+    c.url(&(&uri)).unwrap();
+    {
+        let mut transfer = c.transfer();
+        match transfer.write_function(|new_data| {
+            data.extend_from_slice(new_data);
+            Ok(new_data.len())
+        }) {
+            Ok(v) => v,
+            Err(_e) => {
+                logger(5, String::from("Could not fetch external content!"));
+
+                return "contentlocationerror".to_owned();
+            }
+        };
+        match transfer.perform() {
+            Ok(v) => v,
+            Err(_e) => {
+                logger(5, String::from("Could not fetch external content!"));
+
+                return "contentlocationerror".to_owned();
+            }
+        };
+    }
+    let resp = match std::str::from_utf8(&data) {
+        Ok(v) => v,
+        Err(_e) => {
+            logger(5, String::from("Could not fetch external content!"));
+
+            return "contentlocationerror".to_owned();
+        }
+    };
+    return resp.to_owned();
 }

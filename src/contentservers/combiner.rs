@@ -72,7 +72,7 @@ pub(crate) fn combine_content(
             <style>
 	{0}
 	</style>
-	<script src="/jquery/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script>
 	<title>{1} &ndash; {2}</title>
 	"#,
                 stylesheet, post.title, currentmode.sitename

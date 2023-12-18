@@ -152,6 +152,7 @@ pub(crate) struct PluginRunners {
     #[serde(rename = "pluginChildExecute")]
     pub plugin_children: Option<PluginChildExecute>,
     pub hostedfolders: Option<Vec<Vec<String>>>,
+    pub proxied: Option<Vec<Vec<String>>>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

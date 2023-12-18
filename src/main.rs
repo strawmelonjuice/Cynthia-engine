@@ -4,7 +4,7 @@ use actix_web::{
     get,
     http::header::ContentType,
     web::{self, Data},
-    App, HttpResponse, HttpServer, Responder,
+    App, HttpResponse, HttpServer, Responder, HttpRequest,
 };
 use colored::Colorize;
 use dotenv::dotenv;
@@ -36,6 +36,32 @@ async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
     };
     contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins)
 }
+
+#[get("/c/{category:.*}")]
+async fn serves_c(category: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let s = category.as_str();
+    let pgid = if s.ends_with('/') {
+        s.strip_suffix('/').unwrap()
+    } else {
+        s
+    };
+    contentservers::e_server(true, &pgid.to_string(), format!("/c/{}", category), plugins)
+}
+
+#[get("/t/{tag:.*}")]
+async fn serves_t(tag: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let s = tag.as_str();
+    let pgid = if s.ends_with('/') {
+        s.strip_suffix('/').unwrap()
+    } else {
+        s
+    };
+    contentservers::e_server(false, &pgid.to_string(), format!("/t/{}", tag), plugins)
+}
+
+
 
 fn find_mimetype(filename_: &str) -> Mime {
     let filename = filename_.replace('"', "").to_lowercase();
@@ -90,6 +116,35 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
         .append_header(ContentType(mime))
         .body(body);
 }
+
+
+#[get("/es/{en}/{id:.*}")]
+async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+     let en: String = req.match_info().get("en").unwrap().parse().unwrap();
+    let id: String = req.match_info().query("id").parse().unwrap();
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let mut body = String::new();
+    for plugin in plugins {
+        match &plugin.runners.proxied {
+            Some(p) => {
+                for s in p {
+                    // println!("{} == {}?", en , s[1].to_string());
+                    if en == s[1].to_string() {
+                        println!("{}",id);
+                        body = contentservers::fetcher(format!("{}/{}", s[0], id));
+                    };
+                }
+            }
+            None => {}
+        }
+    }
+
+    return HttpResponse::Ok().body(body);
+}
+
+
+
+
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     contentservers::p_server(&"root".to_string(), "/".to_string(), plugins)
@@ -185,6 +240,7 @@ As of now, Cynthia has only 4 commands:
             std::env::args().nth(2).unwrap_or(String::from("none")),
             std::env::args().nth(3).unwrap_or(String::from("latest")),
         );
+        process::exit(0);
     } else if std::env::args()
         .nth(1)
         .unwrap_or(String::from(""))
@@ -379,7 +435,10 @@ As of now, Cynthia has only 4 commands:
                 actix_files::Files::new("/assets", "./cynthiaFiles/assets").show_files_listing(),
             )
             .service(serves_p)
+            .service(serves_c)
+            .service(serves_t)
             .service(serves_e)
+            .service(serves_es)
             .route("/", web::get().to(root))
             .app_data(web::Data::clone(&data))
     })

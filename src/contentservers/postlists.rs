@@ -81,10 +81,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                 }
             };
         let addition = format!(
-            r#"
-            <tr><td class="post-date"><span class="unparsedtimestamp post-date">{0}</span></td><td><a href="/p/${1}"><span class="post-title">{2}</span></a>
-			</td><td class="post-category"><a href="/c/s{3}">{3}</a></td></tr><tr><td></td><td class="post-desc"><p>{4}</p></td></tr>
-        "#,
+            r#"<tr><td class="post-date"><span class="unparsedtimestamp post-date">{0}</span></td><td><a href="/p/{1}"><span class="post-title">{2}</span></a></td><td class="post-category"><a href="/c/{3}">{3}</a></td></tr><tr><td></td><td class="post-desc"><p>{4}</p></td></tr>"#,
             &timestamp,
             &post.id,
             to_html_with_options(

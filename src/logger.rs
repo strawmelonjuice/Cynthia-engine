@@ -23,7 +23,7 @@ pub(crate) fn logger(act: i32, msg: String) {
     12: Error in JSR
 
      */
-    let spaces: usize = 10;
+    let spaces: usize = 32;
     let tabs: String = "\t\t".to_string();
     let dt1: OffsetDateTime = SystemTime::now().into();
     let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
@@ -40,7 +40,7 @@ pub(crate) fn logger(act: i32, msg: String) {
         println!("{0}{1}", preq, msg);
     }
     if act == 200 || act == 2 {
-        let name = "✅ [CYNGET/OK]";
+        let name = "[CYNGET/OK]";
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -48,10 +48,10 @@ pub(crate) fn logger(act: i32, msg: String) {
         };
         let title = format!("{}", name.bold().yellow());
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg);
+        println!("{0}✅ {1}", preq, msg);
     }
     if act == 3 || act == 404 {
-        let name = "❎ [CYNGET/404]";
+        let name = "[CYNGET/404]";
         let spaceleft = if name.chars().count() < spaces {
             spaces - name.chars().count()
         } else {
@@ -59,7 +59,7 @@ pub(crate) fn logger(act: i32, msg: String) {
         };
         let title = format!("{}", name.bold().yellow());
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg);
+        println!("{0}❎ {1}", preq, msg);
     }
     if act == 5 {
         let name = "[ERROR]";
