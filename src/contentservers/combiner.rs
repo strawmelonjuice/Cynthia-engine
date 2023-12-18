@@ -53,8 +53,6 @@ pub(crate) fn combine_content(
                 std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
             )
             .unwrap_or(String::from(""));
-            let clientjs: String = std::fs::read_to_string(std::path::Path::new("./src/client.js"))
-                .expect("Could not load src/client.js");
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 if post.kind == "post" {
@@ -110,12 +108,15 @@ pub(crate) fn combine_content(
             head.push_str(
                 format!(
                     r#"<script>
-		const pagemetainfo = JSON.parse(\`{0}\`);
+		const pagemetainfo = JSON.parse(`{0}`);
 	</script>"#,
                     pagemetainfojson
                 )
                 .as_str(),
             );
+            let pageinfosidebarthing = if post.kind == *"post" {r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
+	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#} else {""};
+    contents.push_str(pageinfosidebarthing);
             let data = CynthiaPageVars {
                 head,
                 content: contents,
@@ -124,11 +125,10 @@ pub(crate) fn combine_content(
                 infoshow: String::from(""),
             };
             let mut k = format!(
-                "<html>\n{}\n\n\n\n<script>{}</script>\n\n</html>",
+                "\n{}\n\n\n\n<script src=\"/assets/scripts/client.js\"></script>\n\n</html>",
                 handlebars
                     .render_template(&source.to_string(), &data)
                     .unwrap(),
-                clientjs
             );
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_output_html {
@@ -159,7 +159,7 @@ pub(crate) fn combine_content(
                     None => {}
                 }
             }
-            return format!("<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>\n\n-->\n\n\n\n\r{k}", env!("CARGO_PKG_VERSION"));
+            return format!("<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>\n\n-->\n\n\n\n\r{k}", env!("CARGO_PKG_VERSION"));
         }
     }
     // logger(3, String::from("Can't find that page."));
