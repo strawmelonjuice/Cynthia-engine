@@ -57,7 +57,22 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                     }
                     taggedpostlist
                 }
-                None => vectorofposts,
+                None => match f.searchline {
+                Some(s) => {
+                    let mut taggedpostlist: Vec<&CynthiaContentMetaData> = Vec::new();
+                    for i in vectorofposts {
+                        let id = &i.id;
+                        let desc = &i.short.clone().unwrap();
+                        let tags = &i.tags;
+
+                        if super::p_content(id.to_string()).contains(&s) | i.title.contains(&s) | desc.contains(&s) | tags.contains(&s) {
+                            taggedpostlist.push(i);
+                        }
+                    }
+                    taggedpostlist
+                },
+                None => fullpostlist,
+            },
             },
         },
         None => vectorofposts,

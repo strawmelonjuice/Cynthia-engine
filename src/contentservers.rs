@@ -10,7 +10,51 @@ use self::postlists::postlist_table_gen;
 pub mod combiner;
 mod postlists;
 
-pub(crate) fn e_server(
+pub(crate) fn s_server(
+    filter_s: &String,
+    probableurl: String,
+    plugins: Vec<PluginMeta>,
+) -> HttpResponse {
+    let filters: PostListFilter = 
+        PostListFilter {
+            category: None,
+            tag: None,
+            searchline: Some(filter_s.to_string()),
+        };
+    let cynres = combiner::combine_content(
+        String::from("root"),
+        postlist_table_gen(Postlist {
+            filters: Some(filters),
+        }),
+        generate_menus(String::from("root"), &probableurl),
+        plugins.clone(),
+    );
+
+    if cynres == *"unknownexeception" {
+        logger(
+            5,
+            format!(
+                "--> postlist: [{0} - {1}] ({2})",
+                "Search".magenta(),
+                filter_s,
+                probableurl.blue().underline()
+            ),
+        );
+        return HttpResponse::ExpectationFailed().into();
+    }
+    logger(
+        200,
+        format!(
+            "--> postlist: [{0} - {1}] ({2})",
+            "Search".magenta(),
+            filter_s,
+            probableurl.blue().underline()
+        ),
+    );
+    HttpResponse::Ok().body(cynres)
+}
+
+pub(crate) fn f_server(
     filter_t: bool,
     filter_s: &String,
     probableurl: String,
@@ -63,7 +107,7 @@ pub(crate) fn e_server(
     HttpResponse::Ok().body(cynres)
 }
 
-pub(crate) fn return_content_p(pgid: String) -> String {
+pub(crate) fn p_content(pgid: String) -> String {
     let published_jsonc = crate::read_published_jsonc();
     for i in &published_jsonc {
         if i.id == pgid {
@@ -187,7 +231,7 @@ pub(crate) fn p_server(
 ) -> HttpResponse {
     let cynres = combiner::combine_content(
         pgid.to_string(),
-        return_content_p(pgid.to_string()),
+        p_content(pgid.to_string()),
         generate_menus(pgid.to_string(), &probableurl),
         plugins.clone(),
     );

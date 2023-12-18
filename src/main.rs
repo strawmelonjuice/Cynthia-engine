@@ -46,7 +46,19 @@ async fn serves_c(category: web::Path<String>, pluginsmex: Data<Mutex<Vec<Plugin
     } else {
         s
     };
-    contentservers::e_server(true, &pgid.to_string(), format!("/c/{}", category), plugins)
+    contentservers::f_server(true, &pgid.to_string(), format!("/c/{}", category), plugins)
+}
+
+#[get("/s/{searchterm:.*}")]
+async fn serves_s(searchterm: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let s = searchterm.as_str();
+    let term = if s.ends_with('/') {
+        s.strip_suffix('/').unwrap()
+    } else {
+        s
+    };
+    contentservers::s_server(&term.to_string(), format!("/c/{}", searchterm), plugins)
 }
 
 #[get("/t/{tag:.*}")]
@@ -58,7 +70,7 @@ async fn serves_t(tag: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>
     } else {
         s
     };
-    contentservers::e_server(false, &pgid.to_string(), format!("/t/{}", tag), plugins)
+    contentservers::f_server(false, &pgid.to_string(), format!("/t/{}", tag), plugins)
 }
 
 
