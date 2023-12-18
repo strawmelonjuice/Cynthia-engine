@@ -79,7 +79,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
     };
     // Now, we generate the HTML
     let mut table_html = String::from(r#"<table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>"#);
-    for post in fullpostlist {
+    for post in fullpostlist.clone() {
         let category: &str = match &post.category {
             Some(c) => c.as_str(),
             None => "",
@@ -124,6 +124,10 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
             .unwrap()
         );
         table_html.push_str(addition.as_str());
+    }
+    table_html.push_str("</table>");
+    if fullpostlist.len() == 0 {
+        table_html = String::from("<p>No results.</p>");
     }
     table_html
 }
