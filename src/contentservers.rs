@@ -4,17 +4,21 @@ use markdown::{to_html_with_options, CompileOptions, Options};
 
 use crate::{logger::logger, structs::*};
 
+use self::postlists::postlist_table_gen;
+
 pub mod combiner;
+mod postlists;
 
 pub(crate) fn return_content_p(pgid: String) -> String {
     let published_jsonc = crate::read_published_jsonc();
     for i in &published_jsonc {
         if i.id == pgid {
-            let post: &CynthiaPostData = i;
+            let post: &CynthiaContentMetaData = i;
             if post.kind == *"postlist" {
-                return "Cynthia cannot handle post lists just yet!"
-                    .to_owned()
-                    .to_string();
+                match &post.postlist {
+                    Some(list) => return format!("<h1>{}</h1>{}", post.title, postlist_table_gen(list.clone())),
+                    None => return String::from("unknownexeception"),
+                }
             };
             let rawcontent: String;
             match post.content.location.to_owned().as_str() {

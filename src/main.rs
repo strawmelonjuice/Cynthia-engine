@@ -95,14 +95,14 @@ async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     contentservers::p_server(&"root".to_string(), "/".to_string(), plugins)
 }
 
-fn read_published_jsonc() -> Vec<CynthiaPostData> {
+fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
     let file = "./cynthiaFiles/published.jsonc".to_owned();
     let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(unparsed_json.as_str(), &Default::default())
             .expect("Could not read published.jsonc.");
-    let res: Vec<CynthiaPostData> = serde_json::from_value(parsed_json.into()).unwrap();
+    let res: Vec<CynthiaContentMetaData> = serde_json::from_value(parsed_json.into()).unwrap();
     res
 }
 
@@ -127,7 +127,12 @@ async fn main() -> std::io::Result<()> {
         "juice".bright_yellow(),
         "Mar".magenta()
     );
-    if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"help" {
+    if std::env::args()
+        .nth(1)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        == *"help"
+    {
         println!(
             r#"{}Help
 
@@ -163,14 +168,29 @@ As of now, Cynthia has only 4 commands:
 "\n\r"
         );
         process::exit(0);
-    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"init" {
+    } else if std::env::args()
+        .nth(1)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        == *"init"
+    {
         subcommand::init();
-    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"pm-add" {
+    } else if std::env::args()
+        .nth(1)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        == *"pm-add"
+    {
         subcommand::plugin_install(
             std::env::args().nth(2).unwrap_or(String::from("none")),
             std::env::args().nth(3).unwrap_or(String::from("latest")),
         );
-    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() == *"" {
+    } else if std::env::args()
+        .nth(1)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        == *""
+    {
         logger(
             5,
             format!(
@@ -183,7 +203,12 @@ As of now, Cynthia has only 4 commands:
             ),
         );
         process::exit(1);
-    } else if std::env::args().nth(1).unwrap_or(String::from("")).to_lowercase() != *"start" {
+    } else if std::env::args()
+        .nth(1)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        != *"start"
+    {
         logger(
             5,
             format!(

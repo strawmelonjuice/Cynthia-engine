@@ -17,7 +17,7 @@ use tar::Archive;
 use urlencoding::encode;
 
 pub(crate) fn init() {
-    let tempdir = std::path::Path::new("./.cynthiatemp/");
+    let tempdir = Path::new("./.cynthiatemp/");
     let mut tarfiledownload = Vec::new();
     let mut c: Easy = Easy::new();
     match c.url(
@@ -32,7 +32,7 @@ pub(crate) fn init() {
                 5,
                 String::from("Could not start clean CynthiaConfig download!"),
             );
-            std::process::exit(1);
+            process::exit(1);
         }
     };
     {
@@ -51,7 +51,7 @@ pub(crate) fn init() {
             }
             Err(_) => {
                 logger(5, String::from("Could not download clean CynthiaConfig!"));
-                std::process::exit(1);
+                process::exit(1);
             }
         }
     }
@@ -59,15 +59,15 @@ pub(crate) fn init() {
     // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
     // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
     // println!("lots of bytes: {:#?}", tarfilecontent);
-    std::fs::create_dir_all(tempdir).unwrap();
-    let ctempdir = std::fs::canonicalize(tempdir).unwrap();
-    let mut f = std::fs::File::create(ctempdir.join("./cyn-clean.tar.gz")).unwrap();
+    fs::create_dir_all(tempdir).unwrap();
+    let ctempdir = fs::canonicalize(tempdir).unwrap();
+    let mut f = fs::File::create(ctempdir.join("./cyn-clean.tar.gz")).unwrap();
     std::io::Write::write_all(&mut f, tarfilecontent).unwrap();
-    let tar_gz = match std::fs::File::open(ctempdir.join("./cyn-clean.tar.gz")) {
+    let tar_gz = match fs::File::open(ctempdir.join("./cyn-clean.tar.gz")) {
         Ok(f) => f,
         Err(_) => {
             logger(5, String::from("Could not read clean CynthiaConfig!"));
-            std::process::exit(1);
+            process::exit(1);
         }
     };
     let tar = GzDecoder::new(tar_gz);
@@ -76,7 +76,7 @@ pub(crate) fn init() {
         1,
         format!(
             "Unpacking new CynthiaConfig to {}...",
-            std::fs::canonicalize(ctempdir.parent().unwrap())
+            fs::canonicalize(ctempdir.parent().unwrap())
                 .unwrap()
                 .display()
                 .to_string()
@@ -88,11 +88,11 @@ pub(crate) fn init() {
         Ok(f) => f,
         Err(_) => {
             logger(5, String::from("Could not unpack clean CynthiaConfig!"));
-            std::process::exit(1);
+            process::exit(1);
         }
     };
     // println!("{}", ctempdir.join("./CynthiaCMS-cleanConfig-main/").display());
-    // std::fs::remove_file(ctempdir.join("/CynthiaCMS-cleanConfig-main").join("README.MD")).unwrap_or_default();
+    // fs::remove_file(ctempdir.join("/CynthiaCMS-cleanConfig-main").join("README.MD")).unwrap_or_default();
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
     options.content_only = true;
@@ -102,12 +102,12 @@ pub(crate) fn init() {
         &options,
     )
     .expect("Could not create target files.");
-    std::fs::remove_dir_all(ctempdir).unwrap_or_default();
+    fs::remove_dir_all(ctempdir).unwrap_or_default();
     logger(
         10,
         String::from("Clean CynthiaConfig written! Please adjust then restart Cynthia!"),
     );
-    std::process::exit(0);
+    process::exit(0);
 }
 
 pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
@@ -120,7 +120,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         process::exit(1);
     }
     logger(1, String::from("Creating temporary directories..."));
-    let tempdir = std::path::Path::new("./.cynthiatemp/").join(format!(
+    let tempdir = Path::new("./.cynthiatemp/").join(format!(
         "{}_cyninsttemp",
         rand::thread_rng().gen_range(10000000..999999999)
     ));
@@ -136,7 +136,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
                 5,
                 String::from("Could not start clean CynthiaConfig download!"),
             );
-            std::process::exit(1);
+            process::exit(1);
         }
     };
     {
@@ -155,7 +155,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
             }
             Err(_) => {
                 logger(5, String::from("Could not download clean CynthiaConfig!"));
-                std::process::exit(1);
+                process::exit(1);
             }
         }
     }
@@ -163,9 +163,9 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
     // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
     // println!("lots of bytes: {:#?}", tarfilecontent);
-    std::fs::create_dir_all(tempdir.clone()).unwrap();
-    let ctempdir = std::fs::canonicalize(tempdir.clone()).unwrap();
-    let mut f = std::fs::File::create(ctempdir.join("./plugin_index.json")).unwrap();
+    fs::create_dir_all(tempdir.clone()).unwrap();
+    let ctempdir = fs::canonicalize(tempdir.clone()).unwrap();
+    let mut f = fs::File::create(ctempdir.join("./plugin_index.json")).unwrap();
     std::io::Write::write_all(&mut f, indexcontent).unwrap();
 
     let repositoryfile = ctempdir.join("./plugin_index.json");
@@ -276,7 +276,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         }
         Err(_) => {
             logger(5, String::from("Could not start clean plugin download!"));
-            std::process::exit(1);
+            process::exit(1);
         }
     };
     {
@@ -296,19 +296,18 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         //     }
         //     Err(_) => {
         //         logger(5, String::from("Could not download plugin!"));
-        //         std::process::exit(1);
+        //         process::exit(1);
         //     }
         // }
     }
     let tarfilecontent = &tarfiledownload;
-    let mut f = std::fs::File::create(tarballfilepath.clone()).unwrap();
+    let mut f = fs::File::create(tarballfilepath.clone()).unwrap();
     std::io::Write::write_all(&mut f, tarfilecontent).expect("Failed to write plugin.");
     logger(1, String::from("Download complete, starting unpack..."));
     let tar_gz = fs::File::open(&tarballfilepath).expect("Could not unpack plugin.");
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
     archive.unpack(&tempdir).expect("Could not unpack plugin.");
-
     let packagedir = ctempdir.join("./package");
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;

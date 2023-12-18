@@ -73,7 +73,7 @@ pub(crate) struct Menulist {
 }
 
 #[derive(Deserialize, Debug, Serialize)]
-pub(crate) struct CynthiaPostData {
+pub(crate) struct CynthiaContentMetaData {
     pub id: String,
     pub title: String,
     pub short: Option<String>,
@@ -115,7 +115,7 @@ pub(crate) struct Dates {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Postlist {
-    filters: Option<PostListFilter>,
+    pub filters: Option<PostListFilter>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

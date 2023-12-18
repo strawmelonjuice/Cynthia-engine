@@ -22,12 +22,6 @@ pub(crate) fn combine_content(
                 let cmdjson: String = handlebars
                     .render_template(&p.execute, &data)
                     .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", contents));
-                let path = "cmdjson.json";
-                if false {
-                    use std::io::Write;
-                    let mut output = std::fs::File::create(path).unwrap();
-                    write!(output, "{}", cmdjson.as_str()).unwrap();
-                }
                 let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap();
                 // .unwrap_or(["returndirect", contents.as_str()].to_vec());
                 let mut cmd: Vec<&str> = vec![];
@@ -63,11 +57,11 @@ pub(crate) fn combine_content(
                 .expect("Could not load src/client.js");
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
-                (if post.kind == "post" {
+                if post.kind == "post" {
                     currentmode.handlebar.post
                 } else {
                     currentmode.handlebar.page
-                })
+                }
             )
             .to_owned();
             let source = std::fs::read_to_string(handlebarfile)
@@ -92,12 +86,6 @@ pub(crate) fn combine_content(
                         let cmdjson: String = handlebars
                             .render_template(&p.execute, &data)
                             .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", head));
-                        let path = "cmdjson.json";
-                        if false {
-                            use std::io::Write;
-                            let mut output = std::fs::File::create(path).unwrap();
-                            write!(output, "{}", cmdjson.as_str()).unwrap();
-                        }
                         let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap_or(
                             [
                                 "returndirect".to_string(),
@@ -151,12 +139,6 @@ pub(crate) fn combine_content(
                         let cmdjson: String = handlebars
                             .render_template(&p.execute, &data)
                             .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", k));
-                        let path = "cmdjson.json";
-                        if false {
-                            use std::io::Write;
-                            let mut output = std::fs::File::create(path).unwrap();
-                            write!(output, "{}", cmdjson.as_str()).unwrap();
-                        }
                         let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap();
                         // .unwrap_or(["returndirect".to_string(), escape_json(&k).to_string()].to_vec());
                         let mut cmd: Vec<&str> = vec![];
