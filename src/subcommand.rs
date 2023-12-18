@@ -377,9 +377,9 @@ fn choice(m: String, d: bool) -> bool {
     let mut waiting = true;
     while waiting {
         if d == true {
-        println!("{} (Y/n)", m);
+        logger(10,format!("{} (Y/n)?", m));
     } else {
-        println!("{} (y/N)", m);
+        logger(10,format!("{} (y/N)?", m));
     };
         input.clear();
         std::io::stdin()
