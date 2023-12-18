@@ -58,7 +58,7 @@ async fn serves_s(searchterm: web::Path<String>, pluginsmex: Data<Mutex<Vec<Plug
     } else {
         s
     };
-    contentservers::s_server(&term.to_string(), format!("/c/{}", searchterm), plugins)
+    contentservers::s_server(&term.to_string(), format!("/s/{}", searchterm), plugins)
 }
 
 #[get("/t/{tag:.*}")]
@@ -449,6 +449,7 @@ As of now, Cynthia has only 4 commands:
             .service(serves_p)
             .service(serves_c)
             .service(serves_t)
+            .service(serves_s)
             .service(serves_e)
             .service(serves_es)
             .route("/", web::get().to(root))
