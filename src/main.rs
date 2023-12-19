@@ -187,7 +187,7 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
 async fn main() -> std::io::Result<()> {
     println!(
         "{} - version {}\n by {}{}{} {}!",
-        "CynthiaCMS".bold().bright_purple(),
+        "CynthiaEngine".bold().bright_purple(),
         env!("CARGO_PKG_VERSION").to_string().green(),
         "Straw".bright_red(),
         "melon".green(),

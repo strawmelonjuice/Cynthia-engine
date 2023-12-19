@@ -24,7 +24,7 @@ pub(crate) fn init() {
     let mut tarfiledownload = Vec::new();
     let mut c: Easy = Easy::new();
     match c.url(
-        "https://codeload.github.com/strawmelonjuice/CynthiaCMS-cleanConfig/tar.gz/refs/heads/main",
+        "https://codeload.github.com/CynthiaWebsiteEngine/cleanConfig/tar.gz/refs/heads/main",
     ) {
         Ok(oki) => {
             logger(1, String::from("Downloading clean CynthiaConfig..."));
@@ -149,7 +149,7 @@ pub(crate) fn init() {
 
 pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     let plugin_repo_url: &str = &format!(
-        "https://raw.githubusercontent.com/CynthiaCMS/Plugins/{}/index.json",
+        "https://raw.githubusercontent.com/CynthiaWebsiteEngine/Plugins/{}/index.json",
         crate::CYNTHIAPLUGINCOMPAT
     );
     if wantedplugin == *"none" {
