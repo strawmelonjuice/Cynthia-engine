@@ -92,6 +92,6 @@ pub(crate) fn logger(act: i32, msg: String) {
         };
         let title = format!("{}", name.bold().bright_magenta());
         let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg.bright_purple());
+        println!("{0}{1}", preq, msg.bright_green());
     }
 }
