@@ -4,7 +4,7 @@ use actix_web::{
     get,
     http::header::ContentType,
     web::{self, Data},
-    App, HttpResponse, HttpServer, Responder, HttpRequest,
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use colored::Colorize;
 use dotenv::dotenv;
@@ -38,7 +38,10 @@ async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
 }
 
 #[get("/c/{category:.*}")]
-async fn serves_c(category: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+async fn serves_c(
+    category: web::Path<String>,
+    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+) -> HttpResponse {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     let s = category.as_str();
     let pgid = if s.ends_with('/') {
@@ -50,7 +53,10 @@ async fn serves_c(category: web::Path<String>, pluginsmex: Data<Mutex<Vec<Plugin
 }
 
 #[get("/s/{searchterm:.*}")]
-async fn serves_s(searchterm: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+async fn serves_s(
+    searchterm: web::Path<String>,
+    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+) -> HttpResponse {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     let s = searchterm.as_str();
     let term = if s.ends_with('/') {
@@ -62,7 +68,10 @@ async fn serves_s(searchterm: web::Path<String>, pluginsmex: Data<Mutex<Vec<Plug
 }
 
 #[get("/t/{tag:.*}")]
-async fn serves_t(tag: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+async fn serves_t(
+    tag: web::Path<String>,
+    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+) -> HttpResponse {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     let s = tag.as_str();
     let pgid = if s.ends_with('/') {
@@ -72,8 +81,6 @@ async fn serves_t(tag: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>
     };
     contentservers::f_server(false, &pgid.to_string(), format!("/t/{}", tag), plugins)
 }
-
-
 
 fn find_mimetype(filename_: &str) -> Mime {
     let filename = filename_.replace('"', "").to_lowercase();
@@ -129,10 +136,9 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
         .body(body);
 }
 
-
 #[get("/es/{en}/{id:.*}")]
 async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
-     let en: String = req.match_info().get("en").unwrap().parse().unwrap();
+    let en: String = req.match_info().get("en").unwrap().parse().unwrap();
     let id: String = req.match_info().query("id").parse().unwrap();
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     let mut body = String::new();
@@ -142,7 +148,7 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
                 for s in p {
                     // println!("{} == {}?", en , s[1].to_string());
                     if en == s[1].to_string() {
-                        println!("{}",id);
+                        println!("{}", id);
                         body = contentservers::fetcher(format!("{}/{}", s[0], id));
                     };
                 }
@@ -153,9 +159,6 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
 
     return HttpResponse::Ok().body(body);
 }
-
-
-
 
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
@@ -265,7 +268,7 @@ As of now, Cynthia has only 4 commands:
                 "No command specified! Use '{} {}' for help.",
                 std::env::args()
                     .next()
-                    .unwrap_or(String::from("cynthiacms"))
+                    .unwrap_or(String::from("cynthiaweb"))
                     .purple(),
                 "help".bright_yellow()
             ),
@@ -283,7 +286,7 @@ As of now, Cynthia has only 4 commands:
                 "Unknown command! Use '{} {}' for help.",
                 std::env::args()
                     .next()
-                    .unwrap_or(String::from("cynthiacms"))
+                    .unwrap_or(String::from("cynthiaweb"))
                     .purple(),
                 "help".bright_yellow()
             ),
@@ -295,8 +298,12 @@ As of now, Cynthia has only 4 commands:
         logger(
             10,
             format!(
-                "To set up a clean Cynthia config, run {}.",
-                "cynthiacms init".blue()
+                "To set up a clean Cynthia config, run {} {}.",
+                std::env::args()
+                    .next()
+                    .unwrap_or(String::from("cynthiaweb"))
+                    .purple(),
+                "init".bright_yellow()
             ),
         );
         process::exit(1);
@@ -321,7 +328,7 @@ As of now, Cynthia has only 4 commands:
         .parse::<u16>()
         .unwrap();
     match jsr::jsruntime(true) {
-        "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaCMS/blob/rust/docs/jsr.md>")),
+        "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/rust/docs/jsr.md>")),
         g => {
             logger(1, format!("💪 Using JS runtime: '{}' version {}!",
                               g.bright_cyan().bold(),
