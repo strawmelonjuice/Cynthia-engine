@@ -1,6 +1,6 @@
 [package]
-name = "cynthiacms"
-description = "A simple web server + CMS based on plain file editing. I hate WordPress."
+name = "cynthia-engine"
+description = "A simple web server and generator based on plain file editing. I hate WordPress."
 documentation = "https://cynthia-docs.strawmelonjuice.com/"
 authors = ["MLC Bloeiman <mar@strawmelonjuice.com>"]
 version = "2.0.1-alpha.1"
