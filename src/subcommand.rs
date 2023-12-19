@@ -361,7 +361,8 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     );
     let output = Command::new(crate::jsr::jspm(false))
         .arg("install")
-        .arg("--production")
+        // Disabled as it fails to run on Bun
+        // .arg("--production")
         .current_dir(pdp.clone())
         .output()
         .expect("Could not run the package manager.");
