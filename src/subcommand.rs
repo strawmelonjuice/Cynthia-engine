@@ -359,12 +359,15 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         1,
         String::from("Installing dependencies for this plugin..."),
     );
-    Command::new(crate::jsr::jspm(false))
+    let output = Command::new(crate::jsr::jspm(false))
         .arg("install")
         .arg("--production")
         .current_dir(pdp.clone())
         .output()
         .expect("Could not run the package manager.");
+    if !output.status.success() {
+        logger(5, format!("Installing dependencies failed:\n\n\t{}", String::from_utf8_lossy(&output.stderr).to_string().replace("\n", "\n\t").replace("\r", "\t")));
+    }
     logger(
         1,
         format!("{} Installed to {}", "Done!".bright_green(), pdp.display()),
