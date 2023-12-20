@@ -15,12 +15,11 @@ pub(crate) fn s_server(
     probableurl: String,
     plugins: Vec<PluginMeta>,
 ) -> HttpResponse {
-    let filters: PostListFilter = 
-        PostListFilter {
-            category: None,
-            tag: None,
-            searchline: Some(filter_s.to_string()),
-        };
+    let filters: PostListFilter = PostListFilter {
+        category: None,
+        tag: None,
+        searchline: Some(filter_s.to_string()),
+    };
     let cynres = combiner::combine_content(
         String::from("root"),
         postlist_table_gen(Postlist {

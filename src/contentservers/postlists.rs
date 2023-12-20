@@ -16,14 +16,14 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                 }
             };
             if lastdatestamp == 1 {
-                fullpostlist.push(i.clone());
+                fullpostlist.push(i);
             } else {
                 if timestamp >= lastdatestamp {
                     fullpostlist.insert(0, i);
                 } else {
                     fullpostlist.push(i);
                 }
-                lastdatestamp = timestamp.clone();
+                lastdatestamp = timestamp;
             }
         }
     }
@@ -58,27 +58,33 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                     taggedpostlist
                 }
                 None => match f.searchline {
-                Some(s) => {
-                    let mut taggedpostlist: Vec<&CynthiaContentMetaData> = Vec::new();
-                    for i in vectorofposts {
-                        let id = &i.id;
-                        let desc = &i.short.clone().unwrap();
-                        let tags = &i.tags;
+                    Some(s) => {
+                        let mut taggedpostlist: Vec<&CynthiaContentMetaData> = Vec::new();
+                        for i in vectorofposts {
+                            let id = &i.id;
+                            let desc = &i.short.clone().unwrap();
+                            let tags = &i.tags;
 
-                        if super::p_content(id.to_string()).contains(&s) | i.title.contains(&s) | desc.contains(&s) | tags.contains(&s) {
-                            taggedpostlist.push(i);
+                            if super::p_content(id.to_string()).contains(&s)
+                                | i.title.contains(&s)
+                                | desc.contains(&s)
+                                | tags.contains(&s)
+                            {
+                                taggedpostlist.push(i);
+                            }
                         }
+                        taggedpostlist
                     }
-                    taggedpostlist
+                    None => fullpostlist,
                 },
-                None => fullpostlist,
-            },
             },
         },
         None => vectorofposts,
     };
     // Now, we generate the HTML
-    let mut table_html = String::from(r#"<table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>"#);
+    let mut table_html = String::from(
+        r#"<table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>"#,
+    );
     for post in fullpostlist.clone() {
         let category: &str = match &post.category {
             Some(c) => c.as_str(),
@@ -89,12 +95,15 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
             None => "",
         };
         let timestamp: i64 = match &post.dates {
-                Some(d) => d.published,
-                None => {
-                    logger(5, format!("Post with id '{}' has invalid date data.", post.id));
-                    1
-                }
-            };
+            Some(d) => d.published,
+            None => {
+                logger(
+                    5,
+                    format!("Post with id '{}' has invalid date data.", post.id),
+                );
+                1
+            }
+        };
         let addition = format!(
             r#"<tr><td class="post-date"><span class="unparsedtimestamp post-date">{0}</span></td><td><a href="/p/{1}"><span class="post-title">{2}</span></a></td><td class="post-category"><a href="/c/{3}">{3}</a></td></tr><tr><td></td><td class="post-desc"><p>{4}</p></td></tr>"#,
             &timestamp,

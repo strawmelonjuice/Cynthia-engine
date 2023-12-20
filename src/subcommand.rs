@@ -23,9 +23,9 @@ pub(crate) fn init() {
     ));
     let mut tarfiledownload = Vec::new();
     let mut c: Easy = Easy::new();
-    match c.url(
-        "https://codeload.github.com/CynthiaWebsiteEngine/cleanConfig/tar.gz/refs/heads/main",
-    ) {
+    match c
+        .url("https://codeload.github.com/CynthiaWebsiteEngine/cleanConfig/tar.gz/refs/heads/main")
+    {
         Ok(oki) => {
             logger(1, String::from("Downloading clean CynthiaConfig..."));
             oki
@@ -133,10 +133,13 @@ pub(crate) fn init() {
             let totalplugins: &usize = &cynplmn.len();
             let mut currentplugin: i32 = 1;
             for plugin in cynplmn {
-                logger(10, format!(
-                    "Installing plugin {0}/{1}: {2}",
-                    currentplugin, totalplugins, plugin.id
-                ));
+                logger(
+                    10,
+                    format!(
+                        "Installing plugin {0}/{1}: {2}",
+                        currentplugin, totalplugins, plugin.id
+                    ),
+                );
                 plugin_install(plugin.id, plugin.version);
                 currentplugin += 1;
             }
@@ -365,7 +368,16 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         .output()
         .expect("Could not run the package manager.");
     if !output.status.success() {
-        logger(5, format!("Installing dependencies failed:\n\n\t{}", String::from_utf8_lossy(&output.stderr).to_string().replace("\n", "\n\t").replace("\r", "\t")));
+        logger(
+            5,
+            format!(
+                "Installing dependencies failed:\n\n\t{}",
+                String::from_utf8_lossy(&output.stderr)
+                    .to_string()
+                    .replace("\n", "\n\t")
+                    .replace("\r", "\t")
+            ),
+        );
     }
     logger(
         1,
@@ -379,10 +391,10 @@ fn choice(m: String, d: bool) -> bool {
     let mut waiting = true;
     while waiting {
         if d == true {
-        logger(10,format!("{} (Y/n)?", m));
-    } else {
-        logger(10,format!("{} (y/N)?", m));
-    };
+            logger(10, format!("{} (Y/n)?", m));
+        } else {
+            logger(10, format!("{} (y/N)?", m));
+        };
         input.clear();
         std::io::stdin()
             .read_line(&mut input)

@@ -114,9 +114,13 @@ pub(crate) fn combine_content(
                 )
                 .as_str(),
             );
-            let pageinfosidebarthing = if post.kind == *"post" {r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
-	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#} else {""};
-    contents.push_str(pageinfosidebarthing);
+            let pageinfosidebarthing = if post.kind == *"post" {
+                r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
+	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#
+            } else {
+                ""
+            };
+            contents.push_str(pageinfosidebarthing);
             let data = CynthiaPageVars {
                 head,
                 content: contents,
