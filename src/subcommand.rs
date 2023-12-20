@@ -94,13 +94,11 @@ pub(crate) fn init() {
             process::exit(1);
         }
     };
-    // println!("{}", ctempdir.join("./CynthiaCMS-cleanConfig-main/").display());
-    // fs::remove_file(ctempdir.join("/CynthiaCMS-cleanConfig-main").join("README.MD")).unwrap_or_default();
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
     options.content_only = true;
     fs_extra::dir::copy(
-        ctempdir.join("./CynthiaCMS-cleanConfig-main/"),
+        ctempdir.join("./cleanConfig-main/"),
         Path::new("./"),
         &options,
     )
