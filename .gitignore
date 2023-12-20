@@ -13,3 +13,6 @@ pnpm-lock.yaml
 /cynthiapmanifest.json
 src/client.js
 /plugins/
+
+# Ignore editor files
+/.idea/
