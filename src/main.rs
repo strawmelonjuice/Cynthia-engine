@@ -148,7 +148,6 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
                 for s in p {
                     // println!("{} == {}?", en , s[1].to_string());
                     if en == s[1].to_string() {
-                        println!("{}", id);
                         body = contentservers::fetcher(format!("{}/{}", s[0], id));
                     };
                 }
