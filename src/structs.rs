@@ -78,6 +78,7 @@ pub(crate) struct CynthiaContentMetaData {
     pub id: String,
     pub title: String,
     pub short: Option<String>,
+    pub thumbnail: Option<String>,
     pub author: Option<Author>,
     #[serde(default = "empty_post_data_content_object")]
     pub content: CynthiaPostDataContentObject,

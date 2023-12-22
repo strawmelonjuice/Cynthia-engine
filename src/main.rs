@@ -256,34 +256,35 @@ As of now, Cynthia has only 4 commands:
         == *"pm"
     {
         if std::env::args()
-        .nth(2)
-        .unwrap_or(String::from(""))
-        .to_lowercase()
-        == *"add"
-    {
-        subcommand::plugin_install(
-            std::env::args().nth(3).unwrap_or(String::from("none")),
-            std::env::args().nth(4).unwrap_or(String::from("latest")),
-        );
-    } else if std::env::args()
-        .nth(2)
-        .unwrap_or(String::from(""))
-        .to_lowercase()
-        == *"install"{
+            .nth(2)
+            .unwrap_or(String::from(""))
+            .to_lowercase()
+            == *"add"
+        {
+            subcommand::plugin_install(
+                std::env::args().nth(3).unwrap_or(String::from("none")),
+                std::env::args().nth(4).unwrap_or(String::from("latest")),
+            );
+        } else if std::env::args()
+            .nth(2)
+            .unwrap_or(String::from(""))
+            .to_lowercase()
+            == *"install"
+        {
             subcommand::install_from_plugin_manifest()
         } else {
             logger(
-            5,
-            format!(
-                "No subcommand specified! Use '{} {}' for help.",
-                std::env::args()
-                    .next()
-                    .unwrap_or(String::from("cynthiaweb"))
-                    .purple(),
-                "help".bright_yellow()
-            ),
-        );
-        process::exit(1);
+                5,
+                format!(
+                    "No subcommand specified! Use '{} {}' for help.",
+                    std::env::args()
+                        .next()
+                        .unwrap_or(String::from("cynthiaweb"))
+                        .purple(),
+                    "help".bright_yellow()
+                ),
+            );
+            process::exit(1);
         }
         process::exit(0);
     } else if std::env::args()

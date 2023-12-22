@@ -1,6 +1,6 @@
-use handlebars::Handlebars;
-
 use crate::{jsr, logger::logger, structs::*};
+use handlebars::Handlebars;
+use std::string::String;
 
 pub(crate) fn combine_content(
     pgid: String,
@@ -41,13 +41,13 @@ pub(crate) fn combine_content(
         }
     }
     let mut published_jsonc = crate::read_published_jsonc();
-    for post in &mut published_jsonc {
-        if post.id == pgid {
-            let mode_to_load = post
+    for p_met in &mut published_jsonc {
+        if p_met.id == pgid {
+            let mode_to_load = p_met
                 .mode
                 .get_or_insert_with(|| String::from("default"))
                 .to_string();
-            let pagemetainfojson = serde_json::to_string(&post).unwrap();
+            let pagemetainfojson = serde_json::to_string(&p_met).unwrap();
             let currentmode = crate::load_mode(mode_to_load).1;
             let stylesheet: String = std::fs::read_to_string(
                 std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
@@ -55,7 +55,7 @@ pub(crate) fn combine_content(
             .unwrap_or(String::from(""));
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
-                if post.kind == "post" {
+                if p_met.kind == "post" {
                     currentmode.handlebar.post
                 } else {
                     currentmode.handlebar.page
@@ -67,11 +67,47 @@ pub(crate) fn combine_content(
             let handlebars = Handlebars::new();
             let favicondec = match currentmode.favicon {
                 Some(d) => {
-                    format!(r#"<link rel="shortcut icon" href="/assets/{}" type="image/x-icon"/>"#, d)
-                },
-                None => {
-                    String::from("")
-                },
+                    format!(
+                        r#"<link rel="shortcut icon" href="/assets/{}" type="image/x-icon"/>"#,
+                        d
+                    )
+                }
+                None => String::from(""),
+            };
+            let postthumbnail = match &p_met.thumbnail {
+                Some(d) => format!(r#"<meta name="og:image" content="{}">"#, d),
+                None => String::from(""),
+            };
+            let authorname = match &p_met.author {
+                Some(a) => a.name.as_str(),
+                None => "Unknown author.",
+            };
+            let metatags = match p_met.kind.as_str() {
+                "post" => {
+                    format!(
+                        r#"
+                        <meta name="og:title" content="{}">
+      <meta name="description" content="{}">
+      <meta name="og:description" content="{}">
+        {}
+      <meta name="author" content="{}">
+      <meta name="og:author" content="{}">
+                        "#,
+                        &p_met.title,
+                        &p_met
+                            .short
+                            .clone()
+                            .unwrap_or(String::from("No description available.")),
+                        &p_met
+                            .short
+                            .clone()
+                            .unwrap_or(String::from("No description available.")),
+                        postthumbnail,
+                        authorname,
+                        authorname
+                    )
+                }
+                _ => String::from(""),
             };
             let mut head = format!(
                 r#"
@@ -79,10 +115,11 @@ pub(crate) fn combine_content(
 	{}
 	</style>
 	{}
+	{}
 	<script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script>
 	<title>{} &ndash; {}</title>
 	"#,
-                stylesheet, favicondec, post.title, currentmode.sitename
+                stylesheet, favicondec, metatags, p_met.title, currentmode.sitename
             );
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_head_html {
@@ -123,7 +160,7 @@ pub(crate) fn combine_content(
                 )
                 .as_str(),
             );
-            let pageinfosidebarthing = if post.kind == *"post" {
+            let pageinfosidebarthing = if p_met.kind == *"post" {
                 r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
 	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#
             } else {
