@@ -414,3 +414,50 @@ fn choice(m: String, d: bool) -> bool {
     print!("\n");
     return result;
 }
+
+
+
+
+pub(crate) fn install_from_plugin_manifest() {
+    let pluginmanjson = Path::new("./cynthiapluginmanifest.json");
+    if pluginmanjson.exists() {
+            logger(
+                1,
+                format!(
+                    "Installing plugins specified in '{0}' now...",
+                    pluginmanjson.display().to_string().blue()
+                ),
+            );
+            let mut o = fs::File::open(format!("{}", &pluginmanjson.display()).as_str())
+                .expect("Could not read Cynthia plugin manifest file.");
+            let mut contents = String::new();
+            o.read_to_string(&mut contents)
+                .expect("Could not read Cynthia plugin manifest file.");
+            let unparsed: &str = &contents.as_str();
+            let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
+                serde_json::from_str(unparsed)
+                    .expect("Could not read from Cynthia plugin manifest file.");
+            let totalplugins: &usize = &cynplmn.len();
+            let mut currentplugin: i32 = 1;
+            for plugin in cynplmn {
+                logger(
+                    10,
+                    format!(
+                        "Installing plugin {0}/{1}: {2}",
+                        currentplugin, totalplugins, plugin.id
+                    ),
+                );
+                plugin_install(plugin.id, plugin.version);
+                currentplugin += 1;
+            }
+    } else {
+        logger(
+                5,
+                format!(
+                    "No '{0}' file found...",
+                    pluginmanjson.display().to_string().blue()
+                ),
+            );
+    }
+    process::exit(0);
+}

@@ -215,25 +215,30 @@ As of now, Cynthia has only 4 commands:
     You are viewing this now. It just displays this and then exits!
 - {}
     Creates a new CynthiaConfig in the folder you are currently in. You need to run this command before being able to host a Cynthia site from a new folder!
-- {} <{}> {{{}}}
-    Installs a new plugin as registered in the Cynthia Plugin Index.
+- {} {{{}}} <{}> ({})
+    Available subcommands:
+        - Add:
+            Installs a new plugin as registered in the Cynthia Plugin Index. (Does not save it to the manifest file.)
 
-    Options:
-        - <{}>
-            Specifies the name of the plugin to install. Is required.
-        - {{{}}}
-            (Optional) Specifies the plugin version (this will not work if a plugin has a single-version channel)
-            If not specified, latest available will be used.
+            Options:
+                - <{}>
+                    Specifies the name of the plugin to install. Is required.
+                - {{{}}}
+                    (Optional) Specifies the plugin version (this will not work if a plugin has a single-version channel)
+                    If not specified, latest available will be used.
+        - Install:
+            Installs plugins from {} using the Cynthia Plugin Index. Useful after cloning a config.
 - {}
     Starts the Cynthia server!
 {}"#, "\r",
             "Cynthia is a way to host stuff, but also a very extensible and structurised generator of stuff. And by stuff, I mean websites.".italic(),
-            format!("This help page helps you through the Cynthia {} only. For a guide on {}", "cli-options".cyan(), "the CynthiaConfig").blue(),
+            format!("This help page helps you through the Cynthia {} only. For a guide on {}, see its documentation on {}.", "cli-options".cyan(), "the CynthiaConfig", "https://cynthia-docs.strawmelonjuice.com/".underline().blue()).blue(),
             "Help".bold().yellow(),
             "Init".bold().yellow(),
-            "PM-add".bold().yellow(), "plugin name".bright_yellow(), "plugin version".bright_purple(),
+            "PM".bold().yellow(),"subcommand".bright_green(),"plugin name".bright_yellow(), "plugin version".bright_purple(),
             "plugin name".bright_yellow(),
             "plugin version".bright_purple()       ,
+            "cynthiapluginmanifest.json".bright_green(),
             "Start".bold().yellow(),
 "\n\r"
         );
@@ -249,12 +254,38 @@ As of now, Cynthia has only 4 commands:
         .nth(1)
         .unwrap_or(String::from(""))
         .to_lowercase()
-        == *"pm-add"
+        == *"pm"
+    {
+        if std::env::args()
+        .nth(2)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        == *"add"
     {
         subcommand::plugin_install(
-            std::env::args().nth(2).unwrap_or(String::from("none")),
-            std::env::args().nth(3).unwrap_or(String::from("latest")),
+            std::env::args().nth(3).unwrap_or(String::from("none")),
+            std::env::args().nth(4).unwrap_or(String::from("latest")),
         );
+    } else if std::env::args()
+        .nth(2)
+        .unwrap_or(String::from(""))
+        .to_lowercase()
+        == *"install"{
+            subcommand::install_from_plugin_manifest()
+        } else {
+            logger(
+            5,
+            format!(
+                "No subcommand specified! Use '{} {}' for help.",
+                std::env::args()
+                    .next()
+                    .unwrap_or(String::from("cynthiaweb"))
+                    .purple(),
+                "help".bright_yellow()
+            ),
+        );
+        process::exit(1);
+        }
         process::exit(0);
     } else if std::env::args()
         .nth(1)
