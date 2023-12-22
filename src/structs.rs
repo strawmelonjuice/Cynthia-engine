@@ -32,6 +32,7 @@ pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModeConfig {
     pub sitename: String,
+    pub favicon: Option<String>,
     pub stylefile: String,
     pub handlebar: Handlebar,
     #[serde(default = "empty_menulist")]

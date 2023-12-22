@@ -65,15 +65,24 @@ pub(crate) fn combine_content(
             let source = std::fs::read_to_string(handlebarfile)
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
+            let favicondec = match currentmode.favicon {
+                Some(d) => {
+                    format!(r#"<link rel="shortcut icon" href="/assets/{}" type="image/x-icon"/>"#, d)
+                },
+                None => {
+                    String::from("")
+                },
+            };
             let mut head = format!(
                 r#"
             <style>
-	{0}
+	{}
 	</style>
+	{}
 	<script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script>
-	<title>{1} &ndash; {2}</title>
+	<title>{} &ndash; {}</title>
 	"#,
-                stylesheet, post.title, currentmode.sitename
+                stylesheet, favicondec, post.title, currentmode.sitename
             );
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_head_html {
