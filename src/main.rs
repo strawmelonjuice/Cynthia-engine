@@ -418,7 +418,7 @@ As of now, Cynthia has only 4 commands:
                                         logger(
                                             1,
                                             format!(
-                                                "JSR: Running child script for plugin '{}'",
+                                                "🏃 Running child script for plugin '{}'",
                                                 f.name.italic().bright_green()
                                             ),
                                         );
