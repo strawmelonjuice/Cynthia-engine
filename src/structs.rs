@@ -18,7 +18,7 @@ pub(crate) struct CynthiaUrlDataF {
     pub fullurl: String,
 }
 
-pub(crate) type CynthiaModeObject = (String, Config);
+pub(crate) type CynthiaModeObject = (String, ModeConfig);
 
 pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
     CynthiaPostDataContentObject {
@@ -30,7 +30,7 @@ pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct Config {
+pub(crate) struct ModeConfig {
     pub sitename: String,
     pub stylefile: String,
     pub handlebar: Handlebar,
