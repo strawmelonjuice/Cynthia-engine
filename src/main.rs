@@ -139,7 +139,7 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
 #[get("/es/{en}/{id:.*}")]
 async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
     let en: String = req.match_info().get("en").unwrap().parse().unwrap();
-    let id: String = req.match_info().query("id").parse().unwrap();
+    let id: String = req.uri().to_string().replacen("/es", "", 1);
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
     let mut body = String::new();
     for plugin in plugins {
