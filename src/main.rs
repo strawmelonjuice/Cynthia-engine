@@ -165,13 +165,20 @@ async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
 }
 
 fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
-    let file = "./cynthiaFiles/published.jsonc".to_owned();
+    let res: Vec<CynthiaContentMetaData> = if Path::new("./cynthiaFiles/published.yaml").exists() {
+           let file = "./cynthiaFiles/published.yaml".to_owned();
+        let unparsed_yaml = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
+        serde_yaml::from_str(&*unparsed_yaml).unwrap()
+    }
+else
+     {   let file = "./cynthiaFiles/published.jsonc".to_owned();
     let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(unparsed_json.as_str(), &Default::default())
             .expect("Could not read published.jsonc.");
-    let res: Vec<CynthiaContentMetaData> = serde_json::from_value(parsed_json.into()).unwrap();
+        serde_json::from_value(parsed_json.into()).unwrap()
+};
     res
 }
 
