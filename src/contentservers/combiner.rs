@@ -1,3 +1,4 @@
+use crate::jsr::import_js_minified;
 use crate::{jsr, logger::logger, structs::*};
 use handlebars::Handlebars;
 use std::string::String;
@@ -117,9 +118,9 @@ pub(crate) fn combine_content(
 	{}
 	{}
 	<script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script>
-	<title>{} &ndash; {}</title>
+	<title>{}&ensp;&ndash;&ensp;{}</title>
 	"#,
-                stylesheet, favicondec, metatags, p_met.title, currentmode.sitename
+                stylesheet, favicondec, metatags, currentmode.sitename, p_met.title
             );
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_head_html {
@@ -175,10 +176,11 @@ pub(crate) fn combine_content(
                 infoshow: String::from(""),
             };
             let mut k = format!(
-                "\n{}\n\n\n\n<script src=\"/assets/scripts/client.js\"></script>\n\n</html>",
+                "\n{}\n\n\n\n<script>{}</script>\n\n</html>",
                 handlebars
                     .render_template(&source.to_string(), &data)
                     .unwrap(),
+                import_js_minified("./cynthiaFiles/assets/scripts/client.js".to_string())
             );
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_output_html {
@@ -209,7 +211,7 @@ pub(crate) fn combine_content(
                     None => {}
                 }
             }
-            return format!("<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>\n\n-->\n\n\n\n\r{k}", env!("CARGO_PKG_VERSION"));
+            return format!("<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/main/README.MD>\n\n-->\n\n\n\n\r{k}", env!("CARGO_PKG_VERSION"));
         }
     }
     // logger(3, String::from("Can't find that page."));

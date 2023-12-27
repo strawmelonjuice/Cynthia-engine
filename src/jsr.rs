@@ -28,6 +28,11 @@ pub const BUN_NPM: &'static str = "bun";
 #[cfg(not(windows))]
 pub const BUN_NPM_EX: &'static str = "bunx";
 
+//     NodeJS:
+#[cfg(windows)]
+pub const NODEJSR_EX: &str = "npx";
+#[cfg(not(windows))]
+pub const NODEJSR_EX: &'static str = "npx";
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     if args[0] == "returndirect" {
         logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
@@ -104,6 +109,62 @@ pub(crate) fn jspm(mayfail: bool) -> &'static str {
                     return "";
                 }
             };
+        }
+    };
+}
+pub(crate) fn import_js_minified(scriptfile: String) -> String {
+    return match jsruntime(true) {
+        BUNJSR => {
+            let output = match std::process::Command::new(BUN_NPM_EX)
+                .args([
+                    "terser",
+                    scriptfile.as_str(),
+                    "--compress",
+                    "--keep-fnames",
+                    "--keep-classnames",
+                ])
+                .output()
+            {
+                Ok(result) => result,
+                Err(_erro) => {
+                    logger(5, String::from("Couldn't launch Javascript runtime."));
+                    std::process::exit(1);
+                }
+            };
+            let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
+            format!(
+                "// Minified internally by Cynthia using Terser\n\n{}",
+                res
+            )
+        }
+        NODEJSR => {
+            let output = match std::process::Command::new(NODEJSR_EX)
+                .args([
+                    "-y",
+                    "terser",
+                    scriptfile.as_str(),
+                    "--compress",
+                    "--keep-fnames",
+                    "--keep-classnames",
+                ])
+                .output()
+            {
+                Ok(result) => result,
+                Err(_erro) => {
+                    logger(5, String::from("Couldn't launch Javascript runtime."));
+                    std::process::exit(1);
+                }
+            };
+            let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
+            format!(
+                "// Minified internally by Cynthia using Terser\n\n{}",
+                res
+            )
+        }
+        _ => {
+            let output =
+                std::fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.");
+            output
         }
     };
 }
