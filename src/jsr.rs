@@ -30,7 +30,7 @@ pub const BUN_NPM_EX: &'static str = "bunx";
 
 //     NodeJS:
 #[cfg(windows)]
-pub const NODEJSR_EX: &str = "npx";
+pub const NODEJSR_EX: &str = "npx.cmd";
 #[cfg(not(windows))]
 pub const NODEJSR_EX: &'static str = "npx";
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
