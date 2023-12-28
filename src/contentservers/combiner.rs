@@ -1,4 +1,4 @@
-use crate::jsr::import_js_minified;
+use crate::files::import_js_minified;
 use crate::{jsr, logger::logger, structs::*};
 use handlebars::Handlebars;
 use std::string::String;

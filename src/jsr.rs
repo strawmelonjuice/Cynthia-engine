@@ -87,84 +87,22 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
     };
 }
 pub(crate) fn jspm(mayfail: bool) -> &'static str {
-    match std::process::Command::new(BUN_NPM).arg("-v").output() {
-        Ok(_t) => {
-            return BUN_NPM;
-        }
-        Err(_err) => {
-            match std::process::Command::new(NODE_NPM).arg("-v").output() {
-                Ok(_t) => {
-                    return NODE_NPM;
-                }
-                Err(_err) => {
-                    if !mayfail {
-                        logger(
+    return match std::process::Command::new(BUN_NPM).arg("-v").output() {
+        Ok(_t) => BUN_NPM,
+        Err(_err) => match std::process::Command::new(NODE_NPM).arg("-v").output() {
+            Ok(_t) => NODE_NPM,
+            Err(_err) => {
+                if !mayfail {
+                    logger(
                             5,
                             String::from(
                                 "No supported (Node.JS or Bun) Javascript package managers found on path!",
                             ),
                         );
-                        std::process::exit(1);
-                    }
-                    return "";
-                }
-            };
-        }
-    };
-}
-pub(crate) fn import_js_minified(scriptfile: String) -> String {
-    return match jsruntime(true) {
-        BUNJSR => {
-            let output = match std::process::Command::new(BUN_NPM_EX)
-                .args([
-                    "terser",
-                    scriptfile.as_str(),
-                    "--compress",
-                    "--keep-fnames",
-                    "--keep-classnames",
-                ])
-                .output()
-            {
-                Ok(result) => result,
-                Err(_erro) => {
-                    logger(5, String::from("Couldn't launch Javascript runtime."));
                     std::process::exit(1);
                 }
-            };
-            let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
-            format!(
-                "// Minified internally by Cynthia using Terser\n\n{}",
-                res
-            )
-        }
-        NODEJSR => {
-            let output = match std::process::Command::new(NODEJSR_EX)
-                .args([
-                    "-y",
-                    "terser",
-                    scriptfile.as_str(),
-                    "--compress",
-                    "--keep-fnames",
-                    "--keep-classnames",
-                ])
-                .output()
-            {
-                Ok(result) => result,
-                Err(_erro) => {
-                    logger(5, String::from("Couldn't launch Javascript runtime."));
-                    std::process::exit(1);
-                }
-            };
-            let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
-            format!(
-                "// Minified internally by Cynthia using Terser\n\n{}",
-                res
-            )
-        }
-        _ => {
-            let output =
-                std::fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.");
-            output
-        }
+                ""
+            }
+        },
     };
 }

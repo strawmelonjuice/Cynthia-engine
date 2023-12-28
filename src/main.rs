@@ -21,6 +21,7 @@ mod subcommand;
 mod logger;
 
 mod contentservers;
+mod files;
 mod jsr;
 
 pub(crate) const CYNTHIAPLUGINCOMPAT: &str = "2";

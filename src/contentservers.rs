@@ -281,11 +281,11 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
                     for ele in mode.menulinks {
                         let link: String = if ele.href == *probableurl {
                             format!(
-                                r#"<a href="{0}" class="active">{1}</a>"#,
+                                r#"<a href="{0}" class="menulink active">{1}</a>"#,
                                 ele.href, ele.name
                             )
                         } else {
-                            format!(r#"<a href="{0}" class="">{1}</a>"#, ele.href, ele.name)
+                            format!(r#"<a href="{0}" class="menulink">{1}</a>"#, ele.href, ele.name)
                         };
                         mlist1.push_str(link.as_str());
                     }

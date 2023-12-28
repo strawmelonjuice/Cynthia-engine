@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Debug, Serialize, Clone)]
+pub(crate) struct CynthiaCacheIndexObject {
+    pub(crate) fileid: String,
+    pub(crate) cachepath: String,
+    pub(crate) timestamp: u64,
+}
+
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaPluginRepoItem {
     pub(crate) id: String,
