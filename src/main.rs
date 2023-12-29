@@ -1,4 +1,5 @@
 use std::{path::Path, process, sync::Mutex};
+use std::io::ErrorKind;
 
 use actix_web::{
     get,
@@ -186,7 +187,23 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
 
 fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
-    let unparsed_json = std::fs::read_to_string(file).expect("Couldn't find or load that file.");
+    let unparsed_json = match std::fs::read_to_string(file){
+        Ok(s) => s,
+        Err(f) => {
+            if f.kind() == ErrorKind::NotFound {
+                if mode_name != String::from("default") {
+                    logger(15, format!("Cynthia is missing the `{}´ mode for a page to be served. It will retry using the `default´ mode.", mode_name));
+                    return load_mode(String::from("default"));
+                } else {
+                    logger(5, String::from("Cynthia is missing the right mode for some pages to serve."));
+                    process::exit(1);
+                }
+            } else {
+                logger(5, String::from("Cynthia is having trouble loading the mode for some pages to serve."));
+                process::exit(1);
+            }
+        }
+    };
     // println!("{}", unparsed_json);
     let parsed_json: Option<serde_json::Value> =
         parse_to_serde_value(unparsed_json.as_str(), &Default::default())
@@ -464,9 +481,9 @@ As of now, Cynthia has only 4 commands:
                         }
                     }
                     Err(_) => logger(
-                        5,
+                        15,
                         format!(
-                            "Plugin '{}' doesn't have a CynthiaPlugin.json manifest!",
+                            "Plugin `{}´ doesn't have a CynthiaPlugin.json manifest!",
                             name
                         ),
                     ),
