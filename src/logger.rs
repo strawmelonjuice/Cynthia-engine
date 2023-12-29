@@ -21,76 +21,90 @@ pub(crate) fn logger(act: i32, msg: String) {
 
     12: Error in JSR
 
+    15: Warning!
      */
     let spaces: usize = 32;
     let tabs: String = "\t\t".to_string();
     let dt1: OffsetDateTime = SystemTime::now().into();
     let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
     let times = dt1.format(&dt_fmt).unwrap();
-    if act == 1 {
-        let name = format!("[{} - Log]", times).blue();
-        let spaceleft = if name.chars().count() < spaces {
-            spaces - name.chars().count()
-        } else {
-            0
-        };
-        let title = format!("{}", name.bold().blue());
-        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg);
-    }
-    if act == 200 || act == 2 {
-        let name = "[CYNGET/OK]";
-        let spaceleft = if name.chars().count() < spaces {
-            spaces - name.chars().count()
-        } else {
-            0
-        };
-        let title = format!("{}", name.bold().yellow());
-        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}✅ {1}", preq, msg);
-    }
-    if act == 3 || act == 404 {
-        let name = "[CYNGET/404]";
-        let spaceleft = if name.chars().count() < spaces {
-            spaces - name.chars().count()
-        } else {
-            0
-        };
-        let title = format!("{}", name.bold().yellow());
-        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}❎ {1}", preq, msg);
-    }
-    if act == 5 {
-        let name = "[ERROR]";
-        let spaceleft = if name.chars().count() < spaces {
-            spaces - name.chars().count()
-        } else {
-            0
-        };
-        let title = format!("{}", name.bold().black().on_bright_yellow());
-        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg.bright_red());
-    }
-    if act == 12 {
-        let name = "[JS/ERROR]";
-        let spaceleft = if name.chars().count() < spaces {
-            spaces - name.chars().count()
-        } else {
-            0
-        };
-        let title = format!("{}", name.bold().black().on_bright_yellow());
-        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
-    }
-    if act == 10 {
-        let name = "[Note]";
-        let spaceleft = if name.chars().count() < spaces {
-            spaces - name.chars().count()
-        } else {
-            0
-        };
-        let title = format!("{}", name.bold().bright_magenta());
-        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-        println!("{0}{1}", preq, msg.bright_green());
+    match act {
+        200 | 2 => {
+            let name = format!("[{} - [CynGET/OK]", times);
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().yellow());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}👍 {1}", preq, msg);
+        }
+        3 | 404 => {
+            let name = format!("[{} - [CynGET/404]", times);
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().yellow());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}👎 {1}", preq, msg);
+        }
+        5 => {
+            let name = format!("[{} - [ERROR]", times);
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().red().on_bright_yellow());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}{1}", preq, msg.bright_red());
+        }
+        15 => {
+            let name = format!("[{} - [WARN]", times);
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().black().on_bright_yellow());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}⚠  {1}", preq, msg.on_bright_magenta().black());
+        }
+        12 => {
+            let name = "[JS/ERROR]";
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().black().on_bright_yellow());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
+        }
+        10 => {
+            let name = format!("[{} - [NOTE]", times);
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().bright_magenta());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}❕ {1}", preq, msg.bright_green());
+        }
+        1 | _ => {
+            let name = format!("[{} - [LOG]", times).blue();
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().blue());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}{1}", preq, msg);
+        }
     }
 }

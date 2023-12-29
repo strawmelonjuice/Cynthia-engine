@@ -7,3 +7,4 @@
 - [x] Add HTML meta tags to each post
 - [ ] Add RSS/Atom feeds functionality
 - [ ] Add sitemap.xml generation
+- [ ] Write logs to files, too. 
