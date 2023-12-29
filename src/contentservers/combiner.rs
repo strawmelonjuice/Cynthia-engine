@@ -167,13 +167,12 @@ pub(crate) fn combine_content(
             } else {
                 ""
             };
-            contents.push_str(pageinfosidebarthing);
             let data = CynthiaPageVars {
                 head,
                 content: contents,
                 menu1: menus.menu1,
                 menu2: menus.menu2,
-                infoshow: String::from(""),
+                infoshow: String::from(pageinfosidebarthing),
             };
             let mut k = format!(
                 "\n{}\n\n\n\n<script>{}</script>\n\n</html>",
