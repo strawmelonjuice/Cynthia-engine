@@ -66,9 +66,9 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
             return BUNJSR;
         }
         Err(_err) => {
-            match std::process::Command::new(NODEJSR).arg("-v").output() {
+            return match std::process::Command::new(NODEJSR).arg("-v").output() {
                 Ok(_t) => {
-                    return NODEJSR;
+                    NODEJSR
                 }
                 Err(_err) => {
                     if !mayfail {
@@ -80,7 +80,7 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
                         );
                         std::process::exit(1);
                     }
-                    return "";
+                    ""
                 }
             };
         }

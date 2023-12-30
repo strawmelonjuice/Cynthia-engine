@@ -112,15 +112,15 @@ pub(crate) fn p_content(pgid: String) -> String {
         if i.id == pgid {
             let post: &CynthiaContentMetaData = i;
             if post.kind == *"postlist" {
-                match &post.postlist {
+                return match &post.postlist {
                     Some(list) => {
-                        return format!(
+                        format!(
                             "<h1>{}</h1>{}",
                             post.title,
                             postlist_table_gen(list.clone())
                         )
                     }
-                    None => return String::from("unknownexeception"),
+                    None => String::from("unknownexeception"),
                 }
             };
             let rawcontent: String;
