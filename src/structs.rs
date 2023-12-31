@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub(crate) struct CynthiaCacheIndexObject {
     pub(crate) fileid: String,
-    pub(crate) cachepath: String,
+    pub(crate) cachepath: std::path::PathBuf,
     pub(crate) timestamp: u64,
 }
 

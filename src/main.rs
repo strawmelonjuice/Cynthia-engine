@@ -1,4 +1,4 @@
-use std::{path::Path, process, sync::Mutex};
+use std::{fs, path::Path, process, sync::Mutex};
 use std::io::ErrorKind;
 
 use actix_web::{
@@ -380,6 +380,20 @@ As of now, Cynthia has only 4 commands:
         ),
     );
     dotenv().ok();
+    let _ = fs::remove_dir_all("./.cynthiaTemp");
+    match fs::create_dir_all("./.cynthiaTemp") {
+        Ok(_) => {}
+        Err(e) => {
+            logger(
+                5,
+                format!(
+                    "Could not create the Cynthia temp folder! Error: {}",
+                    e.to_string().bright_red()
+                ),
+            );
+            process::exit(1);
+        }
+    }
     let portnum: u16 = std::env::var("PORT")
         .expect("PORT must be set in the '.env' file.")
         .parse::<u16>()

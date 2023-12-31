@@ -1,4 +1,4 @@
-use crate::files::import_js_minified;
+use crate::files::{import_css_minified, import_js_minified};
 use crate::{jsr, logger::logger, structs::*};
 use handlebars::Handlebars;
 use std::string::String;
@@ -50,10 +50,7 @@ pub(crate) fn combine_content(
                 .to_string();
             let pagemetainfojson = serde_json::to_string(&p_met).unwrap();
             let currentmode = crate::load_mode(mode_to_load).1;
-            let stylesheet: String = std::fs::read_to_string(
-                std::path::Path::new("./cynthiaFiles/styles/").join(currentmode.stylefile),
-            )
-            .unwrap_or(String::from(""));
+            let stylesheet: String = import_css_minified(format!("./cynthiaFiles/styles/{}",currentmode.stylefile));
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 if p_met.kind == "post" {
