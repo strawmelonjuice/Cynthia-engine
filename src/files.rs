@@ -35,14 +35,12 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
         if f.fileid == file {
             if (now - f.timestamp) < max_age {
                 return Ok(f.cachepath);
-            } else {
-                if Path::new(&f.cachepath).exists() {
-                    fs::remove_file(Path::new(&f.cachepath)).unwrap();
-                }
+            } else if Path::new(&f.cachepath).exists() {
+                fs::remove_file(Path::new(&f.cachepath)).unwrap();
             };
         }
     }
-    return Err(Error::from(ErrorKind::Other));
+    Err(Error::from(ErrorKind::Other))
 }
 
 pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
@@ -77,11 +75,11 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
     let line = serde_json::to_string(&cacheindex).unwrap();
     let linestr = line.as_str();
     write!(cacheindexfile, "{}", linestr).unwrap();
-    return contents;
+    contents
 }
 
 pub(crate) fn import_js_minified(scriptfile: String) -> String {
-    return match cacheretriever((&scriptfile).to_string(), 120) {
+    return match cacheretriever(scriptfile.to_string(), 120) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
             BUNJSR => {
@@ -114,9 +112,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                             "Bunx".purple()
                         ),
                     );
-                    let output =
-                        fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.");
-                    output
+                    fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
                 }
             }
             NODEJSR => {
@@ -137,7 +133,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                         std::process::exit(1);
                     }
                 };
-                if !(output.status.success()) {
+                if !output.status.success() {
                     logger(
                         5,
                         format!(
@@ -145,9 +141,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                             "NPX".purple()
                         ),
                     );
-                    let output =
-                        fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.");
-                    output
+                        fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(scriptfile, format!(
@@ -157,16 +151,14 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
             }
             _ => {
                 logger(15, String::from("Couldn't minify inlined javascript because there is no found javascript run time, may incre ase bandwidth and slow down served web pages."));
-                let output =
-                    fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.");
-                output
+                fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
             }
         },
     };
 }
 
 pub(crate) fn import_css_minified(stylefile: String) -> String {
-    return match cacheretriever((&stylefile).to_string(), 120) {
+    return match cacheretriever(stylefile.to_string(), 120) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
             BUNJSR => {
@@ -189,7 +181,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 if output.status.success() {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(stylefile, format!(
-                        "\n\r/* Minified internally by Cynthia using cleas-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~2 minutes behind. */\n\r"
+                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~2 minutes behind. */\n\r"
                     ))
                 } else {
                     logger(
@@ -199,9 +191,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                             "Bunx".purple()
                         ),
                     );
-                    let output =
-                        fs::read_to_string(stylefile).expect("Couldn't find or open a JS file.");
-                    output
+                    fs::read_to_string(stylefile).expect("Couldn't find or open a JS file.")
                 }
             }
             NODEJSR => {
@@ -222,7 +212,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                         std::process::exit(1);
                     }
                 };
-                if !(output.status.success()) {
+                if !output.status.success() {
                     logger(
                         5,
                         format!(
@@ -230,21 +220,17 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                             "NPX".purple()
                         ),
                     );
-                    let output =
-                        fs::read_to_string(stylefile).expect("Couldn't find or open a CSS file.");
-                    output
+                    fs::read_to_string(stylefile).expect("Couldn't find or open a CSS file.")
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(stylefile, format!(
-                        "\n\r/* Minified internally by Cynthia using cleas-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~2 minutes behind. */\n\r"
+                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~2 minutes behind. */\n\r"
                     ))
                 }
             }
             _ => {
                 logger(15, String::from("Couldn't minify inlined javascript because there is no found javascript run time, may incre ase bandwidth and slow down served web pages."));
-                let output =
-                    fs::read_to_string(stylefile).expect("Couldn't find or open a CSS file.");
-                output
+                fs::read_to_string(stylefile).expect("Couldn't find or open a CSS file.")
             }
         },
     };

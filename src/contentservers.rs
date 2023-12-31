@@ -121,10 +121,9 @@ pub(crate) fn p_content(pgid: String) -> String {
                         )
                     }
                     None => String::from("unknownexeception"),
-                }
+                };
             };
-            let rawcontent: String;
-            match post.content.location.to_owned().as_str() {
+            let rawcontent = match post.content.location.to_owned().as_str() {
                 "external" => {
                     let mut data = Vec::new();
                     let mut c = Easy::new();
@@ -159,17 +158,14 @@ pub(crate) fn p_content(pgid: String) -> String {
                             return "contentlocationerror".to_owned();
                         }
                     };
-                    rawcontent = resp.to_owned();
+                    resp.to_owned()
                 }
                 "local" => {
                     let contentpath_ = std::path::Path::new("./cynthiaFiles/pages/");
                     let contentpath = &contentpath_.join(post.content.data.to_owned().as_str());
-                    rawcontent =
-                        std::fs::read_to_string(contentpath).unwrap_or("contenterror".to_string());
+                    std::fs::read_to_string(contentpath).unwrap_or("contenterror".to_string())
                 }
-                "inline" => {
-                    rawcontent = post.content.data.to_owned();
-                }
+                "inline" => post.content.data.to_owned(),
                 &_ => {
                     return "contentlocationerror".to_owned();
                 }
@@ -285,7 +281,10 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
                                 ele.href, ele.name
                             )
                         } else {
-                            format!(r#"<a href="{0}" class="menulink">{1}</a>"#, ele.href, ele.name)
+                            format!(
+                                r#"<a href="{0}" class="menulink">{1}</a>"#,
+                                ele.href, ele.name
+                            )
                         };
                         mlist1.push_str(link.as_str());
                     }
@@ -324,7 +323,7 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
 pub(crate) fn fetcher(uri: String) -> String {
     let mut data = Vec::new();
     let mut c = Easy::new();
-    c.url(&(&uri)).unwrap();
+    c.url(&uri).unwrap();
     {
         let mut transfer = c.transfer();
         match transfer.write_function(|new_data| {
@@ -355,5 +354,5 @@ pub(crate) fn fetcher(uri: String) -> String {
             return "contentlocationerror".to_owned();
         }
     };
-    return resp.to_owned();
+    resp.to_owned()
 }

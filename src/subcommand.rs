@@ -109,40 +109,38 @@ pub(crate) fn init() {
         10,
         String::from("Clean CynthiaConfig written! Please adjust then restart Cynthia!"),
     );
-    if pluginmanjson.exists() {
-        if choice(
+    if pluginmanjson.exists() && choice(
             String::from("Do you want to install recomended plugins"),
             true,
         ) {
+        logger(
+            1,
+            format!(
+                "Installing plugins specified in '{0}' now...",
+                pluginmanjson.display().to_string().blue()
+            ),
+        );
+        let mut o = fs::File::open(format!("{}", &pluginmanjson.display()).as_str())
+            .expect("Could not read Cynthia plugin manifest file.");
+        let mut contents = String::new();
+        o.read_to_string(&mut contents)
+            .expect("Could not read Cynthia plugin manifest file.");
+        let unparsed: &str = contents.as_str();
+        let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
+            serde_json::from_str(unparsed)
+                .expect("Could not read from Cynthia plugin manifest file.");
+        let totalplugins: &usize = &cynplmn.len();
+        let mut currentplugin: i32 = 1;
+        for plugin in cynplmn {
             logger(
-                1,
+                10,
                 format!(
-                    "Installing plugins specified in '{0}' now...",
-                    pluginmanjson.display().to_string().blue()
+                    "Installing plugin {0}/{1}: {2}",
+                    currentplugin, totalplugins, plugin.id
                 ),
             );
-            let mut o = fs::File::open(format!("{}", &pluginmanjson.display()).as_str())
-                .expect("Could not read Cynthia plugin manifest file.");
-            let mut contents = String::new();
-            o.read_to_string(&mut contents)
-                .expect("Could not read Cynthia plugin manifest file.");
-            let unparsed: &str = &contents.as_str();
-            let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
-                serde_json::from_str(unparsed)
-                    .expect("Could not read from Cynthia plugin manifest file.");
-            let totalplugins: &usize = &cynplmn.len();
-            let mut currentplugin: i32 = 1;
-            for plugin in cynplmn {
-                logger(
-                    10,
-                    format!(
-                        "Installing plugin {0}/{1}: {2}",
-                        currentplugin, totalplugins, plugin.id
-                    ),
-                );
-                plugin_install(plugin.id, plugin.version);
-                currentplugin += 1;
-            }
+            plugin_install(plugin.id, plugin.version);
+            currentplugin += 1;
         }
     };
     process::exit(0);
@@ -210,7 +208,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
 
     logger(1, String::from("Loading Cynthia Plugin Index..."));
 
-    let mut o = fs::File::open(&repositoryfile).expect("Could not read Cynthia Plugin Index.");
+    let mut o = fs::File::open(repositoryfile).expect("Could not read Cynthia Plugin Index.");
     let mut contents = String::new();
     o.read_to_string(&mut contents)
         .expect("Could not read Cynthia Plugin Index.");
@@ -374,8 +372,8 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
                 "Installing dependencies failed:\n\n\t{}",
                 String::from_utf8_lossy(&output.stderr)
                     .to_string()
-                    .replace("\n", "\n\t")
-                    .replace("\r", "\t")
+                    .replace('\n', "\n\t")
+                    .replace('\r', "\t")
             ),
         );
     }
@@ -390,7 +388,7 @@ fn choice(m: String, d: bool) -> bool {
     let mut input = String::new();
     let mut waiting = true;
     while waiting {
-        if d == true {
+        if d {
             logger(10, format!("{} (Y/n)?", m));
         } else {
             logger(10, format!("{} (y/N)?", m));
@@ -402,7 +400,7 @@ fn choice(m: String, d: bool) -> bool {
         if input == *"\r\n" {
             waiting = false;
         }
-        input = input.replace('\n', "").replace('\r', "");
+        input = input.replace(['\n', '\r'], "");
         if input.to_lowercase() == *"y" {
             waiting = false;
             result = true;
@@ -411,8 +409,8 @@ fn choice(m: String, d: bool) -> bool {
             waiting = false;
         }
     }
-    print!("\n");
-    return result;
+    println!();
+    result
 }
 
 pub(crate) fn install_from_plugin_manifest() {
@@ -430,7 +428,7 @@ pub(crate) fn install_from_plugin_manifest() {
         let mut contents = String::new();
         o.read_to_string(&mut contents)
             .expect("Could not read Cynthia plugin manifest file.");
-        let unparsed: &str = &contents.as_str();
+        let unparsed: &str = contents.as_str();
         let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
             serde_json::from_str(unparsed)
                 .expect("Could not read from Cynthia plugin manifest file.");

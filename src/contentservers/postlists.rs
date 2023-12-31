@@ -121,7 +121,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
             .unwrap(),
             category,
             to_html_with_options(
-                &description,
+                description,
                 &Options {
                     compile: CompileOptions {
                         allow_dangerous_html: false,
@@ -135,7 +135,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
         table_html.push_str(addition.as_str());
     }
     table_html.push_str("</table>");
-    if fullpostlist.len() == 0 {
+    if fullpostlist.is_empty() {
         table_html = String::from("<p>No results.</p>");
     }
     table_html

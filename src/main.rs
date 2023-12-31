@@ -124,7 +124,7 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
                         let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
                         let file = Path::new(&fileb);
                         mime = find_mimetype(&format!("{:?}", file.file_name().unwrap()));
-                        body = std::fs::read_to_string(file)
+                        body = fs::read_to_string(file)
                             .unwrap_or(String::from("Couldn't serve file."));
                     };
                 }
@@ -149,7 +149,7 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
             Some(p) => {
                 for s in p {
                     // println!("{} == {}?", en , s[1].to_string());
-                    if en == s[1].to_string() {
+                    if en == s[1] {
                         body = contentservers::fetcher(format!("{}/{}", s[0], id));
                     };
                 }
@@ -158,7 +158,7 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
         }
     }
 
-    return HttpResponse::Ok().body(body);
+    HttpResponse::Ok().body(body)
 }
 
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
@@ -170,12 +170,12 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
     let res: Vec<CynthiaContentMetaData> = if Path::new("./cynthiaFiles/published.yaml").exists() {
         let file = "./cynthiaFiles/published.yaml".to_owned();
         let unparsed_yaml =
-            std::fs::read_to_string(file).expect("Couldn't find or load that file.");
-        serde_yaml::from_str(&*unparsed_yaml).unwrap()
+            fs::read_to_string(file).expect("Couldn't find or load that file.");
+        serde_yaml::from_str(&unparsed_yaml).unwrap()
     } else {
         let file = "./cynthiaFiles/published.jsonc".to_owned();
         let unparsed_json =
-            std::fs::read_to_string(file).expect("Couldn't find or load that file.");
+            fs::read_to_string(file).expect("Couldn't find or load that file.");
         // println!("{}", unparsed_json);
         let parsed_json: Option<serde_json::Value> =
             parse_to_serde_value(unparsed_json.as_str(), &Default::default())
@@ -187,11 +187,11 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
 
 fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
-    let unparsed_json = match std::fs::read_to_string(file){
+    let unparsed_json = match fs::read_to_string(file){
         Ok(s) => s,
         Err(f) => {
             if f.kind() == ErrorKind::NotFound {
-                if mode_name != String::from("default") {
+                if mode_name != *"default" {
                     logger(15, format!("Cynthia is missing the `{}´ mode for a page to be served. It will retry using the `default´ mode.", mode_name));
                     return load_mode(String::from("default"));
                 } else {
@@ -420,12 +420,12 @@ As of now, Cynthia has only 4 commands:
     }
     let mut pluginlist: Vec<PluginMeta> = [].to_vec();
     if Path::new("./plugins").exists() {
-        for entry in std::fs::read_dir("./plugins").unwrap() {
+        for entry in fs::read_dir("./plugins").unwrap() {
             if entry.is_ok() {
                 let name = entry.unwrap().file_name().to_string_lossy().into_owned();
                 let p = format!("./plugins/{}/cynthiaplugin.json", name);
                 let pluginmetafile = Path::new(&p);
-                match std::fs::read_to_string(pluginmetafile) {
+                match fs::read_to_string(pluginmetafile) {
                     Ok(e) => {
                         let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
                         if f.cyntia_plugin_compat != CYNTHIAPLUGINCOMPAT {
