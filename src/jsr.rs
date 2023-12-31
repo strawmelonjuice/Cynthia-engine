@@ -61,12 +61,12 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
 }
 
 pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
-    match std::process::Command::new(BUNJSR).arg("-v").output() {
+    return match std::process::Command::new(BUNJSR).arg("-v").output() {
         Ok(_t) => {
-            return BUNJSR;
+            BUNJSR
         }
         Err(_err) => {
-            return match std::process::Command::new(NODEJSR).arg("-v").output() {
+            match std::process::Command::new(NODEJSR).arg("-v").output() {
                 Ok(_t) => {
                     NODEJSR
                 }
@@ -82,7 +82,7 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
                     }
                     ""
                 }
-            };
+            }
         }
     };
 }
