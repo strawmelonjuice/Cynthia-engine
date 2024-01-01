@@ -109,10 +109,12 @@ pub(crate) fn init() {
         10,
         String::from("Clean CynthiaConfig written! Please adjust then restart Cynthia!"),
     );
-    if pluginmanjson.exists() && choice(
+    if pluginmanjson.exists()
+        && choice(
             String::from("Do you want to install recomended plugins"),
             true,
-        ) {
+        )
+    {
         logger(
             1,
             format!(

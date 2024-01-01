@@ -50,7 +50,8 @@ pub(crate) fn combine_content(
                 .to_string();
             let pagemetainfojson = serde_json::to_string(&p_met).unwrap();
             let currentmode = crate::load_mode(mode_to_load).1;
-            let stylesheet: String = import_css_minified(format!("./cynthiaFiles/styles/{}",currentmode.stylefile));
+            let stylesheet: String =
+                import_css_minified(format!("./cynthiaFiles/styles/{}", currentmode.stylefile));
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
                 if p_met.kind == "post" {

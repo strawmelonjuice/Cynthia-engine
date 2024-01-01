@@ -62,28 +62,22 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
 
 pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
     return match std::process::Command::new(BUNJSR).arg("-v").output() {
-        Ok(_t) => {
-            BUNJSR
-        }
-        Err(_err) => {
-            match std::process::Command::new(NODEJSR).arg("-v").output() {
-                Ok(_t) => {
-                    NODEJSR
+        Ok(_t) => BUNJSR,
+        Err(_err) => match std::process::Command::new(NODEJSR).arg("-v").output() {
+            Ok(_t) => NODEJSR,
+            Err(_err) => {
+                if !mayfail {
+                    logger(
+                        5,
+                        String::from(
+                            "No supported (Node.JS or Bun) Javascript runtimes found on path!",
+                        ),
+                    );
+                    std::process::exit(1);
                 }
-                Err(_err) => {
-                    if !mayfail {
-                        logger(
-                            5,
-                            String::from(
-                                "No supported (Node.JS or Bun) Javascript runtimes found on path!",
-                            ),
-                        );
-                        std::process::exit(1);
-                    }
-                    ""
-                }
+                ""
             }
-        }
+        },
     };
 }
 pub(crate) fn jspm(mayfail: bool) -> &'static str {

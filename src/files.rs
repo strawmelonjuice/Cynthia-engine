@@ -79,7 +79,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 }
 
 pub(crate) fn import_js_minified(scriptfile: String) -> String {
-    return match cacheretriever(scriptfile.to_string(), 120) {
+    return match cacheretriever(scriptfile.to_string(), 1200) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
             BUNJSR => {
@@ -102,7 +102,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 if output.status.success() {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(scriptfile, format!(
-                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be ~2 minutes behind.\n\r"
+                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be ~20 minutes behind.\n\r"
                     ))
                 } else {
                     logger(
@@ -141,11 +141,11 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                             "NPX".purple()
                         ),
                     );
-                        fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
+                    fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(scriptfile, format!(
-                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be ~2 minutes behind.\n\r"
+                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be ~20 minutes behind.\n\r"
                     ))
                 }
             }
@@ -158,7 +158,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
 }
 
 pub(crate) fn import_css_minified(stylefile: String) -> String {
-    return match cacheretriever(stylefile.to_string(), 120) {
+    return match cacheretriever(stylefile.to_string(), 1200) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
             BUNJSR => {
@@ -181,7 +181,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 if output.status.success() {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(stylefile, format!(
-                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~2 minutes behind. */\n\r"
+                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~20 minutes behind. */\n\r"
                     ))
                 } else {
                     logger(
@@ -224,7 +224,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(stylefile, format!(
-                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~2 minutes behind. */\n\r"
+                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~20 minutes behind. */\n\r"
                     ))
                 }
             }

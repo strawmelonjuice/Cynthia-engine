@@ -1,5 +1,5 @@
-use std::{fs, path::Path, process, sync::Mutex};
 use std::io::ErrorKind;
+use std::{fs, path::Path, process, sync::Mutex};
 
 use actix_web::{
     get,
@@ -12,6 +12,7 @@ use dotenv::dotenv;
 use jsonc_parser::parse_to_serde_value;
 use mime::Mime;
 
+use crate::files::import_js_minified;
 use structs::*;
 
 use crate::logger::logger;
@@ -124,8 +125,11 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
                         let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
                         let file = Path::new(&fileb);
                         mime = find_mimetype(&format!("{:?}", file.file_name().unwrap()));
-                        body = fs::read_to_string(file)
-                            .unwrap_or(String::from("Couldn't serve file."));
+                        body = if mime == mime::TEXT_JAVASCRIPT {
+                            import_js_minified(file.to_str().unwrap().to_string())
+                        } else {
+                            fs::read_to_string(file).unwrap_or(String::from("Couldn't serve file."))
+                        };
                     };
                 }
             }
@@ -169,13 +173,11 @@ async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
 fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
     let res: Vec<CynthiaContentMetaData> = if Path::new("./cynthiaFiles/published.yaml").exists() {
         let file = "./cynthiaFiles/published.yaml".to_owned();
-        let unparsed_yaml =
-            fs::read_to_string(file).expect("Couldn't find or load that file.");
+        let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
         serde_yaml::from_str(&unparsed_yaml).unwrap()
     } else {
         let file = "./cynthiaFiles/published.jsonc".to_owned();
-        let unparsed_json =
-            fs::read_to_string(file).expect("Couldn't find or load that file.");
+        let unparsed_json = fs::read_to_string(file).expect("Couldn't find or load that file.");
         // println!("{}", unparsed_json);
         let parsed_json: Option<serde_json::Value> =
             parse_to_serde_value(unparsed_json.as_str(), &Default::default())
@@ -187,7 +189,7 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
 
 fn load_mode(mode_name: String) -> CynthiaModeObject {
     let file = format!("./cynthiaFiles/modes/{}.jsonc", mode_name).to_owned();
-    let unparsed_json = match fs::read_to_string(file){
+    let unparsed_json = match fs::read_to_string(file) {
         Ok(s) => s,
         Err(f) => {
             if f.kind() == ErrorKind::NotFound {
@@ -195,11 +197,19 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
                     logger(15, format!("Cynthia is missing the `{}´ mode for a page to be served. It will retry using the `default´ mode.", mode_name));
                     return load_mode(String::from("default"));
                 } else {
-                    logger(5, String::from("Cynthia is missing the right mode for some pages to serve."));
+                    logger(
+                        5,
+                        String::from("Cynthia is missing the right mode for some pages to serve."),
+                    );
                     process::exit(1);
                 }
             } else {
-                logger(5, String::from("Cynthia is having trouble loading the mode for some pages to serve."));
+                logger(
+                    5,
+                    String::from(
+                        "Cynthia is having trouble loading the mode for some pages to serve.",
+                    ),
+                );
                 process::exit(1);
             }
         }
