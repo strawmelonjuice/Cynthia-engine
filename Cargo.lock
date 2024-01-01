@@ -450,7 +450,7 @@ dependencies = [
 
 [[package]]
 name = "cynthiaweb"
-version = "2.0.2-alpha.1"
+version = "2.0.5-alpha.1"
 dependencies = [
  "actix-files",
  "actix-web",

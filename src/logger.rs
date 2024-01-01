@@ -95,6 +95,17 @@ pub(crate) fn logger(act: i32, msg: String) {
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
             println!("{0}❕ {1}", preq, msg.bright_green());
         }
+        31 => {
+            let name = format!("[{} - [CACHE]", times);
+            let spaceleft = if name.chars().count() < spaces {
+                spaces - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.white());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}♻️ {1}", preq, msg.bright_white().italic());
+        }
         _ => {
             let name = format!("[{} - [LOG]", times).blue();
             let spaceleft = if name.chars().count() < spaces {

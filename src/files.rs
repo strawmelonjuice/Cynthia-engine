@@ -9,14 +9,14 @@ use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{env, fs};
+use std::fs;
+use dotenv::dotenv;
 
 fn cachefolder() -> PathBuf {
-    let fl = env::current_dir()
-        .unwrap()
-        .join("/.cynthiaTemp/cache/")
+    let fl = PathBuf::from("./.cynthiaTemp/cache/")
         .join(format!("{}", std::process::id()))
         .normalize();
+    // logger(31, format!("Cache folder: {}", fl.display()));
     fs::create_dir_all(&fl).unwrap();
     fl
 }
@@ -36,6 +36,7 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
             if (now - f.timestamp) < max_age {
                 return Ok(f.cachepath);
             } else if Path::new(&f.cachepath).exists() {
+                logger(31, format!("Cache {}: {} at {}, reason: Too old!","removed".red(), file, &f.cachepath.display()));
                 fs::remove_file(Path::new(&f.cachepath)).unwrap();
             };
         }
@@ -59,6 +60,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 
     let mut cachedfile = File::create(cachepath.clone()).unwrap();
     write!(cachedfile, "{}", contents).unwrap();
+    logger(31, format!("Cache {}: {} in {}", "placed".green(), fileid, cachepath.display()));
     let new = CynthiaCacheIndexObject {
         fileid,
         cachepath,
@@ -79,7 +81,12 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 }
 
 pub(crate) fn import_js_minified(scriptfile: String) -> String {
-    return match cacheretriever(scriptfile.to_string(), 1200) {
+    dotenv().ok();
+    let jscachelifetime: u64 = match std::env::var("JAVASCRIPT_CACHE_LIFETIME") {
+        Ok(g) => g.parse::<u64>().unwrap(),
+        Err(_) => 1200,
+    };
+    return match cacheretriever(scriptfile.to_string(), jscachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
             BUNJSR => {
@@ -102,7 +109,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 if output.status.success() {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(scriptfile, format!(
-                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be ~20 minutes behind.\n\r"
+                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r"
                     ))
                 } else {
                     logger(
@@ -145,7 +152,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(scriptfile, format!(
-                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be ~20 minutes behind.\n\r"
+                        "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r"
                     ))
                 }
             }
@@ -158,7 +165,11 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
 }
 
 pub(crate) fn import_css_minified(stylefile: String) -> String {
-    return match cacheretriever(stylefile.to_string(), 1200) {
+    let csscachelifetime: u64 = match std::env::var("STYLESHEET_CACHE_LIFETIME") {
+        Ok(g) => g.parse::<u64>().unwrap(),
+        Err(_) => 1200,
+    };
+    return match cacheretriever(stylefile.to_string(), csscachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
             BUNJSR => {
@@ -181,7 +192,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 if output.status.success() {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(stylefile, format!(
-                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~20 minutes behind. */\n\r"
+                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be somewhat behind. */\n\r"
                     ))
                 } else {
                     logger(
@@ -224,7 +235,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
                     cacheplacer(stylefile, format!(
-                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be ~20 minutes behind. */\n\r"
+                        "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be somewhat behind. */\n\r"
                     ))
                 }
             }
