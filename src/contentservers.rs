@@ -1,9 +1,12 @@
+use std::fs;
 use actix_web::HttpResponse;
 use colored::Colorize;
 use curl::easy::Easy;
+use dotenv::dotenv;
 use markdown::{to_html_with_options, CompileOptions, Options};
 
 use crate::{logger::logger, structs::*};
+use crate::files::{cacheplacer, cacheretriever};
 
 use self::postlists::postlist_table_gen;
 
@@ -321,38 +324,48 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
 }
 
 pub(crate) fn fetcher(uri: String) -> String {
-    let mut data = Vec::new();
-    let mut c = Easy::new();
-    c.url(&uri).unwrap();
-    {
-        let mut transfer = c.transfer();
-        match transfer.write_function(|new_data| {
-            data.extend_from_slice(new_data);
-            Ok(new_data.len())
-        }) {
-            Ok(v) => v,
-            Err(_e) => {
-                logger(5, String::from("Could not fetch external content!"));
-
-                return "contentlocationerror".to_owned();
-            }
-        };
-        match transfer.perform() {
-            Ok(v) => v,
-            Err(_e) => {
-                logger(5, String::from("Could not fetch external content!"));
-
-                return "contentlocationerror".to_owned();
-            }
-        };
-    }
-    let resp = match std::str::from_utf8(&data) {
-        Ok(v) => v,
-        Err(_e) => {
-            logger(5, String::from("Could not fetch external content!"));
-
-            return "contentlocationerror".to_owned();
-        }
+    dotenv().ok();
+    let cachelifetime: u64 = match std::env::var("EXTERNAL_CACHE_LIFETIME") {
+        Ok(g) => g.parse::<u64>().unwrap(),
+        Err(_) => 1200,
     };
-    resp.to_owned()
+    return match cacheretriever(uri.clone(), cachelifetime) {
+        Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
+        Err(_) => {
+            let mut data = Vec::new();
+            let mut c = Easy::new();
+            c.url(&uri).unwrap();
+            {
+                let mut transfer = c.transfer();
+                match transfer.write_function(|new_data| {
+                    data.extend_from_slice(new_data);
+                    Ok(new_data.len())
+                }) {
+                    Ok(v) => v,
+                    Err(_e) => {
+                        logger(5, String::from("Could not fetch external content!"));
+
+                        return "contentlocationerror".to_owned();
+                    }
+                };
+                match transfer.perform() {
+                    Ok(v) => v,
+                    Err(_e) => {
+                        logger(5, String::from("Could not fetch external content!"));
+
+                        return "contentlocationerror".to_owned();
+                    }
+                };
+            }
+            let resp = match std::str::from_utf8(&data) {
+                Ok(v) => v,
+                Err(_e) => {
+                    logger(5, String::from("Could not fetch external content!"));
+
+                    return "contentlocationerror".to_owned();
+                }
+            };
+           cacheplacer(uri, resp.to_owned())
+        },
+    };
 }

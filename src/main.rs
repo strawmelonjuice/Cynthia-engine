@@ -360,12 +360,12 @@ As of now, Cynthia has only 4 commands:
         );
         process::exit(1);
     }
-    if !Path::new("./.env").exists() {
+    if !(Path::new("./.env").exists()) || !(Path::new("./cynthiaFiles").exists()) {
         logger(5, String::from("No CynthiaConfig found."));
         logger(
             10,
             format!(
-                "To set up a clean Cynthia config, run {} {}.",
+                "To set up a clean Cynthia config, run '{} {}'.",
                 std::env::args()
                     .next()
                     .unwrap_or(String::from("cynthiaweb"))
@@ -404,10 +404,10 @@ As of now, Cynthia has only 4 commands:
             process::exit(1);
         }
     }
-    let portnum: u16 = std::env::var("PORT")
-        .expect("PORT must be set in the '.env' file.")
-        .parse::<u16>()
-        .unwrap();
+    let portnum: u16 = match std::env::var("PORT") {
+        Ok(g) => g.parse::<u16>().unwrap(),
+        Err(_) => 3000,
+    };
     match jsr::jsruntime(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/rust/docs/jsr.md>")),
         g => {
