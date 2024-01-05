@@ -46,6 +46,7 @@ pub(crate) struct ModeConfig {
     pub menulinks: Vec<Menulink>,
     #[serde(default = "empty_menulist")]
     pub menu2links: Vec<Menulink>,
+    pub pageinfooverride: Option<bool>,
 }
 
 fn empty_menulist() -> Vec<Menulink> {
@@ -97,6 +98,7 @@ pub(crate) struct CynthiaContentMetaData {
     #[serde(default)]
     pub tags: Vec<String>,
     pub postlist: Option<Postlist>,
+    pub pageinfooverride: Option<bool>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
