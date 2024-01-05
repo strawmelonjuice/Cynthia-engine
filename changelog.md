@@ -4,7 +4,9 @@
 
 ## Unreleased changes
             
--  **<span style="color: #0033cc">Update</span>**: Rewriting CynthiaCMS to Rust, to enhance user-friendlyness, a division of codebases and compatibility.
+-  **<span style="color: #336600">Addition</span>**: Override for showing page info sidebar, on either mode or post.
+-  **<span style="color: #0033cc">Update</span>**: Feature parity with TS version completed, plugin system 2.0 implemented.
+-  **<span style="color: #0033cc">Update</span>**: Rewriting CynthiaCMS to Rust, to enhance user-friendlyness, a division of codebases and compatibility.
 
 
 ## Releases

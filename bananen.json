@@ -36,6 +36,16 @@
         "contents": "Rewriting CynthiaCMS to Rust, to enhance user-friendlyness, a division of codebases and compatibility.",
         "type": 2,
         "breaking": false
+      },
+      {
+        "contents": "Feature parity with TS version completed, plugin system 2.0 implemented.",
+        "type": 2,
+        "breaking": false
+      },
+      {
+        "contents": "Override for showing page info sidebar, on either mode or post.",
+        "type": 1,
+        "breaking": false
       }
     ],
     "released": []
