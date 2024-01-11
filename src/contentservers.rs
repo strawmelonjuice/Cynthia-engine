@@ -188,7 +188,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                 "text" | "raw" => {
                     format!("<div><pre>{rawcontent}</pre></div>")
                 }
-                "markdown" | "md" => {
+                "markdown" | "md" | "" => {
                     format!(
                         "<div>{}</div>",
                         to_html_with_options(
@@ -203,18 +203,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                         )
                         .unwrap()
                     )
-                }
-                "" => to_html_with_options(
-                    &rawcontent,
-                    &Options {
-                        compile: CompileOptions {
-                            allow_dangerous_html: true,
-                            ..CompileOptions::default()
-                        },
-                        ..Options::default()
-                    },
-                )
-                .unwrap(),
+                },
                 &_ => "contenttypeerror".to_owned(),
             };
         }
