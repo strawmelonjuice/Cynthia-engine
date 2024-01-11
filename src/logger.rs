@@ -60,7 +60,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().red().on_bright_yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}{1}", preq, msg.bright_red());
+            eprintln!("{0}{1}", preq, msg.bright_red());
         }
         15 => {
             let name = format!("[{} - [WARN]", times);
@@ -71,7 +71,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().black().on_bright_yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}⚠\t{1}", preq, msg.on_bright_magenta().black());
+            eprintln!("{0}⚠\t{1}", preq, msg.on_bright_magenta().black());
         }
         12 => {
             let name = "[JS/ERROR]";
@@ -82,7 +82,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().black().on_bright_yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
+            eprintln!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
         }
         10 => {
             let name = format!("[{} - [NOTE]", times);
