@@ -166,7 +166,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                 "local" => {
                     let contentpath_ = std::path::Path::new("./cynthiaFiles/pages/");
                     let contentpath = &contentpath_.join(post.content.data.to_owned().as_str());
-                    std::fs::read_to_string(contentpath).unwrap_or("contenterror".to_string())
+                    fs::read_to_string(contentpath).unwrap_or("contenterror".to_string())
                 }
                 "inline" => post.content.data.to_owned(),
                 &_ => {
