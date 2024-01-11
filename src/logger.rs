@@ -38,7 +38,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}👍 {1}", preq, msg);
+            println!("{0}👍\t{1}", preq, msg);
         }
         3 | 404 => {
             let name = format!("[{} - [CynGET/404]", times);
@@ -49,7 +49,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}👎 {1}", preq, msg);
+            println!("{0}👎\t{1}", preq, msg);
         }
         5 => {
             let name = format!("[{} - [ERROR]", times);
@@ -71,7 +71,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().black().on_bright_yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}⚠  {1}", preq, msg.on_bright_magenta().black());
+            println!("{0}⚠\t{1}", preq, msg.on_bright_magenta().black());
         }
         12 => {
             let name = "[JS/ERROR]";
@@ -93,7 +93,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.bold().bright_magenta());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}❕ {1}", preq, msg.bright_green());
+            println!("{0}❕\t{1}", preq, msg.bright_green());
         }
         31 => {
             let name = format!("[{} - [CACHE]", times);
@@ -104,7 +104,7 @@ pub(crate) fn logger(act: i32, msg: String) {
             };
             let title = format!("{}", name.white());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}♻️ {1}", preq, msg.bright_white().italic());
+            println!("{0}♻️\t{1}", preq, msg.bright_white().italic());
         }
         _ => {
             let name = format!("[{} - [LOG]", times).blue();

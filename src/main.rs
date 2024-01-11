@@ -377,18 +377,16 @@ As of now, Cynthia has only 4 commands:
     }
     logger(
         1,
-        format!(
-            "🤔 Loading configuration from '{}'!",
-            Path::new("./.env")
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
-                .replace("\\\\?\\", "")
-                .bright_purple()
-                .italic()
-        ),
+        "🤔\tLoading configuration from:".to_string(),
     );
+    logger(1, format!("`{}´", Path::new("./.env")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string()
+        .replace("\\\\?\\", "")
+        .bright_purple()
+        .italic()));
     dotenv().ok();
     let _ = fs::remove_dir_all("./.cynthiaTemp");
     match fs::create_dir_all("./.cynthiaTemp") {
@@ -411,7 +409,7 @@ As of now, Cynthia has only 4 commands:
     match jsr::jsruntime(true) {
         "" => logger(5, String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/rust/docs/jsr.md>")),
         g => {
-            logger(1, format!("💪 Using JS runtime: '{}' version {}!",
+            logger(1, format!("💪\tUsing JS runtime: '{}' version {}!",
                               g.bright_cyan().bold(),
                               str::replace(
                                   str::replace(
@@ -450,7 +448,7 @@ As of now, Cynthia has only 4 commands:
                         } else {
                             logger(
                                 1,
-                                format!("🧩  Plugin '{}' loaded!", name.italic().bright_green()),
+                                format!("🧩\tPlugin '{}' loaded!", name.italic().bright_green()),
                             );
                             f.name = name;
                             match &f.runners.plugin_children {
@@ -468,7 +466,7 @@ As of now, Cynthia has only 4 commands:
                                         logger(
                                             1,
                                             format!(
-                                                "🏃 Running child script for plugin '{}'",
+                                                "🏃\tRunning child script for plugin '{}'",
                                                 f.name.italic().bright_green()
                                             ),
                                         );
@@ -519,7 +517,7 @@ As of now, Cynthia has only 4 commands:
     logger(
         1,
         format!(
-            "🆙  Running at {} ...",
+            "🆙\tRunning at {} ...",
             format!(
                 "http://{}:{}/",
                 "localhost".green(),
