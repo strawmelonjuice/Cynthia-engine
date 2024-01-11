@@ -171,10 +171,13 @@ async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
 }
 
 fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
-    let res: Vec<CynthiaContentMetaData> = if Path::new("./cynthiaFiles/published.yaml").exists() {
+    if Path::new("./cynthiaFiles/published.yaml").exists() {
         let file = "./cynthiaFiles/published.yaml".to_owned();
         let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
-        serde_yaml::from_str(&unparsed_yaml).unwrap()
+        serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
+            logger(5, String::from("Published.yaml contains invalid Cynthia-instructions."));
+            Vec::new()
+        })
     } else {
         let file = "./cynthiaFiles/published.jsonc".to_owned();
         let unparsed_json = fs::read_to_string(file).expect("Couldn't find or load that file.");
@@ -182,9 +185,11 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
         let parsed_json: Option<serde_json::Value> =
             parse_to_serde_value(unparsed_json.as_str(), &Default::default())
                 .expect("Could not read published.jsonc.");
-        serde_json::from_value(parsed_json.into()).unwrap()
-    };
-    res
+        serde_json::from_value(parsed_json.into()).unwrap_or_else(|_e| {
+            logger(5, String::from("Published.json contains invalid Cynthia-instructions."));
+            Vec::new()
+        })
+    }
 }
 
 fn load_mode(mode_name: String) -> CynthiaModeObject {
@@ -360,7 +365,7 @@ As of now, Cynthia has only 4 commands:
         );
         process::exit(1);
     }
-    if !(Path::new("./.env").exists()) || !(Path::new("./cynthiaFiles").exists()) {
+    if !Path::new("./.env").exists() || !Path::new("./cynthiaFiles").exists() {
         logger(5, String::from("No CynthiaConfig found."));
         logger(
             10,
