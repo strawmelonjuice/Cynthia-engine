@@ -175,7 +175,10 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
         let file = "./cynthiaFiles/published.yaml".to_owned();
         let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
         serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
-            logger(5, String::from("Published.yaml contains invalid Cynthia-instructions."));
+            logger(
+                5,
+                String::from("Published.yaml contains invalid Cynthia-instructions."),
+            );
             Vec::new()
         })
     } else {
@@ -186,7 +189,10 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
             parse_to_serde_value(unparsed_json.as_str(), &Default::default())
                 .expect("Could not read published.jsonc.");
         serde_json::from_value(parsed_json.into()).unwrap_or_else(|_e| {
-            logger(5, String::from("Published.json contains invalid Cynthia-instructions."));
+            logger(
+                5,
+                String::from("Published.json contains invalid Cynthia-instructions."),
+            );
             Vec::new()
         })
     }
@@ -380,18 +386,21 @@ As of now, Cynthia has only 4 commands:
         );
         process::exit(1);
     }
+    logger(1, "🤔\tLoading configuration from:".to_string());
     logger(
         1,
-        "🤔\tLoading configuration from:".to_string(),
+        format!(
+            "`{}´",
+            Path::new("./.env")
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string()
+                .replace("\\\\?\\", "")
+                .bright_purple()
+                .italic()
+        ),
     );
-    logger(1, format!("`{}´", Path::new("./.env")
-        .canonicalize()
-        .unwrap()
-        .display()
-        .to_string()
-        .replace("\\\\?\\", "")
-        .bright_purple()
-        .italic()));
     dotenv().ok();
     let _ = fs::remove_dir_all("./.cynthiaTemp");
     match fs::create_dir_all("./.cynthiaTemp") {

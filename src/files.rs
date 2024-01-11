@@ -2,15 +2,15 @@ use crate::jsr::{jsruntime, BUNJSR, BUN_NPM_EX, NODEJSR, NODEJSR_EX};
 use crate::logger::logger;
 use crate::structs::CynthiaCacheIndexObject;
 use colored::Colorize;
+use dotenv::dotenv;
 use normalize_path::NormalizePath;
 use rand::Rng;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::fs;
-use dotenv::dotenv;
 
 fn cachefolder() -> PathBuf {
     let fl = PathBuf::from("./.cynthiaTemp/cache/")
@@ -36,7 +36,15 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
             if (now - f.timestamp) < max_age {
                 return Ok(f.cachepath);
             } else if Path::new(&f.cachepath).exists() {
-                logger(31, format!("Cache {}: `{}´ at `{}´, reason: Too old!","removed".red(), file.bright_magenta(), &f.cachepath.display().to_string().bright_yellow()));
+                logger(
+                    31,
+                    format!(
+                        "Cache {}: `{}´ at `{}´, reason: Too old!",
+                        "removed".red(),
+                        file.bright_magenta(),
+                        &f.cachepath.display().to_string().bright_yellow()
+                    ),
+                );
                 fs::remove_file(Path::new(&f.cachepath)).unwrap();
             };
         }
@@ -60,7 +68,15 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 
     let mut cachedfile = File::create(cachepath.clone()).unwrap();
     write!(cachedfile, "{}", contents).unwrap();
-    logger(31, format!("Cache {}: `{}´ at `{}´", "placed".green(), fileid.bright_magenta(), cachepath.display().to_string().bright_yellow()));
+    logger(
+        31,
+        format!(
+            "Cache {}: `{}´ at `{}´",
+            "placed".green(),
+            fileid.bright_magenta(),
+            cachepath.display().to_string().bright_yellow()
+        ),
+    );
     let new = CynthiaCacheIndexObject {
         fileid,
         cachepath,

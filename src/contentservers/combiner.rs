@@ -13,7 +13,7 @@ pub(crate) fn combine_content(
         "contentlocationerror" | "404error" | "contenttypeerror" => return content,
         &_ => {}
     }
-    let mut contents = content;
+    let mut contents = escape_known_problematic_chars(content);
     for plugin in plugins.clone() {
         match &plugin.runners.modify_body_html {
             Some(p) => {
@@ -159,7 +159,11 @@ pub(crate) fn combine_content(
                 )
                 .as_str(),
             );
-            let pageinfosidebarthing = if (p_met.kind == *"post") || p_met.pageinfooverride.unwrap_or(currentmode.pageinfooverride.unwrap_or(false)) {
+            let pageinfosidebarthing = if (p_met.kind == *"post")
+                || p_met
+                    .pageinfooverride
+                    .unwrap_or(currentmode.pageinfooverride.unwrap_or(false))
+            {
                 r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
 	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#
             } else {
@@ -213,4 +217,11 @@ pub(crate) fn combine_content(
     }
     // logger(3, String::from("Can't find that page."));
     contents
+}
+
+fn escape_known_problematic_chars(s: String) -> String {
+    s.replace('—', "&#8212;") // Em-dash
+        .replace('–', "&#8211;") // En-dash
+        .replace('€', "&#8364;") // Euro sign
+                                 // etc...
 }

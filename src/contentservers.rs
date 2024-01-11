@@ -1,12 +1,12 @@
-use std::fs;
 use actix_web::HttpResponse;
 use colored::Colorize;
 use curl::easy::Easy;
 use dotenv::dotenv;
 use markdown::{to_html_with_options, CompileOptions, Options};
+use std::fs;
 
-use crate::{logger::logger, structs::*};
 use crate::files::{cacheplacer, cacheretriever};
+use crate::{logger::logger, structs::*};
 
 use self::postlists::postlist_table_gen;
 
@@ -365,7 +365,7 @@ pub(crate) fn fetcher(uri: String) -> String {
                     return "contentlocationerror".to_owned();
                 }
             };
-           cacheplacer(uri, resp.to_owned())
-        },
+            cacheplacer(uri, resp.to_owned())
+        }
     };
 }
