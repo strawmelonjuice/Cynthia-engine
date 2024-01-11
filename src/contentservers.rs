@@ -176,7 +176,7 @@ pub(crate) fn p_content(pgid: String) -> String {
             return match post.content.markup_type.to_owned().to_lowercase().as_str() {
                 "html" | "webfile" => {
                     format!(
-                        "<div><pre>{}</pre></div>",
+                        "<div>{}</div>",
                         rawcontent
                             .replace('&', "&amp;")
                             .replace('<', "&lt;")
@@ -186,7 +186,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                     )
                 }
                 "text" | "raw" => {
-                    format!("<div>{rawcontent}</div>")
+                    format!("<div><pre>{rawcontent}</pre></div>")
                 }
                 "markdown" | "md" => {
                     format!(
