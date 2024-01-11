@@ -71,7 +71,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
     };
     cacheindex.push(new);
     if cachefolder().join("./index.json").exists() {
-        fs::remove_file(cachefolder().join("./index.json")).unwrap();
+        let _ = fs::remove_file(cachefolder().join("./index.json"));
     }
     let mut cacheindexfile = File::create(cachefolder().join("./index.json")).unwrap();
     let line = serde_json::to_string(&cacheindex).unwrap();
