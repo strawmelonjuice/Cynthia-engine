@@ -36,7 +36,7 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
             if (now - f.timestamp) < max_age {
                 return Ok(f.cachepath);
             } else if Path::new(&f.cachepath).exists() {
-                logger(31, format!("Cache {}: {} at {}, reason: Too old!","removed".red(), file, &f.cachepath.display()));
+                logger(31, format!("Cache {}: `{}´ at `{}´, reason: Too old!","removed".red(), file.bright_magenta(), &f.cachepath.display().to_string().bright_yellow()));
                 fs::remove_file(Path::new(&f.cachepath)).unwrap();
             };
         }
@@ -60,7 +60,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 
     let mut cachedfile = File::create(cachepath.clone()).unwrap();
     write!(cachedfile, "{}", contents).unwrap();
-    logger(31, format!("Cache {}: {} in {}", "placed".green(), fileid, cachepath.display()));
+    logger(31, format!("Cache {}: `{}´ at `{}´", "placed".green(), fileid.bright_magenta(), cachepath.display().to_string().bright_yellow()));
     let new = CynthiaCacheIndexObject {
         fileid,
         cachepath,
