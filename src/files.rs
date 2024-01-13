@@ -55,7 +55,7 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
 pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
     let mut cacheindex: Vec<CynthiaCacheIndexObject> =
         match fs::read_to_string(cachefolder().join("./index.json")) {
-            Ok(g) => serde_json::from_str(g.as_str()).unwrap(),
+            Ok(g) => serde_json::from_str(g.as_str()).unwrap_or([].to_vec()),
             Err(_) => [].to_vec(),
         };
     let cachepath = cachefolder()
