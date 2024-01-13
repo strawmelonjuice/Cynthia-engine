@@ -198,7 +198,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                                     allow_dangerous_html: true,
                                     ..CompileOptions::default()
                                 },
-                                ..Options::default()
+                                ..Options::gfm()
                             },
                         )
                         .unwrap()
