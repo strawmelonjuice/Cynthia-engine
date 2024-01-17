@@ -1,12 +1,13 @@
+use std::fs;
+
 use actix_web::HttpResponse;
 use colored::Colorize;
 use curl::easy::Easy;
 use dotenv::dotenv;
-use markdown::{to_html_with_options, CompileOptions, Options};
-use std::fs;
+use markdown::{CompileOptions, Options, to_html_with_options};
 
-use crate::files::{cacheplacer, cacheretriever};
 use crate::{logger::logger, structs::*};
+use crate::files::{cacheplacer, cacheretriever};
 
 use self::postlists::postlist_table_gen;
 
@@ -176,7 +177,7 @@ pub(crate) fn p_content(pgid: String) -> String {
             return match post.content.markup_type.to_owned().to_lowercase().as_str() {
                 "html" | "webfile" => {
                     format!(
-                        "<div>{}</div>",
+                        "<div id=\"pagecontent\">{}</div>",
                         rawcontent
                             .replace('&', "&amp;")
                             .replace('<', "&lt;")
@@ -190,12 +191,13 @@ pub(crate) fn p_content(pgid: String) -> String {
                 }
                 "markdown" | "md" | "" => {
                     format!(
-                        "<div>{}</div>",
+                        "<div id=\"pagecontent\">{}</div>",
                         to_html_with_options(
                             &rawcontent,
                             &Options {
                                 compile: CompileOptions {
                                     allow_dangerous_html: true,
+                                    allow_dangerous_protocol: true,
                                     ..CompileOptions::default()
                                 },
                                 ..Options::gfm()
@@ -216,42 +218,55 @@ pub(crate) fn p_server(
     probableurl: String,
     plugins: Vec<PluginMeta>,
 ) -> HttpResponse {
-    let cynres = combiner::combine_content(
-        pgid.to_string(),
-        p_content(pgid.to_string()),
-        generate_menus(pgid.to_string(), &probableurl),
-        plugins.clone(),
-    );
-    if cynres == *"404error" {
-        logger(
-            404,
-            format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-        );
-        return HttpResponse::NotFound().into();
-    }
-    if cynres == *"unknownexeception" {
-        logger(
-            5,
-            format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-        );
-        return HttpResponse::ExpectationFailed().into();
-    }
-    if cynres == *"contentlocationerror" {
-        logger(
-            5,
-            format!(
-                "--> {0} ({1}) : Post location error",
-                pgid,
-                probableurl.blue().underline()
-            ),
-        );
-        return HttpResponse::ExpectationFailed().into();
-    }
-    logger(
-        200,
-        format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-    );
-    HttpResponse::Ok().body(cynres)
+    let servecache: u64 = match std::env::var("SERVED_CACHE_LIFETIME") {
+        Ok(g) => g.parse::<u64>().unwrap(),
+        Err(_) => 90,
+    };
+        match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
+            Ok(d) if servecache != 0 => HttpResponse::Ok().body(fs::read_to_string(d).unwrap_or(String::from("Cache error. Please try again later."))),
+            _ => {
+                let cynres = combiner::combine_content(
+                    pgid.to_string(),
+                    p_content(pgid.to_string()),
+                    generate_menus(pgid.to_string(), &probableurl),
+                    plugins.clone(),
+                );
+                if cynres == *"404error" {
+                    logger(
+                        404,
+                        format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+                    );
+                    return HttpResponse::NotFound().into();
+                }
+                if cynres == *"unknownexeception" {
+                    logger(
+                        5,
+                        format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+                    );
+                    return HttpResponse::ExpectationFailed().into();
+                }
+                if cynres == *"contentlocationerror" {
+                    logger(
+                        5,
+                        format!(
+                            "--> {0} ({1}) : Post location error",
+                            pgid,
+                            probableurl.blue().underline()
+                        ),
+                    );
+                    return HttpResponse::ExpectationFailed().into();
+                }
+                logger(
+                    200,
+                    format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+                );
+                if servecache != 0 {
+                    HttpResponse::Ok().body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
+                } else {
+                    HttpResponse::Ok().body(cynres)
+                }
+            }
+        }
 }
 
 pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {

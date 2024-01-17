@@ -1,5 +1,7 @@
-use std::io::ErrorKind;
+use std::io::{Error, ErrorKind};
 use std::{fs, path::Path, process, sync::Mutex};
+use std::io::ErrorKind::NotFound;
+use actix_files::NamedFile;
 
 use actix_web::{
     get,
@@ -106,11 +108,10 @@ fn find_mimetype(filename_: &str) -> Mime {
     res
 }
 
-#[get("/e/{id:.*}")]
-async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+// #[get("/e/{id:.*}")]
+async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> Result<NamedFile, Error> {
+    use actix_files::NamedFile;
     let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
-    let mut body = String::new();
-    let mut mime = find_mimetype(&String::from("hello.html"));
     for plugin in plugins {
         match &plugin.runners.hostedfolders {
             Some(p) => {
@@ -124,22 +125,15 @@ async fn serves_e(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>
                         let fid = id.replace(&**l, "");
                         let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
                         let file = Path::new(&fileb);
-                        mime = find_mimetype(&format!("{:?}", file.file_name().unwrap()));
-                        body = if mime == mime::TEXT_JAVASCRIPT {
-                            import_js_minified(file.to_str().unwrap().to_string())
-                        } else {
-                            fs::read_to_string(file).unwrap_or(String::from("Couldn't serve file."))
-                        };
+                        logger(10, format!("Serving {}", file.canonicalize().unwrap().display()));
+                            return NamedFile::open(file);
                     };
                 }
             }
             None => {}
         }
     }
-
-    return HttpResponse::Ok()
-        .append_header(ContentType(mime))
-        .body(body);
+    Err(Error::from(ErrorKind::NotFound))
 }
 
 #[get("/es/{en}/{id:.*}")]
@@ -550,7 +544,7 @@ As of now, Cynthia has only 4 commands:
             .service(serves_c)
             .service(serves_t)
             .service(serves_s)
-            .service(serves_e)
+            .route("/e/{id:.*}", web::get().to(serves_e))
             .service(serves_es)
             .route("/", web::get().to(root))
             .app_data(web::Data::clone(&data))
