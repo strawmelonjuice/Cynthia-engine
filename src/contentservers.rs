@@ -4,10 +4,10 @@ use actix_web::HttpResponse;
 use colored::Colorize;
 use curl::easy::Easy;
 use dotenv::dotenv;
-use markdown::{CompileOptions, Options, to_html_with_options};
+use markdown::{to_html_with_options, CompileOptions, Options};
 
-use crate::{logger::logger, structs::*};
 use crate::files::{cacheplacer, cacheretriever};
+use crate::{logger::logger, structs::*};
 
 use self::postlists::postlist_table_gen;
 
@@ -205,7 +205,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                         )
                         .unwrap()
                     )
-                },
+                }
                 &_ => "contenttypeerror".to_owned(),
             };
         }
@@ -222,51 +222,53 @@ pub(crate) fn p_server(
         Ok(g) => g.parse::<u64>().unwrap(),
         Err(_) => 90,
     };
-        match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
-            Ok(d) if servecache != 0 => HttpResponse::Ok().body(fs::read_to_string(d).unwrap_or(String::from("Cache error. Please try again later."))),
-            _ => {
-                let cynres = combiner::combine_content(
-                    pgid.to_string(),
-                    p_content(pgid.to_string()),
-                    generate_menus(pgid.to_string(), &probableurl),
-                    plugins.clone(),
-                );
-                if cynres == *"404error" {
-                    logger(
-                        404,
-                        format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-                    );
-                    return HttpResponse::NotFound().into();
-                }
-                if cynres == *"unknownexeception" {
-                    logger(
-                        5,
-                        format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-                    );
-                    return HttpResponse::ExpectationFailed().into();
-                }
-                if cynres == *"contentlocationerror" {
-                    logger(
-                        5,
-                        format!(
-                            "--> {0} ({1}) : Post location error",
-                            pgid,
-                            probableurl.blue().underline()
-                        ),
-                    );
-                    return HttpResponse::ExpectationFailed().into();
-                }
+    match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
+        Ok(d) if servecache != 0 => HttpResponse::Ok().body(
+            fs::read_to_string(d).unwrap_or(String::from("Cache error. Please try again later.")),
+        ),
+        _ => {
+            let cynres = combiner::combine_content(
+                pgid.to_string(),
+                p_content(pgid.to_string()),
+                generate_menus(pgid.to_string(), &probableurl),
+                plugins.clone(),
+            );
+            if cynres == *"404error" {
                 logger(
-                    200,
+                    404,
                     format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
                 );
-                if servecache != 0 {
-                    HttpResponse::Ok().body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
-                } else {
-                    HttpResponse::Ok().body(cynres)
-                }
+                return HttpResponse::NotFound().into();
+            }
+            if cynres == *"unknownexeception" {
+                logger(
+                    5,
+                    format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+                );
+                return HttpResponse::ExpectationFailed().into();
+            }
+            if cynres == *"contentlocationerror" {
+                logger(
+                    5,
+                    format!(
+                        "--> {0} ({1}) : Post location error",
+                        pgid,
+                        probableurl.blue().underline()
+                    ),
+                );
+                return HttpResponse::ExpectationFailed().into();
+            }
+            logger(
+                200,
+                format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
+            );
+            if servecache != 0 {
+                HttpResponse::Ok().body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
+            } else {
+                HttpResponse::Ok().body(cynres)
             }
         }
+    }
 }
 
 pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
