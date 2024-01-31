@@ -5,12 +5,12 @@ use crate::logger::logger;
 #[cfg(windows)]
 pub const NODEJSR: &str = "node.exe";
 #[cfg(not(windows))]
-pub const NODEJSR: &'static str = "node";
+pub const NODEJSR: &str = "node";
 //     Bun:
 #[cfg(windows)]
 pub const BUNJSR: &str = "bash.exe bun";
 #[cfg(not(windows))]
-pub const BUNJSR: &'static str = "bun";
+pub const BUNJSR: &str = "bun";
 
 // Javascript package managers:
 //     NPM:
@@ -24,15 +24,15 @@ pub const BUN_NPM: &str = "bash.exe bun";
 #[cfg(windows)]
 pub const BUN_NPM_EX: &str = "bash.exe bunx";
 #[cfg(not(windows))]
-pub const BUN_NPM: &'static str = "bun";
+pub const BUN_NPM: &str = "bun";
 #[cfg(not(windows))]
-pub const BUN_NPM_EX: &'static str = "bunx";
+pub const BUN_NPM_EX: &str = "bunx";
 
 //     NodeJS:
 #[cfg(windows)]
 pub const NODEJSR_EX: &str = "npx.cmd";
 #[cfg(not(windows))]
-pub const NODEJSR_EX: &'static str = "npx";
+pub const NODEJSR_EX: &str = "npx";
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     if args[0] == "returndirect" {
         logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
