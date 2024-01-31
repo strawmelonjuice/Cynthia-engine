@@ -8,7 +8,7 @@ pub const NODEJSR: &str = "node.exe";
 pub const NODEJSR: &str = "node";
 //     Bun:
 #[cfg(windows)]
-pub const BUNJSR: &str = "bash.exe bun";
+pub const BUNJSR: &str = "bun.exe";
 #[cfg(not(windows))]
 pub const BUNJSR: &str = "bun";
 
@@ -20,9 +20,9 @@ pub const NODE_NPM: &str = "npm.cmd";
 pub const NODE_NPM: &str = "npm";
 //     Bun:
 #[cfg(windows)]
-pub const BUN_NPM: &str = "bash.exe bun";
+pub const BUN_NPM: &str = "bun.exe";
 #[cfg(windows)]
-pub const BUN_NPM_EX: &str = "bash.exe bunx";
+pub const BUN_NPM_EX: &str = "bunx.exe";
 #[cfg(not(windows))]
 pub const BUN_NPM: &str = "bun";
 #[cfg(not(windows))]
