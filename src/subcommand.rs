@@ -1,3 +1,4 @@
+use crate::structs::CynthiaPluginManifestItem;
 use crate::{
     jsr::{BUN_NPM, BUN_NPM_EX, NODE_NPM},
     logger,
@@ -6,20 +7,21 @@ use crate::{
 use colored::Colorize;
 use curl::easy::Easy;
 use flate2::read::GzDecoder;
-use rand::Rng;
+use std::io::{Error, ErrorKind, Write};
 use std::{
     fs,
     io::Read,
     path::Path,
     process::{self, Command},
 };
+use random_string::generate_rng;
 use tar::Archive;
 use urlencoding::encode;
 
 pub(crate) fn init() {
     let tempdir = Path::new("./.cynthiatemp/").join(format!(
         "{}_cyninittemp",
-        rand::thread_rng().gen_range(10000000..999999999)
+        generate_rng(3..7, random_string::charsets::ALPHANUMERIC)
     ));
     let mut tarfiledownload = Vec::new();
     let mut c: Easy = Easy::new();
@@ -160,7 +162,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     logger(1, String::from("Creating temporary directories..."));
     let tempdir = Path::new("./.cynthiatemp/").join(format!(
         "{}_cyninsttemp",
-        rand::thread_rng().gen_range(10000000..999999999)
+        generate_rng(3..7, random_string::charsets::ALPHANUMERIC)
     ));
     let mut indexdownload = Vec::new();
     let mut c: Easy = Easy::new();
@@ -198,9 +200,6 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         }
     }
     let indexcontent = &indexdownload;
-    // Originally, I wanted to avoid downloading this, but Cargo doesn't do a great job at packaging extra files with it.
-    // > let tarfilecontent = include_bytes!("../clean-cyn.tar.gz");
-    // println!("lots of bytes: {:#?}", tarfilecontent);
     fs::create_dir_all(tempdir.clone()).unwrap();
     let ctempdir = fs::canonicalize(tempdir.clone()).unwrap();
     let mut f = fs::File::create(ctempdir.join("./plugin_index.json")).unwrap();
@@ -229,8 +228,8 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     for cynplug in &cynplind {
         if cynplug.id == wantedplugin {
             logger(1, String::from("Found!").green().to_string());
-
             wantedpkg = cynplug;
+            addtocynplmn(&wantedplugin, &wantedpluginv);
             break;
         }
         // println!("{:#?}", cynplug);
@@ -384,7 +383,58 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         format!("{} Installed to {}", "Done!".bright_green(), pdp.display()),
     );
 }
+fn getcynplmn() -> Result<Vec<CynthiaPluginManifestItem>, Error> {
+    let pluginmanjson = Path::new("./cynthiapluginmanifest.json");
+    return if pluginmanjson.exists() {
+        logger(
+            1,
+            format!(
+                "Installing plugins specified in '{0}' now...",
+                pluginmanjson.display().to_string().blue()
+            ),
+        );
+        let mut o = fs::File::open(format!("{}", &pluginmanjson.display()).as_str())?;
+        let mut contents = String::new();
+        o.read_to_string(&mut contents)?;
+        let unparsed: &str = contents.as_str();
+        let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
+            serde_json::from_str(unparsed)?;
+        Ok(cynplmn)
+    } else {
+        logger(
+            5,
+            format!(
+                "No Cynthia plugin manifest file found at '{0}'!",
+                pluginmanjson.display().to_string().blue()
+            ),
+        );
+        Err(Error::from(ErrorKind::Other))
+    }
+}
 
+fn addtocynplmn(s_wantedplugin: &String, s_wantedpluginv: &String) {
+    let wantedplugin: String = s_wantedplugin.to_string();
+    let wantedpluginv: String = s_wantedpluginv.to_string();
+
+    let mut cynplmn = getcynplmn().unwrap();
+    let mut found = false;
+    for cynplug in &mut cynplmn {
+        if cynplug.id == wantedplugin {
+            cynplug.version = wantedpluginv.to_string();
+            found = true;
+            break;
+        }
+    }
+    if!found {
+        cynplmn.push(CynthiaPluginManifestItem {
+            id: wantedplugin.to_string(),
+            version: wantedpluginv.to_string(),
+        });
+    }
+    let mut o = fs::File::create("./cynthiapluginmanifest.json").unwrap();
+    let contents = serde_json::to_string(&cynplmn).unwrap();
+    o.write_all(contents.as_bytes()).unwrap();
+}
 fn choice(m: String, d: bool) -> bool {
     let mut result = d;
     let mut input = String::new();
@@ -416,45 +466,29 @@ fn choice(m: String, d: bool) -> bool {
 }
 
 pub(crate) fn install_from_plugin_manifest() {
-    let pluginmanjson = Path::new("./cynthiapluginmanifest.json");
-    if pluginmanjson.exists() {
-        logger(
-            1,
-            format!(
-                "Installing plugins specified in '{0}' now...",
-                pluginmanjson.display().to_string().blue()
-            ),
-        );
-        let mut o = fs::File::open(format!("{}", &pluginmanjson.display()).as_str())
-            .expect("Could not read Cynthia plugin manifest file.");
-        let mut contents = String::new();
-        o.read_to_string(&mut contents)
-            .expect("Could not read Cynthia plugin manifest file.");
-        let unparsed: &str = contents.as_str();
-        let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
-            serde_json::from_str(unparsed)
-                .expect("Could not read from Cynthia plugin manifest file.");
-        let totalplugins: &usize = &cynplmn.len();
-        let mut currentplugin: i32 = 1;
-        for plugin in cynplmn {
-            logger(
-                10,
-                format!(
-                    "Installing plugin {0}/{1}: {2}",
-                    currentplugin, totalplugins, plugin.id
-                ),
-            );
-            plugin_install(plugin.id, plugin.version);
-            currentplugin += 1;
+    match getcynplmn() {
+        Ok(cynplmn) => {
+            let totalplugins: &usize = &cynplmn.len();
+            let mut currentplugin: i32 = 1;
+            for plugin in cynplmn {
+                logger(
+                    10,
+                    format!(
+                        "Installing plugin {0}/{1}: {2}",
+                        currentplugin, totalplugins, plugin.id
+                    ),
+                );
+                plugin_install(plugin.id, plugin.version);
+                currentplugin += 1;
+            }
         }
-    } else {
-        logger(
-            5,
-            format!(
-                "No '{0}' file found...",
-                pluginmanjson.display().to_string().blue()
-            ),
-        );
+        Err(_) => {
+            logger(
+                5,
+                String::from("Could not read Cynthia plugin manifest file!"),
+            );
+            process::exit(1);
+        }
     }
     process::exit(0);
 }

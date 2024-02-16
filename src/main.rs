@@ -13,6 +13,7 @@ use dotenv::dotenv;
 use jsonc_parser::parse_to_serde_value;
 use mime::Mime;
 
+use crate::dashfunctions::dashserver;
 use crate::files::import_js_minified;
 use structs::*;
 
@@ -24,6 +25,7 @@ mod subcommand;
 mod logger;
 
 mod contentservers;
+mod dashfunctions;
 mod files;
 mod jsr;
 
@@ -477,12 +479,14 @@ As of now, Cynthia has only 4 commands:
         }
     }
     let mut pluginlist: Vec<PluginMeta> = [].to_vec();
+    let mut cynthiadashactive: bool = false;
     if Path::new("./plugins").exists() {
         for entry in fs::read_dir("./plugins").unwrap() {
             if entry.is_ok() {
                 let name = entry.unwrap().file_name().to_string_lossy().into_owned();
                 let p = format!("./plugins/{}/cynthiaplugin.json", name);
                 let pluginmetafile = Path::new(&p);
+                if name != ".gitignore" {
                 match fs::read_to_string(pluginmetafile) {
                     Ok(e) => {
                         let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
@@ -504,10 +508,17 @@ As of now, Cynthia has only 4 commands:
                             match &f.runners.plugin_children {
                                 Some(p) => {
                                     let cmdjson: String = p.execute.clone();
-                                    let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str())
-                                        .unwrap_or(
-                                            ["returndirect".to_string().to_string()].to_vec(),
+                                    let mut cmds: Vec<String> = serde_json::from_str(
+                                        cmdjson.as_str(),
+                                    )
+                                    .unwrap_or(["returndirect".to_string().to_string()].to_vec());
+                                    if f.name == "cynthia-dash" {
+                                        cmds.push(
+                                            dashfunctions::passkey()
+                                                .unwrap_or(String::from("")),
                                         );
+                                        cynthiadashactive = true;
+                                    }
                                     let mut cmd: Vec<&str> = vec![];
                                     for com in &cmds {
                                         cmd.push(com.as_str());
@@ -559,7 +570,7 @@ As of now, Cynthia has only 4 commands:
                             name
                         ),
                     ),
-                };
+                }};
             }
         }
     }
@@ -577,24 +588,50 @@ As of now, Cynthia has only 4 commands:
             .italic()
         ),
     );
-    HttpServer::new(move || {
-        App::new()
-            .service(
-                actix_files::Files::new("/assets", "./cynthiaFiles/assets").show_files_listing(),
-            )
-            .service(serves_p)
-            .service(serves_c)
-            .service(serves_t)
-            .service(serves_s)
-            .route("/e/{id:.*}", web::get().to(serves_e))
-            .service(serves_ej)
-            .service(serves_es)
-            .route("/", web::get().to(root))
-            .app_data(web::Data::clone(&data))
-    })
-    .bind(("127.0.0.1", portnum))?
-    .run()
-    .await
+    if cynthiadashactive {
+        logger(15, String::from("Cynthia dashboard plugin found! The Cynthia Dashboard has additional permissions, so uninstall it if left unused, also check the source  of this plugin."));
+
+        HttpServer::new(move || {
+            App::new()
+                .service(
+                    actix_files::Files::new("/assets", "./cynthiaFiles/assets")
+                        .show_files_listing(),
+                )
+                .service(serves_p)
+                .service(serves_c)
+                .service(serves_t)
+                .service(serves_s)
+                .route("/e/{id:.*}", web::get().to(serves_e))
+                .service(serves_ej)
+                .service(serves_es)
+                .route("/", web::get().to(root))
+                .app_data(web::Data::clone(&data))
+                .service(dashserver)
+        })
+        .bind(("127.0.0.1", portnum))?
+        .run()
+        .await
+    } else {
+        HttpServer::new(move || {
+            App::new()
+                .service(
+                    actix_files::Files::new("/assets", "./cynthiaFiles/assets")
+                        .show_files_listing(),
+                )
+                .service(serves_p)
+                .service(serves_c)
+                .service(serves_t)
+                .service(serves_s)
+                .route("/e/{id:.*}", web::get().to(serves_e))
+                .service(serves_ej)
+                .service(serves_es)
+                .route("/", web::get().to(root))
+                .app_data(web::Data::clone(&data))
+        })
+        .bind(("127.0.0.1", portnum))?
+        .run()
+        .await
+    }
 }
 
 fn escape_json(src: &str) -> String {

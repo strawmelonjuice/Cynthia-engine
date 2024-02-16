@@ -8,7 +8,7 @@ pub const NODEJSR: &str = "node.exe";
 pub const NODEJSR: &str = "node";
 //     Bun:
 #[cfg(windows)]
-pub const BUNJSR: &str = "bun.exe";
+pub const BUNJSR: &str = "bun.exe-disabled";
 #[cfg(not(windows))]
 pub const BUNJSR: &str = "bun";
 
@@ -20,13 +20,13 @@ pub const NODE_NPM: &str = "npm.cmd";
 pub const NODE_NPM: &str = "npm";
 //     Bun:
 #[cfg(windows)]
-pub const BUN_NPM: &str = "bun.exe";
+pub const BUN_NPM: &str = "bun.exe-disabled";
 #[cfg(windows)]
-pub const BUN_NPM_EX: &str = "bunx.exe";
+pub const BUN_NPM_EX: &str = "bunx.exe-disabled";
 #[cfg(not(windows))]
 pub const BUN_NPM: &str = "bun";
 #[cfg(not(windows))]
-pub const BUN_NPM_EX: &str = "bunx";
+pub const BUN_NPM_EX: &str = "bunx-disabled";
 
 //     NodeJS:
 #[cfg(windows)]
