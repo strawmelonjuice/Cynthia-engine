@@ -1,5 +1,7 @@
 use crate::logger::logger;
 
+// Bun on windows is enabled by default. This is because choosing to have Bun on windows, means choosing for an experimental feature.
+
 // Javascript runtimes:
 //     NodeJS:
 #[cfg(windows)]
@@ -8,7 +10,7 @@ pub const NODEJSR: &str = "node.exe";
 pub const NODEJSR: &str = "node";
 //     Bun:
 #[cfg(windows)]
-pub const BUNJSR: &str = "bun.exe-disabled";
+pub const BUNJSR: &str = "bun.exe";
 #[cfg(not(windows))]
 pub const BUNJSR: &str = "bun";
 
@@ -20,13 +22,13 @@ pub const NODE_NPM: &str = "npm.cmd";
 pub const NODE_NPM: &str = "npm";
 //     Bun:
 #[cfg(windows)]
-pub const BUN_NPM: &str = "bun.exe-disabled";
+pub const BUN_NPM: &str = "bun.exe";
 #[cfg(windows)]
-pub const BUN_NPM_EX: &str = "bunx.exe-disabled";
+pub const BUN_NPM_EX: &str = "bunx.exe";
 #[cfg(not(windows))]
 pub const BUN_NPM: &str = "bun";
 #[cfg(not(windows))]
-pub const BUN_NPM_EX: &str = "bunx-disabled";
+pub const BUN_NPM_EX: &str = "bunx";
 
 //     NodeJS:
 #[cfg(windows)]
