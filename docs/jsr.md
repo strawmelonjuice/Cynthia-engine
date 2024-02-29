@@ -6,7 +6,7 @@ _Cynthia doesn't need one, but most of its plugins do!_
 
 #### Runtimes
 
-Cynthia supports **_Node.js_ and _Bun_ everywhere**. If you have Bun working on Windows through WSL, it'll try that but most likely fail (and fall back on Node.js).
+Cynthia supports **_Node.js_ and _Bun_ (natively) everywhere** (please be advised Bun on Windows is experimental).
 
 - Any available Bun instance is prefered over Node.js by Cynthia, this because Cynthia assumes Bun will start faster.
     - Cynthia (plv2) plugins are rapidly iterated over, giving each a chance to modify or enhance outputs. This makes starting times **very** important, as a single action might mean 30 scripts being run and returned from. This said, in testing, no serious issues have been seen, yet.
@@ -21,7 +21,7 @@ Cynthia will have a preference when it finds multiple supported components insta
 
 | **_Runtime_** | **_Package manager_** |
 |---------------|-----------------------|
-| Bun           | _PNPM_                |
+| Bun           | _PNPM_\*              |
 | Node.JS       | Bun                   |
 |               | NPM                   |
 

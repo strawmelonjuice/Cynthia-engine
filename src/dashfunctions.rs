@@ -1,15 +1,15 @@
-use normalize_path::NormalizePath;
-use random_string::generate_rng;
-use std::fs;
-use std::fs::File;
-use std::io::{ Error, Write };
-use std::path::PathBuf;
-use std::sync::Mutex;
-use actix_web::{ post, HttpResponse, web };
-use actix_web::web::Data;
-use serde::Deserialize;
 use crate::logger::logger;
 use crate::structs::PluginMeta;
+use actix_web::web::Data;
+use actix_web::{post, web, HttpResponse};
+use normalize_path::NormalizePath;
+use random_string::generate_rng;
+use serde::Deserialize;
+use std::fs;
+use std::fs::File;
+use std::io::{Error, Write};
+use std::path::PathBuf;
+use std::sync::Mutex;
 
 #[derive(Deserialize)]
 struct DashAPIData {
@@ -18,35 +18,74 @@ struct DashAPIData {
     subcommand: String,
     params: String,
 }
+
+#[derive(Deserialize)]
+struct PluginDashInstallParams {
+    plugin_name: String,
+    plugin_version: String,
+}
+// #[derive(Deserialize)]
+// struct PluginDashRemoveParams {
+//     plugin_name: String
+// }
+
 #[post("/dashapi/")]
 pub(crate) async fn dashserver(
     data: web::Form<DashAPIData>,
-    _pluginsmex: Data<Mutex<Vec<PluginMeta>>>
+    _pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
 ) -> HttpResponse {
     if data.passkey != passkey().unwrap_or(String::from("")) {
         logger(
             15,
             String::from(
-                "An unauthorized external entity just tried performing an action on this instance."
-            )
+                "An unauthorized external entity just tried performing an action on this instance.",
+            ),
         );
-        return HttpResponse::Forbidden().body(
-            String::from("Wrong passkey entered. A report has been sent to the server owner.")
-        );
+        return HttpResponse::Forbidden().body(String::from(
+            "<h1>NO ACCESS!</h1>Wrong passkey entered. A report has been sent to the server logs.",
+        ));
     }
 
     match data.command.as_str() {
         "log" => {
             logger(
                 data.subcommand.parse().unwrap_or(1),
-                format!("{{CynthiaDash}} {}", data.params.clone())
+                format!("{{CynthiaDash}} {}", data.params.clone()),
             );
         }
+        "plugin" => match data.subcommand.as_str() {
+            // "remove" => match serde_json::from_str(&data.params) {
+            //     Ok(s) => {
+            //         let plugindata: PluginDashRemoveParams = s;
+            //         crate::subcommand::plugin_remove(
+            //             plugindata.plugin_name
+            //         );
+            //     },
+            //     Err(_e) => {
+            //         return HttpResponse::BadRequest().body(String::from("Invalid plugin."));
+            //     }
+            // }
+            "install" => match serde_json::from_str(&data.params) {
+                Ok(s) => {
+                    let plugindata: PluginDashInstallParams = s;
+                    crate::subcommand::plugin_install(
+                        plugindata.plugin_name,
+                        plugindata.plugin_version,
+                    );
+                },
+
+                Err(_e) => {
+                    return HttpResponse::BadRequest().body(String::from("Invalid plugin."));
+                }
+            },
+            _ => {
+                return HttpResponse::BadRequest().body(String::from("Invalid command."));
+            }
+        },
         _ => {
             return HttpResponse::BadRequest().body(String::from("Invalid command."));
         }
     }
-
     HttpResponse::Ok().body(String::from("OK!"))
 }
 

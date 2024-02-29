@@ -4,13 +4,13 @@ use crate::structs::CynthiaCacheIndexObject;
 use colored::Colorize;
 use dotenv::dotenv;
 use normalize_path::NormalizePath;
+use random_string::generate_rng;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use random_string::generate_rng;
 
 fn cachefolder() -> PathBuf {
     let fl = PathBuf::from("./.cynthiaTemp/cache/")
@@ -59,9 +59,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
             Err(_) => [].to_vec(),
         };
     let cachepath = cachefolder()
-        .join(
-            generate_rng(3..7, random_string::charsets::ALPHANUMERIC),
-        )
+        .join(generate_rng(3..7, random_string::charsets::ALPHANUMERIC))
         .normalize();
 
     let mut cachedfile = File::create(cachepath.clone()).unwrap();

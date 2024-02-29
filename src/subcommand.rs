@@ -7,6 +7,7 @@ use crate::{
 use colored::Colorize;
 use curl::easy::Easy;
 use flate2::read::GzDecoder;
+use random_string::generate_rng;
 use std::io::{Error, ErrorKind, Write};
 use std::{
     fs,
@@ -14,7 +15,6 @@ use std::{
     path::Path,
     process::{self, Command},
 };
-use random_string::generate_rng;
 use tar::Archive;
 use urlencoding::encode;
 
@@ -409,7 +409,7 @@ fn getcynplmn() -> Result<Vec<CynthiaPluginManifestItem>, Error> {
             ),
         );
         Err(Error::from(ErrorKind::Other))
-    }
+    };
 }
 
 fn addtocynplmn(s_wantedplugin: &String, s_wantedpluginv: &String) {
@@ -425,7 +425,7 @@ fn addtocynplmn(s_wantedplugin: &String, s_wantedpluginv: &String) {
             break;
         }
     }
-    if!found {
+    if !found {
         cynplmn.push(CynthiaPluginManifestItem {
             id: wantedplugin.to_string(),
             version: wantedpluginv.to_string(),

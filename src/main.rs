@@ -487,11 +487,11 @@ As of now, Cynthia has only 4 commands:
                 let p = format!("./plugins/{}/cynthiaplugin.json", name);
                 let pluginmetafile = Path::new(&p);
                 if name != ".gitignore" {
-                match fs::read_to_string(pluginmetafile) {
-                    Ok(e) => {
-                        let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
-                        if f.cyntia_plugin_compat != CYNTHIAPLUGINCOMPAT {
-                            logger(
+                    match fs::read_to_string(pluginmetafile) {
+                        Ok(e) => {
+                            let mut f: PluginMeta = serde_json::from_str(&e).unwrap();
+                            if f.cyntia_plugin_compat != CYNTHIAPLUGINCOMPAT {
+                                logger(
                                 5,
                                 format!(
                                     "Plugin '{}' (for CynthiaPluginLoader v{}) isn't compatible with current Cynthia version (PL v{})!",
@@ -499,78 +499,82 @@ As of now, Cynthia has only 4 commands:
                                     f.cyntia_plugin_compat.yellow(),
                                     CYNTHIAPLUGINCOMPAT.bright_yellow()
                                 ))
-                        } else {
-                            logger(
-                                1,
-                                format!("🧩\tPlugin '{}' loaded!", name.italic().bright_green()),
-                            );
-                            f.name = name;
-                            match &f.runners.plugin_children {
-                                Some(p) => {
-                                    let cmdjson: String = p.execute.clone();
-                                    let mut cmds: Vec<String> = serde_json::from_str(
-                                        cmdjson.as_str(),
-                                    )
-                                    .unwrap_or(["returndirect".to_string().to_string()].to_vec());
-                                    if f.name == "cynthia-dash" {
-                                        cmds.push(
-                                            dashfunctions::passkey()
-                                                .unwrap_or(String::from("")),
-                                        );
-                                        cynthiadashactive = true;
-                                    }
-                                    let mut cmd: Vec<&str> = vec![];
-                                    for com in &cmds {
-                                        cmd.push(com.as_str());
-                                    }
-                                    if p.type_field == *"js" {
-                                        logger(
-                                            1,
-                                            format!(
-                                                "🏃\tRunning child script for plugin '{}'",
-                                                f.name.italic().bright_green()
-                                            ),
-                                        );
-                                        {
-                                            if cmd[0] == "returndirect" {
-                                                logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
-                                            }
-                                            match process::Command::new(jsr::jsruntime(false))
-                                                .args(cmd.clone())
-                                                .current_dir(
-                                                    format!("./plugins/{}/", f.name).as_str(),
-                                                )
-                                                .spawn()
+                            } else {
+                                logger(
+                                    1,
+                                    format!(
+                                        "🧩\tPlugin '{}' loaded!",
+                                        name.italic().bright_green()
+                                    ),
+                                );
+                                f.name = name;
+                                match &f.runners.plugin_children {
+                                    Some(p) => {
+                                        let cmdjson: String = p.execute.clone();
+                                        let mut cmds: Vec<String> =
+                                            serde_json::from_str(cmdjson.as_str()).unwrap_or(
+                                                ["returndirect".to_string().to_string()].to_vec(),
+                                            );
+                                        if f.name == "cynthia-dash" {
+                                            cmds.push(
+                                                dashfunctions::passkey()
+                                                    .unwrap_or(String::from("")),
+                                            );
+                                            cynthiadashactive = true;
+                                        }
+                                        let mut cmd: Vec<&str> = vec![];
+                                        for com in &cmds {
+                                            cmd.push(com.as_str());
+                                        }
+                                        if p.type_field == *"js" {
+                                            logger(
+                                                1,
+                                                format!(
+                                                    "🏃\tRunning child script for plugin '{}'",
+                                                    f.name.italic().bright_green()
+                                                ),
+                                            );
                                             {
-                                                Ok(_) => {}
-                                                Err(_erro) => {
-                                                    logger(
+                                                if cmd[0] == "returndirect" {
+                                                    logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
+                                                }
+                                                match process::Command::new(jsr::jsruntime(false))
+                                                    .args(cmd.clone())
+                                                    .current_dir(
+                                                        format!("./plugins/{}/", f.name).as_str(),
+                                                    )
+                                                    .spawn()
+                                                {
+                                                    Ok(_) => {}
+                                                    Err(_erro) => {
+                                                        logger(
                                                         5,
                                                         String::from(
                                                             "Couldn't launch Javascript runtime.",
                                                         ),
                                                     );
-                                                }
-                                            };
+                                                    }
+                                                };
+                                            }
+                                        } else if p.type_field == *"bin" {
+                                        } else {
+                                            logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", f.name, p.type_field))
                                         }
-                                    } else if p.type_field == *"bin" {
-                                    } else {
-                                        logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", f.name, p.type_field))
                                     }
+                                    None => {}
                                 }
-                                None => {}
+                                pluginlist.push(f);
                             }
-                            pluginlist.push(f);
                         }
-                    }
-                    Err(_) => logger(
-                        15,
-                        format!(
-                            "Plugin `{}´ doesn't have a CynthiaPlugin.json manifest!",
-                            name
+                        Err(_) => logger(
+                            15,
+                            format!(
+                                "Plugin `{}´ doesn't have a CynthiaPlugin.json manifest!",
+                                name
+                            ),
                         ),
-                    ),
-                }};
+                    }
+                };
             }
         }
     }
