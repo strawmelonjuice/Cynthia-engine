@@ -1,12 +1,16 @@
 use serde::{Deserialize, Serialize};
 
+// Serde allows using the output of a function to replace incoherent data. This is why there are
+// some private functions in this file, that just create empty objects or structs.
+
+// Cache index, used in cache-indexes saved on disk as JSON.
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub(crate) struct CynthiaCacheIndexObject {
     pub(crate) fileid: String,
     pub(crate) cachepath: std::path::PathBuf,
     pub(crate) timestamp: u64,
 }
-
+// Plugin information as stored in the Cynthia Plugin Repo
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaPluginRepoItem {
     pub(crate) id: String,
@@ -14,19 +18,23 @@ pub(crate) struct CynthiaPluginRepoItem {
     pub(crate) referrer: String,
 }
 
+// Plugin information on plugins Cynthia should install from the cynthiapluginmanifest file.
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaPluginManifestItem {
     pub(crate) id: String,
     pub(crate) version: String,
 }
 
+// Reserved for usage by F-type servers to keep track of URL data.
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaUrlDataF {
     pub fullurl: String,
 }
 
+// Cynthia Mode Objects resemble the structure of a Cynthia mode.jsonc file: An array with the name of the mode in 0, and data for it in 1.
 pub(crate) type CynthiaModeObject = (String, ModeConfig);
 
+// Function to initialise empty post data objects
 pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
     CynthiaPostDataContentObject {
         markup_type: "none".to_string(),
@@ -35,6 +43,7 @@ pub(crate) fn empty_post_data_content_object() -> CynthiaPostDataContentObject {
     }
 }
 
+// Containing data belonging to a Cynthia page-"mode".
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModeConfig {
@@ -49,10 +58,12 @@ pub(crate) struct ModeConfig {
     pub pageinfooverride: Option<bool>,
 }
 
+// Creates an empty vec and sends it out as Vec<Menulink>
 fn empty_menulist() -> Vec<Menulink> {
     Vec::new()
 }
 
+// Allows setting Handlebar file per Cynthia-page-"mode" per pagetype
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Handlebar {
@@ -60,6 +71,7 @@ pub(crate) struct Handlebar {
     pub page: String,
 }
 
+// Menulinks that'll be send to the client in an Array, allowing it to generate navigation menus.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Menulink {
@@ -67,6 +79,7 @@ pub(crate) struct Menulink {
     pub href: String,
 }
 
+// Variables as sent to the web page.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) struct CynthiaPageVars {
     pub head: String,
@@ -81,6 +94,7 @@ pub(crate) struct Menulist {
     pub menu2: String,
 }
 
+// A list of metadata necessary for the serving of publishments
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaContentMetaData {
     pub id: String,
@@ -129,6 +143,7 @@ pub(crate) struct Postlist {
     pub filters: Option<PostListFilter>,
 }
 
+// Metadata allowing to filter out publications based on certain variables.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostListFilter {
@@ -137,6 +152,7 @@ pub struct PostListFilter {
     pub searchline: Option<String>,
 }
 
+// Metadata necessary to run plugins.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PluginMeta {
@@ -147,10 +163,12 @@ pub(crate) struct PluginMeta {
     pub name: String,
 }
 
+// Creates empty string
 fn nonestring() -> String {
     String::from("none")
 }
 
+// Plugin runners, tell the plugin executor (JSR, PYR or binairy mode) what to execute and when.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PluginRunners {
@@ -166,6 +184,7 @@ pub(crate) struct PluginRunners {
     pub proxied: Option<Vec<Vec<String>>>,
 }
 
+// What should run over the HTML body after being created by Cynthia?
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModifyBodyHtml {
@@ -174,6 +193,7 @@ pub(crate) struct ModifyBodyHtml {
     pub execute: String,
 }
 
+// What child processes should Cynthia have running
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PluginChildExecute {
@@ -182,6 +202,7 @@ pub(crate) struct PluginChildExecute {
     pub execute: String,
 }
 
+// What should run over the HTML head after being created by Cynthia?
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModifyHeadHtml {
@@ -190,6 +211,7 @@ pub(crate) struct ModifyHeadHtml {
     pub execute: String,
 }
 
+// What should run over HTML after being compiled by Cynthia?
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModifyOutputHtml {
