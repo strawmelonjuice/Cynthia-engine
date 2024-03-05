@@ -24,10 +24,10 @@ struct PluginDashInstallParams {
     plugin_name: String,
     plugin_version: String,
 }
-// #[derive(Deserialize)]
-// struct PluginDashRemoveParams {
-//     plugin_name: String
-// }
+#[derive(Deserialize)]
+struct PluginDashRemoveParams {
+    plugin_name: String
+}
 
 #[post("/dashapi/")]
 pub(crate) async fn dashserver(
@@ -54,17 +54,17 @@ pub(crate) async fn dashserver(
             );
         }
         "plugin" => match data.subcommand.as_str() {
-            // "remove" => match serde_json::from_str(&data.params) {
-            //     Ok(s) => {
-            //         let plugindata: PluginDashRemoveParams = s;
-            //         crate::subcommand::plugin_remove(
-            //             plugindata.plugin_name
-            //         );
-            //     },
-            //     Err(_e) => {
-            //         return HttpResponse::BadRequest().body(String::from("Invalid plugin."));
-            //     }
-            // }
+            "remove" => match serde_json::from_str(&data.params) {
+                Ok(s) => {
+                    let plugindata: PluginDashRemoveParams = s;
+                    crate::subcommand::plugin_remove(
+                        plugindata.plugin_name
+                    );
+                },
+                Err(_e) => {
+                    return HttpResponse::BadRequest().body(String::from("Invalid plugin."));
+                }
+            }
             "install" => match serde_json::from_str(&data.params) {
                 Ok(s) => {
                     let plugindata: PluginDashInstallParams = s;

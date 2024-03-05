@@ -15,6 +15,8 @@ use std::{
     path::Path,
     process::{self, Command},
 };
+use std::fs::remove_dir_all;
+use std::path::PathBuf;
 use tar::Archive;
 use urlencoding::encode;
 
@@ -67,7 +69,7 @@ pub(crate) fn init() {
     fs::create_dir_all(&tempdir).unwrap();
     let ctempdir = fs::canonicalize(tempdir.clone()).unwrap();
     let mut f = fs::File::create(ctempdir.join("./cyn-clean.tar.gz")).unwrap();
-    std::io::Write::write_all(&mut f, tarfilecontent).unwrap();
+    Write::write_all(&mut f, tarfilecontent).unwrap();
     let tar_gz = match fs::File::open(ctempdir.join("./cyn-clean.tar.gz")) {
         Ok(f) => f,
         Err(_) => {
@@ -105,7 +107,7 @@ pub(crate) fn init() {
         &options,
     )
     .expect("Could not create target files.");
-    fs::remove_dir_all(ctempdir).unwrap_or_default();
+    remove_dir_all(ctempdir).unwrap_or_default();
     let pluginmanjson = Path::new("./cynthiapluginmanifest.json");
     logger(
         10,
@@ -130,7 +132,7 @@ pub(crate) fn init() {
         o.read_to_string(&mut contents)
             .expect("Could not read Cynthia plugin manifest file.");
         let unparsed: &str = contents.as_str();
-        let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
+        let cynplmn: Vec<CynthiaPluginManifestItem> =
             serde_json::from_str(unparsed)
                 .expect("Could not read from Cynthia plugin manifest file.");
         let totalplugins: &usize = &cynplmn.len();
@@ -203,7 +205,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     fs::create_dir_all(tempdir.clone()).unwrap();
     let ctempdir = fs::canonicalize(tempdir.clone()).unwrap();
     let mut f = fs::File::create(ctempdir.join("./plugin_index.json")).unwrap();
-    std::io::Write::write_all(&mut f, indexcontent).unwrap();
+    Write::write_all(&mut f, indexcontent).unwrap();
 
     let repositoryfile = ctempdir.join("./plugin_index.json");
 
@@ -339,7 +341,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     }
     let tarfilecontent = &tarfiledownload;
     let mut f = fs::File::create(tarballfilepath.clone()).unwrap();
-    std::io::Write::write_all(&mut f, tarfilecontent).expect("Failed to write plugin.");
+    Write::write_all(&mut f, tarfilecontent).expect("Failed to write plugin.");
     logger(1, String::from("Download complete, starting unpack..."));
     let tar_gz = fs::File::open(&tarballfilepath).expect("Could not unpack plugin.");
     let tar = GzDecoder::new(tar_gz);
@@ -354,7 +356,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
     fs::create_dir_all(&pdp).expect("Could not create plugin folders.");
     fs_extra::dir::copy(packagedir, &pdp, &options).expect("Could not create target files.");
     logger(1, String::from("Cleaning temp files..."));
-    fs::remove_dir_all(tempdir).unwrap();
+    remove_dir_all(tempdir).unwrap();
     logger(
         1,
         String::from("Installing dependencies for this plugin..."),
@@ -397,7 +399,7 @@ fn getcynplmn() -> Result<Vec<CynthiaPluginManifestItem>, Error> {
         let mut contents = String::new();
         o.read_to_string(&mut contents)?;
         let unparsed: &str = contents.as_str();
-        let cynplmn: Vec<crate::structs::CynthiaPluginManifestItem> =
+        let cynplmn: Vec<CynthiaPluginManifestItem> =
             serde_json::from_str(unparsed)?;
         Ok(cynplmn)
     } else {
@@ -410,6 +412,20 @@ fn getcynplmn() -> Result<Vec<CynthiaPluginManifestItem>, Error> {
         );
         Err(Error::from(ErrorKind::Other))
     };
+}
+
+fn removefromcynplmn (plugin_id: &String) {
+    let wantedplugin: String = plugin_id.to_string();
+    let cynplmns = getcynplmn().unwrap();
+    let mut cynplmn: Vec<CynthiaPluginManifestItem> = vec![];
+    for cynplug in cynplmns {
+        if cynplug.id != wantedplugin {
+            cynplmn.push(cynplug);
+        }
+    }
+    let mut o = fs::File::create("./cynthiapluginmanifest.json").unwrap();
+    let contents = serde_json::to_string(&cynplmn).unwrap();
+    o.write_all(contents.as_bytes()).unwrap();
 }
 
 fn addtocynplmn(s_wantedplugin: &String, s_wantedpluginv: &String) {
@@ -464,6 +480,16 @@ fn choice(m: String, d: bool) -> bool {
     println!();
     result
 }
+
+pub (crate) fn plugin_remove (plugin_id: String) {
+    let pluginpath: PathBuf = Path::new("./plugins/").join(&plugin_id);
+    if pluginpath.exists() {
+        remove_dir_all(pluginpath).unwrap_or_default();
+    }
+    removefromcynplmn(&plugin_id);
+    logger(10, format!("Plugin {} removed.", plugin_id));
+}
+
 
 pub(crate) fn install_from_plugin_manifest() {
     match getcynplmn() {
