@@ -1,5 +1,5 @@
 use crate::jsr::{jsruntime, BUNJSR, BUN_NPM_EX, NODEJSR, NODEJSR_EX};
-use crate::logger::logger;
+use crate::logger;
 use crate::structs::CynthiaCacheIndexObject;
 use colored::Colorize;
 use dotenv::dotenv;
@@ -36,8 +36,7 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
             if (now - f.timestamp) < max_age {
                 return Ok(f.cachepath);
             } else if Path::new(&f.cachepath).exists() {
-                logger(
-                    31,
+                logger::cache_log(
                     format!(
                         "Cache {}: `{}´ at `{}´, reason: Too old!",
                         "removed".red(),
@@ -64,8 +63,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 
     let mut cachedfile = File::create(cachepath.clone()).unwrap();
     write!(cachedfile, "{}", contents).unwrap();
-    logger(
-        31,
+    logger::cache_log(
         format!(
             "Cache {}: `{}´ at `{}´",
             "placed".green(),
@@ -114,7 +112,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger(5, String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
@@ -124,8 +122,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                         "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r"
                     ))
                 } else {
-                    logger(
-                        5,
+                    logger::general_warn(
                         format!(
                             "Failed running Terser in {}, couldn't minify to embed JS.",
                             "Bunx".purple()
@@ -148,13 +145,12 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger(5, String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
                 if !output.status.success() {
-                    logger(
-                        5,
+                    logger::general_warn(
                         format!(
                             "Failed running Terser in {}, couldn't minify to embed JS.",
                             "NPX".purple()
@@ -169,7 +165,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 }
             }
             _ => {
-                logger(15, String::from("Couldn't minify inlined javascript because there is no found javascript run time, may incre ase bandwidth and slow down served web pages."));
+                logger::general_warn(String::from("Couldn't minify inlined javascript because there is no found javascript run time, may increase bandwidth used and slow down served web pages."));
                 fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
             }
         },
@@ -197,7 +193,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger(5, String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
@@ -207,8 +203,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                         "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be somewhat behind. */\n\r"
                     ))
                 } else {
-                    logger(
-                        5,
+                    logger::general_error(
                         format!(
                             "Failed running clean-css in {}, couldn't minify to embed CSS.",
                             "Bunx".purple()
@@ -231,13 +226,12 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger(5, String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
                 if !output.status.success() {
-                    logger(
-                        5,
+                    logger::general_error(
                         format!(
                             "Failed running clean-css in {}, couldn't minify to embed CSS.",
                             "NPX".purple()
@@ -252,7 +246,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 }
             }
             _ => {
-                logger(15, String::from("Couldn't minify inlined javascript because there is no found javascript run time, may incre ase bandwidth and slow down served web pages."));
+                logger::general_warn(String::from("Couldn't minify inlined javascript because there is no found javascript run time, may incre ase bandwidth and slow down served web pages."));
                 fs::read_to_string(stylefile).expect("Couldn't find or open a CSS file.")
             }
         },

@@ -1,4 +1,4 @@
-use crate::logger::logger;
+use crate::logger;
 use crate::structs::PluginMeta;
 use actix_web::web::Data;
 use actix_web::{post, web, HttpResponse};
@@ -35,8 +35,7 @@ pub(crate) async fn dashserver(
     _pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
 ) -> HttpResponse {
     if data.passkey != passkey().unwrap_or(String::from("")) {
-        logger(
-            15,
+        logger::general_warn(
             String::from(
                 "An unauthorized external entity just tried performing an action on this instance.",
             ),
@@ -48,7 +47,7 @@ pub(crate) async fn dashserver(
 
     match data.command.as_str() {
         "log" => {
-            logger(
+            logger::log_by_act_num(
                 data.subcommand.parse().unwrap_or(1),
                 format!("{{CynthiaDash}} {}", data.params.clone()),
             );

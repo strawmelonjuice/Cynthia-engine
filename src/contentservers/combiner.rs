@@ -1,5 +1,5 @@
 use crate::files::{import_css_minified, import_js_minified};
-use crate::{jsr, logger::logger, structs::*};
+use crate::{jsr, logger, structs::*};
 use handlebars::Handlebars;
 use std::string::String;
 
@@ -35,7 +35,7 @@ pub(crate) fn combine_content(
                 if p.type_field == *"js" {
                     contents = jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
                 } else {
-                    logger(5, format!("{} is using a '{}' type allternator, which is not supported by this version of cynthia", plugin.name, p.type_field))
+                    logger::general_error( format!("{} is using a '{}' type allternator, which is not supported by this version of cynthia", plugin.name, p.type_field))
                 }
             }
             None => {}
@@ -144,7 +144,7 @@ pub(crate) fn combine_content(
                             head =
                                 jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
                         } else {
-                            logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", plugin.name, p.type_field))
+                            logger::general_error( format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", plugin.name, p.type_field))
                         }
                     }
                     None => {}
@@ -206,7 +206,7 @@ pub(crate) fn combine_content(
                         if p.type_field == *"js" {
                             k = jsr::noderunner(cmd, format!("./plugins/{}/", plugin.name).into());
                         } else {
-                            logger(5, format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", plugin.name, p.type_field))
+                            logger::general_error( format!("{} is using a '{}' type modifier, which is not supported by this version of cynthia", plugin.name, p.type_field))
                         }
                     }
                     None => {}

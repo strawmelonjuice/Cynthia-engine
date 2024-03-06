@@ -1,4 +1,4 @@
-use crate::{logger::logger, structs::*};
+use crate::{logger, structs::*};
 
 use markdown::{to_html_with_options, CompileOptions, Options};
 
@@ -11,7 +11,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
             let timestamp: i64 = match &i.dates {
                 Some(d) => d.published,
                 None => {
-                    logger(5, format!("Post with id '{}' has invalid date data.", i.id));
+                    logger::general_error( format!("Post with id '{}' has invalid date data.", i.id));
                     1
                 }
             };
@@ -36,7 +36,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                     let cat: String = match &i.category {
                         Some(d) => d.to_string(),
                         None => {
-                            logger(5, format!("Post with id '{}' has no category data.", i.id));
+                            logger::general_error( format!("Post with id '{}' has no category data.", i.id));
                             String::from("")
                         }
                     };
@@ -97,8 +97,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
         let timestamp: i64 = match &post.dates {
             Some(d) => d.published,
             None => {
-                logger(
-                    5,
+                logger::general_error(
                     format!("Post with id '{}' has invalid date data.", post.id),
                 );
                 1

@@ -1,4 +1,4 @@
-use crate::logger::logger;
+use crate::logger;
 
 // Bun on windows is enabled by default. This is because choosing to have Bun on windows, means choosing for an experimental feature.
 
@@ -37,7 +37,7 @@ pub const NODEJSR_EX: &str = "npx.cmd";
 pub const NODEJSR_EX: &str = "npx";
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     if args[0] == "returndirect" {
-        logger(1, String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
+        logger::general_warn( String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
         return args[1].to_string();
     }
     let output = match std::process::Command::new(jsruntime(false))
@@ -47,7 +47,7 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     {
         Ok(result) => result,
         Err(_erro) => {
-            logger(5, String::from("Couldn't launch Javascript runtime."));
+            logger::general_error( String::from("Couldn't launch Javascript runtime."));
             std::process::exit(1);
         }
     };
@@ -57,7 +57,7 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
             .to_string();
     } else {
         println!("Script failed.");
-        logger(12, String::from_utf8_lossy(&output.stderr).to_string());
+        logger::jsr_error(String::from_utf8_lossy(&output.stderr).to_string());
     }
     String::from("")
 }
@@ -69,8 +69,7 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
             Ok(_t) => NODEJSR,
             Err(_err) => {
                 if !mayfail {
-                    logger(
-                        5,
+                    logger::general_error(
                         String::from(
                             "No supported (Node.JS or Bun) Javascript runtimes found on path!",
                         ),
@@ -83,14 +82,13 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
     };
 }
 pub(crate) fn jspm(mayfail: bool) -> &'static str {
-    return match std::process::Command::new(BUN_NPM).arg("-v").output() {
+    match std::process::Command::new(BUN_NPM).arg("-v").output() {
         Ok(_t) => BUN_NPM,
         Err(_err) => match std::process::Command::new(NODE_NPM).arg("-v").output() {
             Ok(_t) => NODE_NPM,
             Err(_err) => {
                 if !mayfail {
-                    logger(
-                            5,
+                    logger::general_error(
                             String::from(
                                 "No supported (Node.JS or Bun) Javascript package managers found on path!",
                             ),
@@ -100,5 +98,5 @@ pub(crate) fn jspm(mayfail: bool) -> &'static str {
                 ""
             }
         },
-    };
+    }
 }

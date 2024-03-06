@@ -7,7 +7,7 @@ use dotenv::dotenv;
 use markdown::{to_html_with_options, CompileOptions, Options};
 
 use crate::files::{cacheplacer, cacheretriever};
-use crate::{logger::logger, structs::*};
+use crate::{logger, structs::*};
 
 use self::postlists::postlist_table_gen;
 
@@ -34,8 +34,7 @@ pub(crate) fn s_server(
     );
 
     if cynres == *"unknownexeception" {
-        logger(
-            5,
+        logger::general_error(
             format!(
                 "--> postlist: [{0} - {1}] ({2})",
                 "Search".magenta(),
@@ -45,8 +44,7 @@ pub(crate) fn s_server(
         );
         return HttpResponse::ExpectationFailed().into();
     }
-    logger(
-        200,
+logger::req_ok(
         format!(
             "--> postlist: [{0} - {1}] ({2})",
             "Search".magenta(),
@@ -87,8 +85,7 @@ pub(crate) fn f_server(
     );
 
     if cynres == *"unknownexeception" {
-        logger(
-            5,
+        logger::general_error(
             format!(
                 "--> postlist: [{0} - {1}] ({2})",
                 filtertype,
@@ -98,8 +95,7 @@ pub(crate) fn f_server(
         );
         return HttpResponse::ExpectationFailed().into();
     }
-    logger(
-        200,
+logger::req_ok(
         format!(
             "--> postlist: [{0} - {1}] ({2})",
             filtertype,
@@ -140,7 +136,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                         }) {
                             Ok(v) => v,
                             Err(_e) => {
-                                logger(5, String::from("Could not download external content!"));
+                                logger::general_error( String::from("Could not download external content!"));
 
                                 return "contentlocationerror".to_owned();
                             }
@@ -148,7 +144,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                         match transfer.perform() {
                             Ok(v) => v,
                             Err(_e) => {
-                                logger(5, String::from("Could not download external content!"));
+                                logger::general_error( String::from("Could not download external content!"));
 
                                 return "contentlocationerror".to_owned();
                             }
@@ -157,7 +153,7 @@ pub(crate) fn p_content(pgid: String) -> String {
                     let resp = match std::str::from_utf8(&data) {
                         Ok(v) => v,
                         Err(_e) => {
-                            logger(5, String::from("Could not download external content!"));
+                            logger::general_error( String::from("Could not download external content!"));
 
                             return "contentlocationerror".to_owned();
                         }
@@ -234,22 +230,19 @@ pub(crate) fn p_server(
                 plugins.clone(),
             );
             if cynres == *"404error" {
-                logger(
-                    404,
+                logger::req_notfound(
                     format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
                 );
                 return HttpResponse::NotFound().into();
             }
             if cynres == *"unknownexeception" {
-                logger(
-                    5,
+                logger::general_error(
                     format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
                 );
                 return HttpResponse::ExpectationFailed().into();
             }
             if cynres == *"contentlocationerror" {
-                logger(
-                    5,
+                logger::general_error(
                     format!(
                         "--> {0} ({1}) : Post location error",
                         pgid,
@@ -258,8 +251,7 @@ pub(crate) fn p_server(
                 );
                 return HttpResponse::ExpectationFailed().into();
             }
-            logger(
-                200,
+            logger::req_ok(
                 format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
             );
             if servecache != 0 {
@@ -349,7 +341,7 @@ pub(crate) fn fetcher(uri: String) -> String {
                 }) {
                     Ok(v) => v,
                     Err(_e) => {
-                        logger(5, String::from("Could not fetch external content!"));
+                        logger::general_error( String::from("Could not fetch external content!"));
 
                         return "contentlocationerror".to_owned();
                     }
@@ -357,7 +349,7 @@ pub(crate) fn fetcher(uri: String) -> String {
                 match transfer.perform() {
                     Ok(v) => v,
                     Err(_e) => {
-                        logger(5, String::from("Could not fetch external content!"));
+                        logger::general_error( String::from("Could not fetch external content!"));
 
                         return "contentlocationerror".to_owned();
                     }
@@ -366,7 +358,7 @@ pub(crate) fn fetcher(uri: String) -> String {
             let resp = match std::str::from_utf8(&data) {
                 Ok(v) => v,
                 Err(_e) => {
-                    logger(5, String::from("Could not fetch external content!"));
+                    logger::general_error( String::from("Could not fetch external content!"));
 
                     return "contentlocationerror".to_owned();
                 }
