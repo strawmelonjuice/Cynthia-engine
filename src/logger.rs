@@ -8,16 +8,32 @@ const DATE_FORMAT_STR: &str = "[year]-[month]-[day]-[hour]:[minute]:[second]:[su
 const SPACES: usize = 32;
 const DIVVER: &str = "\t";
 pub(crate) fn general_log(msg: String) {
+    let log_enabled: bool = match std::env::var("LOG_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // General log item -- '[log]'
     log_by_act_num(1, msg)
 }
 
 pub(crate) fn cache_log(msg: String) {
+    let log_enabled: bool = match std::env::var("LOG_CACHE_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => false,
+    };
+    if !log_enabled {return};
     // Log item for caching -- '[cache]'
     log_by_act_num(31, msg)
 }
 
 pub(crate) fn general_error(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_ERROR_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // General error item -- '[ERROR]'
     log_by_act_num(5, msg)
 }
@@ -27,31 +43,87 @@ pub(crate) fn fatal_error(msg: String) {
 }
 
 pub(crate) fn general_warn(msg: String) {
+// Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_WARN_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // General warning item -- '[WARN]'
     log_by_act_num(15, msg)
 }
 
 pub(crate) fn jsr_error(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_JSR_ERROR_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // Error in JavaScript runtime
     log_by_act_num(12, msg)
 }
 
 pub(crate) fn general_info(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_JSR_INFO_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // General info item -- '[INFO]'
     log_by_act_num(10, msg)
 }
 
 pub(crate) fn req_ok(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_REQUESTS_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // Request that on Cynthia's part succeeded (and is so responded to) -- '[CYNGET/OK]'
     log_by_act_num(200, msg)
 }
 
 pub(crate) fn req_notfound(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_REQUESTS_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     // Request for an item that does not exist Cynthia published.jsonc
     log_by_act_num(404, msg)
 }
 
+pub(crate) fn req_serve_proxied(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_PROXY_REQUESTS_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
+    // Proxying a request to a plugin
+    log_by_act_num(49038, msg)
+}
+pub(crate) fn req_serve_plugin_asset(msg: String) {
+    // Check if these log items are enabled
+        let log_enabled: bool = match std::env::var("LOG_PLUGIN_ASSET_REQUESTS_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
+    // Serving a plugin asset
+    log_by_act_num(293838, msg)
+}
+
 pub(crate) fn log_by_act_num(act: i32, msg: String) {
+    let log_enabled: bool = match std::env::var("LOG_ENABLED") {
+        Ok(g) => g.parse::<bool>().unwrap(),
+        Err(_) => true,
+    };
+    if !log_enabled {return};
     /*
 
     Acts:
@@ -131,6 +203,28 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             let title = format!("{}", name.bold().black().on_bright_yellow());
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
             eprintln!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
+        }
+        49038 => {
+            let name = format!("[{} - [PROXY]", times);
+            let spaceleft = if name.chars().count() < SPACES {
+                SPACES - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().bright_magenta());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
+        }
+        293838 => {
+            let name = format!("[{} - [PLUGIN ASSET]", times);
+            let spaceleft = if name.chars().count() < SPACES {
+                SPACES - name.chars().count()
+            } else {
+                0
+            };
+            let title = format!("{}", name.bold().bright_magenta());
+            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+            println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         10 => {
             let name = format!("[{} - [NOTE]", times);

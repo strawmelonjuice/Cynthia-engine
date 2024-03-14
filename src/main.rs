@@ -163,9 +163,9 @@ async fn serves_e(
                     if id.starts_with(&**l) {
                         let fid = id.replace(&**l, "");
                         let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
-                        let file = Path::new(&fileb);
-                        logger::general_info(
-                            format!("Serving {}", file.canonicalize().unwrap().display()),
+                        let file: &Path = Path::new(&fileb);
+                        logger::req_serve_plugin_asset(
+                            format!("Serving '{}' for '{}'.", file.canonicalize().unwrap().display(), plugin.name),
                         );
                         return NamedFile::open(file);
                     };
@@ -196,7 +196,6 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
             None => {}
         }
     }
-
     HttpResponse::Ok().body(body)
 }
 
