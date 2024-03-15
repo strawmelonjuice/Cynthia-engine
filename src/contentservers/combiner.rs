@@ -17,13 +17,22 @@ pub(crate) fn combine_content(
     for plugin in plugins.clone() {
         match &plugin.runners.modify_body_html {
             Some(p) => {
-                let handlebars = Handlebars::new();
-                let mut data = std::collections::BTreeMap::new();
-                data.insert("input".to_string(), "kamkdxcvjgCVJGVvdbvcgcvgdvd");
-                let cmdjson: String = handlebars
-                    .render_template(&p.execute, &data)
-                    .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", contents));
-                let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap();
+                let cont_1 = serde_json::to_string(&contents).unwrap();
+                let mut cont_2 = cont_1.as_str().chars();
+                cont_2.next();
+                cont_2.next_back();
+                let con_s = cont_2.as_str();
+                let cmdjson: String = p.execute.replace(r#"{{{input}}}"#, con_s);
+                let cmds: Vec<String> = match serde_json::from_str(cmdjson.as_str()) {
+                    Ok(cmds) => cmds,
+                    Err(e) => {
+                        logger::jsr_error(format!(
+                            "Could not parse JSON for plugin {}: {}",
+                            plugin.name, e
+                        ));
+                        [].to_vec()
+                    }
+                };
                 // .unwrap_or(["returndirect", contents.as_str()].to_vec());
                 let mut cmd: Vec<&str> = vec![];
                 for com in &cmds {
@@ -123,12 +132,12 @@ pub(crate) fn combine_content(
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_head_html {
                     Some(p) => {
-                        let handlebars = Handlebars::new();
-                        let mut data = std::collections::BTreeMap::new();
-                        data.insert("input".to_string(), crate::escape_json(&head));
-                        let cmdjson: String = handlebars
-                            .render_template(&p.execute, &data)
-                            .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", head));
+                        let cont_1 = serde_json::to_string(&contents).unwrap();
+                        let mut cont_2 = cont_1.as_str().chars();
+                        cont_2.next();
+                        cont_2.next_back();
+                        let con_s = cont_2.as_str();
+                        let cmdjson: String = p.execute.replace(r#"{{{input}}}"#, con_s);
                         let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap_or(
                             [
                                 "returndirect".to_string(),
@@ -186,12 +195,12 @@ pub(crate) fn combine_content(
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_output_html {
                     Some(p) => {
-                        let handlebars = Handlebars::new();
-                        let mut data = std::collections::BTreeMap::new();
-                        data.insert("input".to_string(), "kamdlnjnjnsjkanj");
-                        let cmdjson: String = handlebars
-                            .render_template(&p.execute, &data)
-                            .unwrap_or(format!("[ \"returndirect\", \"f{}\" ]", k));
+                        let cont_1 = serde_json::to_string(&k).unwrap();
+                        let mut cont_2 = cont_1.as_str().chars();
+                        cont_2.next();
+                        cont_2.next_back();
+                        let con_s = cont_2.as_str();
+                        let cmdjson: String = p.execute.replace(r#"{{{input}}}"#, con_s);
                         let cmds: Vec<String> = serde_json::from_str(cmdjson.as_str()).unwrap();
                         // .unwrap_or(["returndirect".to_string(), escape_json(&k).to_string()].to_vec());
                         let mut cmd: Vec<&str> = vec![];
