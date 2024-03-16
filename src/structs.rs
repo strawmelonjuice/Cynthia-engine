@@ -115,6 +115,24 @@ pub(crate) struct CynthiaContentMetaData {
     pub pageinfooverride: Option<bool>,
 }
 
+// CynthiaContentMetaData but without stuff that doesn't need to be served again, or that would cause troubles otherwise.
+#[derive(Deserialize, Debug, Serialize)]
+pub(crate) struct CynthiaContentMetaDataMinimal {
+    pub id: String,
+    pub title: String,
+    pub short: Option<String>,
+    pub thumbnail: Option<String>,
+    pub author: Option<Author>,
+    pub dates: Option<Dates>,
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub mode: Option<String>,
+    pub category: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub pageinfooverride: Option<bool>,
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Author {

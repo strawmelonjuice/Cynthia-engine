@@ -57,7 +57,8 @@ pub(crate) fn combine_content(
                 .mode
                 .get_or_insert_with(|| String::from("default"))
                 .to_string();
-            let pagemetainfojson = serde_json::to_string(&p_met).unwrap();
+                 let p_m_met: CynthiaContentMetaDataMinimal = serde_json::from_str(serde_json::to_string(&p_met).unwrap().as_str()).unwrap();
+            let pagemetainfojson = serde_json::to_string(&p_m_met).unwrap();
             let currentmode = crate::load_mode(mode_to_load).1;
             let stylesheet: String =
                 import_css_minified(format!("./cynthiaFiles/styles/{}", currentmode.stylefile));
@@ -132,7 +133,7 @@ pub(crate) fn combine_content(
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_head_html {
                     Some(p) => {
-                        let cont_1 = serde_json::to_string(&contents).unwrap();
+                        let cont_1 = serde_json::to_string(&head).unwrap();
                         let mut cont_2 = cont_1.as_str().chars();
                         cont_2.next();
                         cont_2.next_back();

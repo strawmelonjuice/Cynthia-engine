@@ -1,6 +1,6 @@
 {
   "main": {
-    "bananen_version": "0.1.7-beta2",
+    "bananen_version": "0.1.8",
     "bananendata_version": 3
   },
   "config": {
@@ -33,21 +33,32 @@
   "saved_changes": {
     "unreleased": [
       {
-        "contents": "Rewriting CynthiaCMS to Rust, to enhance user-friendlyness, a division of codebases and compatibility.",
-        "type": 2,
-        "breaking": false
-      },
-      {
-        "contents": "Feature parity with TS version completed, plugin system 2.0 implemented.",
-        "type": 2,
-        "breaking": false
-      },
-      {
-        "contents": "Override for showing page info sidebar, on either mode or post.",
-        "type": 1,
+        "contents": "Some issues with plugins that modified content.",
+        "type": 3,
         "breaking": false
       }
     ],
-    "released": []
+    "released": [
+      {
+        "name": "Past changes",
+        "changes": [
+          {
+            "contents": "Rewriting CynthiaCMS to Rust, to enhance user-friendlyness, a division of codebases and compatibility.",
+            "type": 2,
+            "breaking": true
+          },
+          {
+            "contents": "Feature parity with TS version completed, plugin system 2.0 implemented.",
+            "type": 2,
+            "breaking": true
+          },
+          {
+            "contents": "Override for showing page info sidebar, on either mode or post.",
+            "type": 1,
+            "breaking": false
+          }
+        ]
+      }
+    ]
   }
 }
