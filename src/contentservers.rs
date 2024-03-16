@@ -52,7 +52,7 @@ logger::req_ok(
             probableurl.blue().underline()
         ),
     );
-    HttpResponse::Ok().body(cynres)
+    HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(cynres)
 }
 
 pub(crate) fn f_server(
@@ -219,7 +219,7 @@ pub(crate) fn p_server(
         Err(_) => 90,
     };
     match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
-        Ok(d) if servecache != 0 => HttpResponse::Ok().body(
+        Ok(d) if servecache != 0 => HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(
             fs::read_to_string(d).unwrap_or(String::from("Cache error. Please try again later.")),
         ),
         _ => {
@@ -255,9 +255,9 @@ pub(crate) fn p_server(
                 format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
             );
             if servecache != 0 {
-                HttpResponse::Ok().body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
+                HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
             } else {
-                HttpResponse::Ok().body(cynres)
+                HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(cynres)
             }
         }
     }

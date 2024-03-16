@@ -174,7 +174,7 @@ pub(crate) fn combine_content(
                     .pageinfooverride
                     .unwrap_or(currentmode.pageinfooverride.unwrap_or(false))
             {
-                r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">➧</span>
+                r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">&#x27A7;</span>
 	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#
             } else {
                 ""

@@ -196,7 +196,7 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
             None => {}
         }
     }
-    HttpResponse::Ok().body(body)
+    HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(body)
 }
 
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
