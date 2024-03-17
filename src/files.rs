@@ -36,14 +36,12 @@ pub(crate) fn cacheretriever(file: String, max_age: u64) -> Result<PathBuf, Erro
             if (now - f.timestamp) < max_age {
                 return Ok(f.cachepath);
             } else if Path::new(&f.cachepath).exists() {
-                logger::cache_log(
-                    format!(
-                        "Cache {}: `{}´ at `{}´, reason: Too old!",
-                        "removed".red(),
-                        file.bright_magenta(),
-                        &f.cachepath.display().to_string().bright_yellow()
-                    ),
-                );
+                logger::cache_log(format!(
+                    "Cache {}: `{}´ at `{}´, reason: Too old!",
+                    "removed".red(),
+                    file.bright_magenta(),
+                    &f.cachepath.display().to_string().bright_yellow()
+                ));
                 fs::remove_file(Path::new(&f.cachepath)).unwrap();
             };
         }
@@ -63,14 +61,12 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 
     let mut cachedfile = File::create(cachepath.clone()).unwrap();
     write!(cachedfile, "{}", contents).unwrap();
-    logger::cache_log(
-        format!(
-            "Cache {}: `{}´ at `{}´",
-            "placed".green(),
-            fileid.bright_magenta(),
-            cachepath.display().to_string().bright_yellow()
-        ),
-    );
+    logger::cache_log(format!(
+        "Cache {}: `{}´ at `{}´",
+        "placed".green(),
+        fileid.bright_magenta(),
+        cachepath.display().to_string().bright_yellow()
+    ));
     let new = CynthiaCacheIndexObject {
         fileid,
         cachepath,
@@ -112,7 +108,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error(String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
@@ -122,12 +118,10 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                         "\n\r// Minified internally by Cynthia using Terser\n\n{res}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r"
                     ))
                 } else {
-                    logger::general_warn(
-                        format!(
-                            "Failed running Terser in {}, couldn't minify to embed JS.",
-                            "Bunx".purple()
-                        ),
-                    );
+                    logger::general_warn(format!(
+                        "Failed running Terser in {}, couldn't minify to embed JS.",
+                        "Bunx".purple()
+                    ));
                     fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
                 }
             }
@@ -145,17 +139,15 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error(String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
                 if !output.status.success() {
-                    logger::general_warn(
-                        format!(
-                            "Failed running Terser in {}, couldn't minify to embed JS.",
-                            "NPX".purple()
-                        ),
-                    );
+                    logger::general_warn(format!(
+                        "Failed running Terser in {}, couldn't minify to embed JS.",
+                        "NPX".purple()
+                    ));
                     fs::read_to_string(scriptfile).expect("Couldn't find or open a JS file.")
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();
@@ -193,7 +185,7 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error(String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
@@ -203,12 +195,10 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                         "\n\r/* Minified internally by Cynthia using clean-css */\n\n{res}\n\n\r/* Cached after minifying, so might be somewhat behind. */\n\r"
                     ))
                 } else {
-                    logger::general_error(
-                        format!(
-                            "Failed running clean-css in {}, couldn't minify to embed CSS.",
-                            "Bunx".purple()
-                        ),
-                    );
+                    logger::general_error(format!(
+                        "Failed running clean-css in {}, couldn't minify to embed CSS.",
+                        "Bunx".purple()
+                    ));
                     fs::read_to_string(stylefile).expect("Couldn't find or open a JS file.")
                 }
             }
@@ -226,17 +216,15 @@ pub(crate) fn import_css_minified(stylefile: String) -> String {
                 {
                     Ok(result) => result,
                     Err(_erro) => {
-                        logger::general_error( String::from("Couldn't launch Javascript runtime."));
+                        logger::general_error(String::from("Couldn't launch Javascript runtime."));
                         std::process::exit(1);
                     }
                 };
                 if !output.status.success() {
-                    logger::general_error(
-                        format!(
-                            "Failed running clean-css in {}, couldn't minify to embed CSS.",
-                            "NPX".purple()
-                        ),
-                    );
+                    logger::general_error(format!(
+                        "Failed running clean-css in {}, couldn't minify to embed CSS.",
+                        "NPX".purple()
+                    ));
                     fs::read_to_string(stylefile).expect("Couldn't find or open a CSS file.")
                 } else {
                     let res: String = String::from_utf8_lossy(&output.stdout).parse().unwrap();

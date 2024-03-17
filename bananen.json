@@ -36,6 +36,11 @@
         "contents": "Some issues with plugins that modified content.",
         "type": 3,
         "breaking": false
+      },
+      {
+        "contents": "Enhanced some HTML-grammar Cynthia was generating.",
+        "type": 2,
+        "breaking": false
       }
     ],
     "released": [

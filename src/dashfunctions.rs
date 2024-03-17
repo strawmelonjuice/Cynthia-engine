@@ -26,7 +26,7 @@ struct PluginDashInstallParams {
 }
 #[derive(Deserialize)]
 struct PluginDashRemoveParams {
-    plugin_name: String
+    plugin_name: String,
 }
 
 #[post("/dashapi/")]
@@ -35,11 +35,9 @@ pub(crate) async fn dashserver(
     _pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
 ) -> HttpResponse {
     if data.passkey != passkey().unwrap_or(String::from("")) {
-        logger::general_warn(
-            String::from(
-                "An unauthorized external entity just tried performing an action on this instance.",
-            ),
-        );
+        logger::general_warn(String::from(
+            "An unauthorized external entity just tried performing an action on this instance.",
+        ));
         return HttpResponse::Forbidden().body(String::from(
             "<h1>NO ACCESS!</h1>Wrong passkey entered. A report has been sent to the server logs.",
         ));
@@ -56,14 +54,12 @@ pub(crate) async fn dashserver(
             "remove" => match serde_json::from_str(&data.params) {
                 Ok(s) => {
                     let plugindata: PluginDashRemoveParams = s;
-                    crate::subcommand::plugin_remove(
-                        plugindata.plugin_name
-                    );
-                },
+                    crate::subcommand::plugin_remove(plugindata.plugin_name);
+                }
                 Err(_e) => {
                     return HttpResponse::BadRequest().body(String::from("Invalid plugin."));
                 }
-            }
+            },
             "install" => match serde_json::from_str(&data.params) {
                 Ok(s) => {
                     let plugindata: PluginDashInstallParams = s;
@@ -71,7 +67,7 @@ pub(crate) async fn dashserver(
                         plugindata.plugin_name,
                         plugindata.plugin_version,
                     );
-                },
+                }
 
                 Err(_e) => {
                     return HttpResponse::BadRequest().body(String::from("Invalid plugin."));

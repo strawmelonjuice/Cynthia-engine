@@ -57,7 +57,8 @@ pub(crate) fn combine_content(
                 .mode
                 .get_or_insert_with(|| String::from("default"))
                 .to_string();
-                 let p_m_met: CynthiaContentMetaDataMinimal = serde_json::from_str(serde_json::to_string(&p_met).unwrap().as_str()).unwrap();
+            let p_m_met: CynthiaContentMetaDataMinimal =
+                serde_json::from_str(serde_json::to_string(&p_met).unwrap().as_str()).unwrap();
             let pagemetainfojson = serde_json::to_string(&p_m_met).unwrap();
             let currentmode = crate::load_mode(mode_to_load).1;
             let stylesheet: String =
@@ -126,6 +127,7 @@ pub(crate) fn combine_content(
 	{}
 	{}
 	<script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script>
+    
 	<title>{}&ensp;&ndash;&ensp;{}</title>
 	"#,
                 stylesheet, favicondec, metatags, currentmode.sitename, p_met.title
@@ -164,11 +166,13 @@ pub(crate) fn combine_content(
                 format!(
                     r#"<script>
 		const pagemetainfo = JSON.parse(`{0}`);
-	</script>"#,
-                    pagemetainfojson
+	</script>
+    "#,
+                    pagemetainfojson,
                 )
                 .as_str(),
             );
+
             let pageinfosidebarthing = if (p_met.kind == *"post")
                 || p_met
                     .pageinfooverride
@@ -187,11 +191,10 @@ pub(crate) fn combine_content(
                 infoshow: String::from(pageinfosidebarthing),
             };
             let mut k = format!(
-                "\n{}\n\n\n\n<script>{}</script>\n\n</html>",
+                "\n{}\n</html>",
                 handlebars
                     .render_template(&source.to_string(), &data)
-                    .unwrap(),
-                import_js_minified("./cynthiaFiles/assets/scripts/client.js".to_string())
+                    .unwrap()
             );
             for plugin in plugins.clone() {
                 match &plugin.runners.modify_output_html {
@@ -222,7 +225,20 @@ pub(crate) fn combine_content(
                     None => {}
                 }
             }
-            return format!("<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/main/README.MD>\n\n-->\n\n\n\n\r{k}", env!("CARGO_PKG_VERSION"));
+            let j = k.replace(
+                "</body>",
+                format!(
+                    r#"
+                <script defer>
+                {0}
+                </script>
+                </body>
+                "#,
+                    import_js_minified("./cynthiaFiles/assets/scripts/client.js".to_string())
+                )
+                .as_str(),
+            );
+            return format!("<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/main/README.MD>\n\n-->\n\n\n\n\r{j}", env!("CARGO_PKG_VERSION"));
         }
     }
     // logger(3, String::from("Can't find that page."));

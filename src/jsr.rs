@@ -47,7 +47,7 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     {
         Ok(result) => result,
         Err(_erro) => {
-            logger::general_error( String::from("Couldn't launch Javascript runtime."));
+            logger::general_error(String::from("Couldn't launch Javascript runtime."));
             std::process::exit(1);
         }
     };
@@ -69,11 +69,9 @@ pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
             Ok(_t) => NODEJSR,
             Err(_err) => {
                 if !mayfail {
-                    logger::general_error(
-                        String::from(
-                            "No supported (Node.JS or Bun) Javascript runtimes found on path!",
-                        ),
-                    );
+                    logger::general_error(String::from(
+                        "No supported (Node.JS or Bun) Javascript runtimes found on path!",
+                    ));
                     std::process::exit(1);
                 }
                 ""
@@ -88,11 +86,9 @@ pub(crate) fn jspm(mayfail: bool) -> &'static str {
             Ok(_t) => NODE_NPM,
             Err(_err) => {
                 if !mayfail {
-                    logger::general_error(
-                            String::from(
-                                "No supported (Node.JS or Bun) Javascript package managers found on path!",
-                            ),
-                        );
+                    logger::general_error(String::from(
+                        "No supported (Node.JS or Bun) Javascript package managers found on path!",
+                    ));
                     std::process::exit(1);
                 }
                 ""

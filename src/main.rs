@@ -164,9 +164,11 @@ async fn serves_e(
                         let fid = id.replace(&**l, "");
                         let fileb = format!("./plugins/{}/{}/{fid}", plugin.name, s[0]);
                         let file: &Path = Path::new(&fileb);
-                        logger::req_serve_plugin_asset(
-                            format!("Serving '{}' for '{}'.", file.canonicalize().unwrap().display(), plugin.name),
-                        );
+                        logger::req_serve_plugin_asset(format!(
+                            "Serving '{}' for '{}'.",
+                            file.canonicalize().unwrap().display(),
+                            plugin.name
+                        ));
                         return NamedFile::open(file);
                     };
                 }
@@ -196,7 +198,9 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
             None => {}
         }
     }
-    HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(body)
+    HttpResponse::Ok()
+        .append_header(("Accept-Charset", "UTF-8"))
+        .body(body)
 }
 
 async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
@@ -209,9 +213,9 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
         let file = "./cynthiaFiles/published.yaml".to_owned();
         let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
         serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
-            logger::general_error(
-                String::from("Published.yaml contains invalid Cynthia-instructions."),
-            );
+            logger::general_error(String::from(
+                "Published.yaml contains invalid Cynthia-instructions.",
+            ));
             Vec::new()
         })
     } else {
@@ -222,9 +226,9 @@ fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
             parse_to_serde_value(unparsed_json.as_str(), &Default::default())
                 .expect("Could not read published.jsonc.");
         serde_json::from_value(parsed_json.into()).unwrap_or_else(|_e| {
-            logger::general_error(
-                String::from("Published.json contains invalid Cynthia-instructions."),
-            );
+            logger::general_error(String::from(
+                "Published.json contains invalid Cynthia-instructions.",
+            ));
             Vec::new()
         })
     }
@@ -240,17 +244,15 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
                     logger::general_warn( format!("Cynthia is missing the `{}´ mode for a page to be served. It will retry using the `default´ mode.", mode_name));
                     return load_mode(String::from("default"));
                 } else {
-                    logger::general_error(
-                        String::from("Cynthia is missing the right mode for some pages to serve."),
-                    );
+                    logger::general_error(String::from(
+                        "Cynthia is missing the right mode for some pages to serve.",
+                    ));
                     process::exit(1);
                 }
             } else {
-                logger::general_error(
-                    String::from(
-                        "Cynthia is having trouble loading the mode for some pages to serve.",
-                    ),
-                );
+                logger::general_error(String::from(
+                    "Cynthia is having trouble loading the mode for some pages to serve.",
+                ));
                 process::exit(1);
             }
         }
@@ -350,16 +352,14 @@ As of now, Cynthia has only 4 commands:
         {
             subcommand::install_from_plugin_manifest()
         } else {
-            logger::general_error(
-                format!(
-                    "No subcommand specified! Use '{} {}' for help.",
-                    std::env::args()
-                        .next()
-                        .unwrap_or(String::from("cynthiaweb"))
-                        .purple(),
-                    "help".bright_yellow()
-                ),
-            );
+            logger::general_error(format!(
+                "No subcommand specified! Use '{} {}' for help.",
+                std::env::args()
+                    .next()
+                    .unwrap_or(String::from("cynthiaweb"))
+                    .purple(),
+                "help".bright_yellow()
+            ));
             process::exit(1);
         }
         process::exit(0);
@@ -369,16 +369,14 @@ As of now, Cynthia has only 4 commands:
         .to_lowercase()
         == *""
     {
-        logger::general_error(
-            format!(
-                "No command specified! Use '{} {}' for help.",
-                std::env::args()
-                    .next()
-                    .unwrap_or(String::from("cynthiaweb"))
-                    .purple(),
-                "help".bright_yellow()
-            ),
-        );
+        logger::general_error(format!(
+            "No command specified! Use '{} {}' for help.",
+            std::env::args()
+                .next()
+                .unwrap_or(String::from("cynthiaweb"))
+                .purple(),
+            "help".bright_yellow()
+        ));
         process::exit(1);
     } else if std::env::args()
         .nth(1)
@@ -386,57 +384,49 @@ As of now, Cynthia has only 4 commands:
         .to_lowercase()
         != *"start"
     {
-        logger::general_error(
-            format!(
-                "Unknown command! Use '{} {}' for help.",
-                std::env::args()
-                    .next()
-                    .unwrap_or(String::from("cynthiaweb"))
-                    .purple(),
-                "help".bright_yellow()
-            ),
-        );
+        logger::general_error(format!(
+            "Unknown command! Use '{} {}' for help.",
+            std::env::args()
+                .next()
+                .unwrap_or(String::from("cynthiaweb"))
+                .purple(),
+            "help".bright_yellow()
+        ));
         process::exit(1);
     }
     if !Path::new("./.env").exists() || !Path::new("./cynthiaFiles").exists() {
-        logger::general_error( String::from("No CynthiaConfig found."));
-        logger::general_info(
-            format!(
-                "To set up a clean Cynthia config, run '{} {}'.",
-                std::env::args()
-                    .next()
-                    .unwrap_or(String::from("cynthiaweb"))
-                    .purple(),
-                "init".bright_yellow()
-            ),
-        );
+        logger::general_error(String::from("No CynthiaConfig found."));
+        logger::general_info(format!(
+            "To set up a clean Cynthia config, run '{} {}'.",
+            std::env::args()
+                .next()
+                .unwrap_or(String::from("cynthiaweb"))
+                .purple(),
+            "init".bright_yellow()
+        ));
         process::exit(1);
     }
-    logger::general_log( "🤔\tLoading configuration from:".to_string());
-logger::general_log(
-        format!(
-            "`{}´",
-            Path::new("./.env")
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
-                .replace("\\\\?\\", "")
-                .bright_purple()
-                .italic()
-        ),
-    );
+    logger::general_log("🤔\tLoading configuration from:".to_string());
+    logger::general_log(format!(
+        "`{}´",
+        Path::new("./.env")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
+            .replace("\\\\?\\", "")
+            .bright_purple()
+            .italic()
+    ));
     dotenv().ok();
     let _ = fs::remove_dir_all("./.cynthiaTemp");
     match fs::create_dir_all("./.cynthiaTemp") {
         Ok(_) => {}
         Err(e) => {
-            logger::general_error(
-                format!(
-                    "Could not create the Cynthia temp folder! Error: {}",
-                    e.to_string().bright_red()
-                ),
-            );
+            logger::general_error(format!(
+                "Could not create the Cynthia temp folder! Error: {}",
+                e.to_string().bright_red()
+            ));
             process::exit(1);
         }
     }
@@ -485,12 +475,10 @@ logger::general_log(
                                     CYNTHIAPLUGINCOMPAT.bright_yellow()
                                 ))
                             } else {
-                                logger::general_log(
-                                    format!(
-                                        "🧩\tPlugin '{}' loaded!",
-                                        name.italic().bright_green()
-                                    ),
-                                );
+                                logger::general_log(format!(
+                                    "🧩\tPlugin '{}' loaded!",
+                                    name.italic().bright_green()
+                                ));
                                 f.name = name;
                                 match &f.runners.plugin_children {
                                     Some(p) => {
@@ -511,12 +499,10 @@ logger::general_log(
                                             cmd.push(com.as_str());
                                         }
                                         if p.type_field == *"js" {
-                                            logger::general_log(
-                                                format!(
-                                                    "🏃\tRunning child script for plugin '{}'",
-                                                    f.name.italic().bright_green()
-                                                ),
-                                            );
+                                            logger::general_log(format!(
+                                                "🏃\tRunning child script for plugin '{}'",
+                                                f.name.italic().bright_green()
+                                            ));
                                             {
                                                 if cmd[0] == "returndirect" {
                                                     logger::general_log( String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
@@ -530,11 +516,9 @@ logger::general_log(
                                                 {
                                                     Ok(_) => {}
                                                     Err(_erro) => {
-                                                        logger::general_error(
-                                                        String::from(
+                                                        logger::general_error(String::from(
                                                             "Couldn't launch Javascript runtime.",
-                                                        ),
-                                                    );
+                                                        ));
                                                     }
                                                 };
                                             }
@@ -548,30 +532,26 @@ logger::general_log(
                                 pluginlist.push(f);
                             }
                         }
-                        Err(_) => logger::general_warn(
-                            format!(
-                                "Plugin `{}´ doesn't have a CynthiaPlugin.json manifest!",
-                                name
-                            ),
-                        ),
+                        Err(_) => logger::general_warn(format!(
+                            "Plugin `{}´ doesn't have a CynthiaPlugin.json manifest!",
+                            name
+                        )),
                     }
                 };
             }
         }
     }
     let data: Data<Mutex<Vec<PluginMeta>>> = Data::new(Mutex::new(pluginlist));
-logger::general_log(
+    logger::general_log(format!(
+        "🆙\tRunning at {} ...",
         format!(
-            "🆙\tRunning at {} ...",
-            format!(
-                "http://{}:{}/",
-                "localhost".green(),
-                portnum.to_string().bold().green()
-            )
-            .yellow()
-            .italic()
-        ),
-    );
+            "http://{}:{}/",
+            "localhost".green(),
+            portnum.to_string().bold().green()
+        )
+        .yellow()
+        .italic()
+    ));
     if cynthiadashactive {
         logger::general_warn( String::from("Cynthia dashboard plugin found! The Cynthia Dashboard has additional permissions, so uninstall it if left unused, also check the source  of this plugin."));
 

@@ -34,25 +34,23 @@ pub(crate) fn s_server(
     );
 
     if cynres == *"unknownexeception" {
-        logger::general_error(
-            format!(
-                "--> postlist: [{0} - {1}] ({2})",
-                "Search".magenta(),
-                filter_s,
-                probableurl.blue().underline()
-            ),
-        );
-        return HttpResponse::ExpectationFailed().into();
-    }
-logger::req_ok(
-        format!(
+        logger::general_error(format!(
             "--> postlist: [{0} - {1}] ({2})",
             "Search".magenta(),
             filter_s,
             probableurl.blue().underline()
-        ),
-    );
-    HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(cynres)
+        ));
+        return HttpResponse::ExpectationFailed().into();
+    }
+    logger::req_ok(format!(
+        "--> postlist: [{0} - {1}] ({2})",
+        "Search".magenta(),
+        filter_s,
+        probableurl.blue().underline()
+    ));
+    HttpResponse::Ok()
+        .append_header(("Accept-Charset", "UTF-8"))
+        .body(cynres)
 }
 
 pub(crate) fn f_server(
@@ -85,24 +83,20 @@ pub(crate) fn f_server(
     );
 
     if cynres == *"unknownexeception" {
-        logger::general_error(
-            format!(
-                "--> postlist: [{0} - {1}] ({2})",
-                filtertype,
-                filter_s,
-                probableurl.blue().underline()
-            ),
-        );
-        return HttpResponse::ExpectationFailed().into();
-    }
-logger::req_ok(
-        format!(
+        logger::general_error(format!(
             "--> postlist: [{0} - {1}] ({2})",
             filtertype,
             filter_s,
             probableurl.blue().underline()
-        ),
-    );
+        ));
+        return HttpResponse::ExpectationFailed().into();
+    }
+    logger::req_ok(format!(
+        "--> postlist: [{0} - {1}] ({2})",
+        filtertype,
+        filter_s,
+        probableurl.blue().underline()
+    ));
     HttpResponse::Ok().body(cynres)
 }
 
@@ -136,7 +130,9 @@ pub(crate) fn p_content(pgid: String) -> String {
                         }) {
                             Ok(v) => v,
                             Err(_e) => {
-                                logger::general_error( String::from("Could not download external content!"));
+                                logger::general_error(String::from(
+                                    "Could not download external content!",
+                                ));
 
                                 return "contentlocationerror".to_owned();
                             }
@@ -144,7 +140,9 @@ pub(crate) fn p_content(pgid: String) -> String {
                         match transfer.perform() {
                             Ok(v) => v,
                             Err(_e) => {
-                                logger::general_error( String::from("Could not download external content!"));
+                                logger::general_error(String::from(
+                                    "Could not download external content!",
+                                ));
 
                                 return "contentlocationerror".to_owned();
                             }
@@ -153,7 +151,9 @@ pub(crate) fn p_content(pgid: String) -> String {
                     let resp = match std::str::from_utf8(&data) {
                         Ok(v) => v,
                         Err(_e) => {
-                            logger::general_error( String::from("Could not download external content!"));
+                            logger::general_error(String::from(
+                                "Could not download external content!",
+                            ));
 
                             return "contentlocationerror".to_owned();
                         }
@@ -219,9 +219,12 @@ pub(crate) fn p_server(
         Err(_) => 90,
     };
     match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
-        Ok(d) if servecache != 0 => HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(
-            fs::read_to_string(d).unwrap_or(String::from("Cache error. Please try again later.")),
-        ),
+        Ok(d) if servecache != 0 => HttpResponse::Ok()
+            .append_header(("Accept-Charset", "UTF-8"))
+            .body(
+                fs::read_to_string(d)
+                    .unwrap_or(String::from("Cache error. Please try again later.")),
+            ),
         _ => {
             let cynres = combiner::combine_content(
                 pgid.to_string(),
@@ -230,34 +233,42 @@ pub(crate) fn p_server(
                 plugins.clone(),
             );
             if cynres == *"404error" {
-                logger::req_notfound(
-                    format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-                );
+                logger::req_notfound(format!(
+                    "--> {0} ({1})",
+                    pgid,
+                    probableurl.blue().underline()
+                ));
                 return HttpResponse::NotFound().into();
             }
             if cynres == *"unknownexeception" {
-                logger::general_error(
-                    format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-                );
+                logger::general_error(format!(
+                    "--> {0} ({1})",
+                    pgid,
+                    probableurl.blue().underline()
+                ));
                 return HttpResponse::ExpectationFailed().into();
             }
             if cynres == *"contentlocationerror" {
-                logger::general_error(
-                    format!(
-                        "--> {0} ({1}) : Post location error",
-                        pgid,
-                        probableurl.blue().underline()
-                    ),
-                );
+                logger::general_error(format!(
+                    "--> {0} ({1}) : Post location error",
+                    pgid,
+                    probableurl.blue().underline()
+                ));
                 return HttpResponse::ExpectationFailed().into();
             }
-            logger::req_ok(
-                format!("--> {0} ({1})", pgid, probableurl.blue().underline()),
-            );
+            logger::req_ok(format!(
+                "--> {0} ({1})",
+                pgid,
+                probableurl.blue().underline()
+            ));
             if servecache != 0 {
-                HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
+                HttpResponse::Ok()
+                    .append_header(("Accept-Charset", "UTF-8"))
+                    .body(cacheplacer(format!("@web@/p/{}", pgid), cynres))
             } else {
-                HttpResponse::Ok().append_header(("Accept-Charset", "UTF-8")).body(cynres)
+                HttpResponse::Ok()
+                    .append_header(("Accept-Charset", "UTF-8"))
+                    .body(cynres)
             }
         }
     }
@@ -341,7 +352,7 @@ pub(crate) fn fetcher(uri: String) -> String {
                 }) {
                     Ok(v) => v,
                     Err(_e) => {
-                        logger::general_error( String::from("Could not fetch external content!"));
+                        logger::general_error(String::from("Could not fetch external content!"));
 
                         return "contentlocationerror".to_owned();
                     }
@@ -349,7 +360,7 @@ pub(crate) fn fetcher(uri: String) -> String {
                 match transfer.perform() {
                     Ok(v) => v,
                     Err(_e) => {
-                        logger::general_error( String::from("Could not fetch external content!"));
+                        logger::general_error(String::from("Could not fetch external content!"));
 
                         return "contentlocationerror".to_owned();
                     }
@@ -358,7 +369,7 @@ pub(crate) fn fetcher(uri: String) -> String {
             let resp = match std::str::from_utf8(&data) {
                 Ok(v) => v,
                 Err(_e) => {
-                    logger::general_error( String::from("Could not fetch external content!"));
+                    logger::general_error(String::from("Could not fetch external content!"));
 
                     return "contentlocationerror".to_owned();
                 }
