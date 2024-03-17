@@ -31,24 +31,23 @@
     }
   },
   "saved_changes": {
-    "unreleased": [
-      {
-        "contents": "Some issues with plugins that modified content.",
-        "type": 3,
-        "breaking": false
-      },
-      {
-        "contents": "Enhanced some HTML-grammar Cynthia was generating.",
-        "type": 2,
-        "breaking": false
-      },
-      {
-        "contents": "Switching from `.env` to `cynthia.toml`.",
-        "type": 2,
-        "breaking": true
-      }
-    ],
+    "unreleased": [],
     "released": [
+      {
+        "name": "2.1.0-alpha.0.0",
+        "changes": [
+          {
+            "contents": "Enhanced some HTML-grammar Cynthia was generating.",
+            "type": 2,
+            "breaking": false
+          },
+          {
+            "contents": "Switching from `.env` to `cynthia.toml`.",
+            "type": 2,
+            "breaking": true
+          }
+        ]
+      },
       {
         "name": "Past changes",
         "changes": [
@@ -65,6 +64,11 @@
           {
             "contents": "Override for showing page info sidebar, on either mode or post.",
             "type": 1,
+            "breaking": false
+          },
+          {
+            "contents": "Some issues with plugins that modified content.",
+            "type": 3,
             "breaking": false
           }
         ]
