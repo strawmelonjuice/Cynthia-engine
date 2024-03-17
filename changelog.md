@@ -4,7 +4,8 @@
 
 ## Unreleased changes
             
--  **<span style="color: #0033cc">Update</span>**: Enhanced some HTML-grammar Cynthia was generating.
+- <span style="color: red; background-color: #ffcc00">BREAKING!</span> **<span style="color: #0033cc">Update</span>**: Switching from `.env` to `cynthia.toml`.
+-  **<span style="color: #0033cc">Update</span>**: Enhanced some HTML-grammar Cynthia was generating.
 -  **<span style="color: #9900cc">Fix</span>**: Some issues with plugins that modified content.
 
 

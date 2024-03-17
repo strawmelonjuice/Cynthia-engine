@@ -41,6 +41,11 @@
         "contents": "Enhanced some HTML-grammar Cynthia was generating.",
         "type": 2,
         "breaking": false
+      },
+      {
+        "contents": "Switching from `.env` to `cynthia.toml`.",
+        "type": 2,
+        "breaking": true
       }
     ],
     "released": [

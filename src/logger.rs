@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use std::time::SystemTime;
 
+use crate::config;
 use colored::Colorize;
 use time::{format_description, OffsetDateTime};
 
@@ -8,11 +9,7 @@ const DATE_FORMAT_STR: &str = "[year]-[month]-[day]-[hour]:[minute]:[second]:[su
 const SPACES: usize = 32;
 const DIVVER: &str = "\t";
 pub(crate) fn general_log(msg: String) {
-    let log_enabled: bool = match std::env::var("LOG_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.enabled {
         return;
     };
     // General log item -- '[log]'
@@ -20,11 +17,7 @@ pub(crate) fn general_log(msg: String) {
 }
 
 pub(crate) fn cache_log(msg: String) {
-    let log_enabled: bool = match std::env::var("LOG_CACHE_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => false,
-    };
-    if !log_enabled {
+    if !config::main().logging.cache {
         return;
     };
     // Log item for caching -- '[cache]'
@@ -33,11 +26,7 @@ pub(crate) fn cache_log(msg: String) {
 
 pub(crate) fn general_error(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_ERROR_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.error {
         return;
     };
     // General error item -- '[ERROR]'
@@ -50,11 +39,7 @@ pub(crate) fn fatal_error(msg: String) {
 
 pub(crate) fn general_warn(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_WARN_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.warn {
         return;
     };
     // General warning item -- '[WARN]'
@@ -63,11 +48,7 @@ pub(crate) fn general_warn(msg: String) {
 
 pub(crate) fn jsr_error(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_JSR_ERROR_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.jsr_errors {
         return;
     };
     // Error in JavaScript runtime
@@ -76,11 +57,7 @@ pub(crate) fn jsr_error(msg: String) {
 
 pub(crate) fn general_info(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_JSR_INFO_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.info {
         return;
     };
     // General info item -- '[INFO]'
@@ -89,11 +66,7 @@ pub(crate) fn general_info(msg: String) {
 
 pub(crate) fn req_ok(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_REQUESTS_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.plugin_asset_requests {
         return;
     };
     // Request that on Cynthia's part succeeded (and is so responded to) -- '[CYNGET/OK]'
@@ -102,11 +75,7 @@ pub(crate) fn req_ok(msg: String) {
 
 pub(crate) fn req_notfound(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_REQUESTS_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.requests {
         return;
     };
     // Request for an item that does not exist Cynthia published.jsonc
@@ -115,11 +84,7 @@ pub(crate) fn req_notfound(msg: String) {
 
 pub(crate) fn req_serve_proxied(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_PROXY_REQUESTS_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.proxy_requests {
         return;
     };
     // Proxying a request to a plugin
@@ -127,11 +92,7 @@ pub(crate) fn req_serve_proxied(msg: String) {
 }
 pub(crate) fn req_serve_plugin_asset(msg: String) {
     // Check if these log items are enabled
-    let log_enabled: bool = match std::env::var("LOG_PLUGIN_ASSET_REQUESTS_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
-    if !log_enabled {
+    if !config::main().logging.plugin_asset_requests {
         return;
     };
     // Serving a plugin asset
@@ -139,10 +100,7 @@ pub(crate) fn req_serve_plugin_asset(msg: String) {
 }
 
 pub(crate) fn log_by_act_num(act: i32, msg: String) {
-    let log_enabled: bool = match std::env::var("LOG_ENABLED") {
-        Ok(g) => g.parse::<bool>().unwrap(),
-        Err(_) => true,
-    };
+    let log_enabled: bool = config::main().logging.enabled;
     if !log_enabled {
         return;
     };

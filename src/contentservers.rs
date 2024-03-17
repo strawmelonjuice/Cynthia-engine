@@ -3,11 +3,10 @@ use std::fs;
 use actix_web::HttpResponse;
 use colored::Colorize;
 use curl::easy::Easy;
-use dotenv::dotenv;
 use markdown::{to_html_with_options, CompileOptions, Options};
 
 use crate::files::{cacheplacer, cacheretriever};
-use crate::{logger, structs::*};
+use crate::{config, logger, structs::*};
 
 use self::postlists::postlist_table_gen;
 
@@ -214,10 +213,7 @@ pub(crate) fn p_server(
     probableurl: String,
     plugins: Vec<PluginMeta>,
 ) -> HttpResponse {
-    let servecache: u64 = match std::env::var("SERVED_CACHE_LIFETIME") {
-        Ok(g) => g.parse::<u64>().unwrap(),
-        Err(_) => 90,
-    };
+    let servecache: u64 = config::main().cache.lifetimes.served;
     match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
         Ok(d) if servecache != 0 => HttpResponse::Ok()
             .append_header(("Accept-Charset", "UTF-8"))
@@ -333,11 +329,7 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
 }
 
 pub(crate) fn fetcher(uri: String) -> String {
-    dotenv().ok();
-    let cachelifetime: u64 = match std::env::var("EXTERNAL_CACHE_LIFETIME") {
-        Ok(g) => g.parse::<u64>().unwrap(),
-        Err(_) => 1200,
-    };
+    let cachelifetime: u64 = config::main().cache.lifetimes.external;
     return match cacheretriever(uri.clone(), cachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => {

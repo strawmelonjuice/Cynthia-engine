@@ -1,8 +1,7 @@
 use crate::jsr::{jsruntime, BUNJSR, BUN_NPM_EX, NODEJSR, NODEJSR_EX};
-use crate::logger;
 use crate::structs::CynthiaCacheIndexObject;
+use crate::{config, logger};
 use colored::Colorize;
-use dotenv::dotenv;
 use normalize_path::NormalizePath;
 use random_string::generate_rng;
 use std::fs;
@@ -87,11 +86,7 @@ pub(crate) fn cacheplacer(fileid: String, contents: String) -> String {
 }
 
 pub(crate) fn import_js_minified(scriptfile: String) -> String {
-    dotenv().ok();
-    let jscachelifetime: u64 = match std::env::var("JAVASCRIPT_CACHE_LIFETIME") {
-        Ok(g) => g.parse::<u64>().unwrap(),
-        Err(_) => 1200,
-    };
+    let jscachelifetime: u64 = config::main().cache.lifetimes.javascript;
     return match cacheretriever(scriptfile.to_string(), jscachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {
@@ -165,10 +160,7 @@ pub(crate) fn import_js_minified(scriptfile: String) -> String {
 }
 
 pub(crate) fn import_css_minified(stylefile: String) -> String {
-    let csscachelifetime: u64 = match std::env::var("STYLESHEET_CACHE_LIFETIME") {
-        Ok(g) => g.parse::<u64>().unwrap(),
-        Err(_) => 1200,
-    };
+    let csscachelifetime: u64 = config::main().cache.lifetimes.stylesheets;
     return match cacheretriever(stylefile.to_string(), csscachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => match jsruntime(true) {

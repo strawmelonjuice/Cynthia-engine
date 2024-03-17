@@ -21,7 +21,7 @@ use tar::Archive;
 use urlencoding::encode;
 
 pub(crate) fn init() {
-    let tempdir = Path::new("./.cynthiatemp/").join(format!(
+    let tempdir = Path::new("./.cynthiaTemp/").join(format!(
         "{}_cyninittemp",
         generate_rng(3..7, random_string::charsets::ALPHANUMERIC)
     ));
@@ -150,7 +150,7 @@ pub(crate) fn plugin_install(wantedplugin: String, wantedpluginv: String) {
         process::exit(1);
     }
     logger::general_log(String::from("Creating temporary directories..."));
-    let tempdir = Path::new("./.cynthiatemp/").join(format!(
+    let tempdir = Path::new("./.cynthiaTemp/").join(format!(
         "{}_cyninsttemp",
         generate_rng(3..7, random_string::charsets::ALPHANUMERIC)
     ));

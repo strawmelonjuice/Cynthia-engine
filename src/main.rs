@@ -9,7 +9,6 @@ use actix_web::{
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use colored::Colorize;
-use dotenv::dotenv;
 use jsonc_parser::parse_to_serde_value;
 use mime::Mime;
 
@@ -22,6 +21,7 @@ mod subcommand;
 
 mod logger;
 
+mod config;
 mod contentservers;
 mod dashfunctions;
 mod files;
@@ -394,7 +394,7 @@ As of now, Cynthia has only 4 commands:
         ));
         process::exit(1);
     }
-    if !Path::new("./.env").exists() || !Path::new("./cynthiaFiles").exists() {
+    if !Path::new("./cynthia.toml").exists() || !Path::new("./cynthiaFiles").exists() {
         logger::general_error(String::from("No CynthiaConfig found."));
         logger::general_info(format!(
             "To set up a clean Cynthia config, run '{} {}'.",
@@ -409,7 +409,7 @@ As of now, Cynthia has only 4 commands:
     logger::general_log("🤔\tLoading configuration from:".to_string());
     logger::general_log(format!(
         "`{}´",
-        Path::new("./.env")
+        Path::new("./cynthia.toml")
             .canonicalize()
             .unwrap()
             .display()
@@ -418,7 +418,6 @@ As of now, Cynthia has only 4 commands:
             .bright_purple()
             .italic()
     ));
-    dotenv().ok();
     let _ = fs::remove_dir_all("./.cynthiaTemp");
     match fs::create_dir_all("./.cynthiaTemp") {
         Ok(_) => {}
@@ -430,10 +429,7 @@ As of now, Cynthia has only 4 commands:
             process::exit(1);
         }
     }
-    let portnum: u16 = match std::env::var("PORT") {
-        Ok(g) => g.parse::<u16>().unwrap(),
-        Err(_) => 3000,
-    };
+    let portnum: u16 = (config::main()).port;
     match jsr::jsruntime(true) {
         "" => logger::general_error( String::from("No JS runtime found! Cynthia doesn't need one, but most of it's plugins do!\n\nSee: <https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/rust/docs/jsr.md>")),
         g => {
