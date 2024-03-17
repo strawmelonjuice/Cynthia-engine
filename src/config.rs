@@ -59,6 +59,7 @@ pub struct Lifetimes {
 #[serde(rename_all = "camelCase")]
 pub struct Generator {
     #[serde(alias = "site-baseurl")]
+    #[serde(default = "c_emptystring")]
     pub site_baseurl: String,
     pub meta: Meta,
 }
@@ -105,6 +106,9 @@ fn c_bool_false() -> bool {
 }
 fn c_bool_true() -> bool {
     true
+}
+fn c_emptystring() -> String {
+    String::from("")
 }
 fn c_cache_lifetime_stylesheets() -> u64 {
     72000
