@@ -1,5 +1,5 @@
 use crate::files::{import_css_minified, import_js_minified};
-use crate::{jsr, logger, structs::*};
+use crate::{config, jsr, logger, structs::*};
 use handlebars::Handlebars;
 use std::string::String;
 
@@ -92,16 +92,19 @@ pub(crate) fn combine_content(
                 Some(a) => a.name.as_str(),
                 None => "Unknown author.",
             };
-            let metatags = match p_met.kind.as_str() {
+            let mut metatags: String = match p_met.kind.as_str() {
                 "post" => {
                     format!(
                         r#"
-                        <meta name="og:title" content="{}">
-      <meta name="description" content="{}">
-      <meta name="og:description" content="{}">
-        {}
-      <meta name="author" content="{}">
-      <meta name="og:author" content="{}">
+    <meta charset="UTF-8">
+    <meta name="og:title" content="{}">
+    <meta name="description" content="{}">
+    <meta name="og:description" content="{}">
+    {}
+    <meta name="author" content="{}">
+    <meta name="og:author" content="{}">
+    <meta name="robots" content="index, follow">
+    <meta name="generator" content="Cynthia {}">
                         "#,
                         &p_met.title,
                         &p_met
@@ -114,11 +117,19 @@ pub(crate) fn combine_content(
                             .unwrap_or(String::from("No description available.")),
                         postthumbnail,
                         authorname,
-                        authorname
+                        authorname,
+                        env!("CARGO_PKG_VERSION")
                     )
                 }
                 _ => String::from(""),
             };
+            if config::main().generator.site_baseurl != *"" {
+                metatags.push_str(format!(r#"{1}<base href="{0}">"#, config::main().generator.site_baseurl, "\n").as_str())
+            }
+            if config::main().generator.og_sitename != *"" {
+                metatags.push_str(format!(r#"{1}<meta property="og:site_name" content="{0}"/>"#, config::main().generator.og_sitename, "\n").as_str())
+            }
+            
             let mut head = format!(
                 r#"
             <style>
