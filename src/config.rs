@@ -66,7 +66,7 @@ pub struct Generator {
     #[serde(alias = "sitename")]
     #[serde(default = "c_emptystring")]
     pub og_sitename: String,
-    
+
     pub meta: Meta,
 }
 

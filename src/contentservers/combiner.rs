@@ -124,12 +124,26 @@ pub(crate) fn combine_content(
                 _ => String::from(""),
             };
             if config::main().generator.site_baseurl != *"" {
-                metatags.push_str(format!(r#"{1}<base href="{0}">"#, config::main().generator.site_baseurl, "\n").as_str())
+                metatags.push_str(
+                    format!(
+                        r#"{1}<base href="{0}">"#,
+                        config::main().generator.site_baseurl,
+                        "\n"
+                    )
+                    .as_str(),
+                )
             }
             if config::main().generator.og_sitename != *"" {
-                metatags.push_str(format!(r#"{1}<meta property="og:site_name" content="{0}"/>"#, config::main().generator.og_sitename, "\n").as_str())
+                metatags.push_str(
+                    format!(
+                        r#"{1}<meta property="og:site_name" content="{0}"/>"#,
+                        config::main().generator.og_sitename,
+                        "\n"
+                    )
+                    .as_str(),
+                )
             }
-            
+
             let mut head = format!(
                 r#"
             <style>

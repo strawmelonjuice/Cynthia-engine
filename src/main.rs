@@ -340,6 +340,13 @@ As of now, Cynthia has only 4 commands:
             .to_lowercase()
             == *"add"
         {
+            subcommand::plugin_remove(std::env::args().nth(3).unwrap_or(String::from("none")));
+        } else if std::env::args()
+            .nth(2)
+            .unwrap_or(String::from(""))
+            .to_lowercase()
+            == *"add"
+        {
             subcommand::plugin_install(
                 std::env::args().nth(3).unwrap_or(String::from("none")),
                 std::env::args().nth(4).unwrap_or(String::from("latest")),
