@@ -31,6 +31,8 @@ pub struct CynthiaConf {
     pub port: u16,
     #[serde(alias = "Cache")]
     pub cache: Cache,
+    #[serde(alias = "Pages")]
+    pub pages: Pages,
     #[serde(alias = "Generator")]
     pub generator: Generator,
     #[serde(alias = "Logging")]
@@ -41,6 +43,16 @@ pub struct CynthiaConf {
 pub struct Cache {
     pub lifetimes: Lifetimes,
 }
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Pages {
+    #[serde(alias = "404-page")]
+    #[serde(alias = "notfound-page")]
+    #[serde(default = "c_404")]
+    pub notfound_page: String,
+}
+
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -103,10 +115,7 @@ pub struct Logging {
     #[serde(default = "c_bool_true")]
     pub jsr_errors: bool,
 }
-fn c_port() -> u16 {
-    logger::general_warn("Missing or unreadable 'port' in cynthia-configuration at `./cynthia.toml`! Using default 3000".to_string());
-    3000
-}
+fn c_port() -> u16 {3000}
 fn c_bool_false() -> bool {
     false
 }
@@ -128,3 +137,5 @@ fn c_cache_lifetime_external() -> u64 {
 fn c_cache_lifetime_served() -> u64 {
     50
 }
+
+fn c_404() -> String { String::from("404") }

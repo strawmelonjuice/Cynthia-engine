@@ -30,23 +30,29 @@ mod jsr;
 pub(crate) const CYNTHIAPLUGINCOMPAT: &str = "2";
 
 #[get("/p/{id:.*}")]
-async fn serves_p(id: web::Path<String>, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+async fn serves_p(id: web::Path<String>, loaded_data: Data<Mutex<LoadedData>>) -> HttpResponse {
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let config = run.config.clone();
+    drop(run);
     let s = id.as_str();
     let pgid = if s.ends_with('/') {
         s.strip_suffix('/').unwrap()
     } else {
         s
     };
-    contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins)
+    contentservers::p_server(&pgid.to_string(), format!("/p/{}", id), plugins, config)
 }
 
 #[get("/c/{category:.*}")]
 async fn serves_c(
     category: web::Path<String>,
-    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+    loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let _config = run.config.clone();
+    drop(run);
     let s = category.as_str();
     let pgid = if s.ends_with('/') {
         s.strip_suffix('/').unwrap()
@@ -59,9 +65,12 @@ async fn serves_c(
 #[get("/s/{searchterm:.*}")]
 async fn serves_s(
     searchterm: web::Path<String>,
-    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+    loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let _config = run.config.clone();
+    drop(run);
     let s = searchterm.as_str();
     let term = if s.ends_with('/') {
         s.strip_suffix('/').unwrap()
@@ -74,9 +83,12 @@ async fn serves_s(
 #[get("/t/{tag:.*}")]
 async fn serves_t(
     tag: web::Path<String>,
-    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+    loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let _config = run.config.clone();
+    drop(run);
     let s = tag.as_str();
     let pgid = if s.ends_with('/') {
         s.strip_suffix('/').unwrap()
@@ -110,9 +122,12 @@ fn find_mimetype(filename_: &str) -> Mime {
 #[get("/ej/{id:.*}")]
 async fn serves_ej(
     id: web::Path<String>,
-    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+    loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let _config = run.config.clone();
+    drop(run);
     let mut body = String::new();
     let mut mime = find_mimetype(&String::from("hello.html"));
     for plugin in plugins {
@@ -148,9 +163,12 @@ async fn serves_ej(
 
 async fn serves_e(
     id: web::Path<String>,
-    pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+    loaded_data: Data<Mutex<LoadedData>>,
 ) -> Result<NamedFile, Error> {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let _config = run.config.clone();
+    drop(run);
     for plugin in plugins {
         match &plugin.runners.hostedfolders {
             Some(p) => {
@@ -180,10 +198,13 @@ async fn serves_e(
 }
 
 #[get("/es/{en}/{id:.*}")]
-async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> HttpResponse {
+async fn serves_es(req: HttpRequest, loaded_data: Data<Mutex<LoadedData>>) -> HttpResponse {
     let en: String = req.match_info().get("en").unwrap().parse().unwrap();
     let id: String = req.uri().to_string().replacen("/es", "", 1);
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let config = run.config.clone();
+    drop(run);
     let mut body = String::new();
     for plugin in plugins {
         match &plugin.runners.proxied {
@@ -191,7 +212,7 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
                 for s in p {
                     // println!("{} == {}?", en , s[1].to_string());
                     if en == s[1] {
-                        body = contentservers::fetcher(format!("{}/{}", s[0], id));
+                        body = contentservers::fetcher(format!("{}/{}", s[0], id), &config);
                     };
                 }
             }
@@ -203,9 +224,12 @@ async fn serves_es(req: HttpRequest, pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -
         .body(body)
 }
 
-async fn root(pluginsmex: Data<Mutex<Vec<PluginMeta>>>) -> impl Responder {
-    let plugins: Vec<PluginMeta> = pluginsmex.lock().unwrap().clone();
-    contentservers::p_server(&"root".to_string(), "/".to_string(), plugins)
+async fn root(loaded_data: Data<Mutex<LoadedData>>) -> impl Responder {
+    let run = loaded_data.lock().unwrap();
+    let plugins= run.plugins.clone();
+    let config = run.config.clone();
+    drop(run);
+    contentservers::p_server(&"root".to_string(), "/".to_string(), plugins, config)
 }
 
 fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
@@ -544,7 +568,8 @@ As of now, Cynthia has only 4 commands:
             }
         }
     }
-    let data: Data<Mutex<Vec<PluginMeta>>> = Data::new(Mutex::new(pluginlist));
+    let compileddata: structs::LoadedData = LoadedData{plugins: pluginlist, config: (config::main())};
+    let data: Data<Mutex<LoadedData>> = Data::new(Mutex::new(compileddata));
     logger::general_log(format!(
         "🆙\tRunning at {} ...",
         format!(

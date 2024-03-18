@@ -5,8 +5,9 @@ use colored::Colorize;
 use curl::easy::Easy;
 use markdown::{to_html_with_options, CompileOptions, Options};
 
+use crate::config::CynthiaConf;
 use crate::files::{cacheplacer, cacheretriever};
-use crate::{config, logger, structs::*};
+use crate::{logger, structs::*};
 
 use self::postlists::postlist_table_gen;
 
@@ -212,8 +213,9 @@ pub(crate) fn p_server(
     pgid: &String,
     probableurl: String,
     plugins: Vec<PluginMeta>,
+    config: CynthiaConf
 ) -> HttpResponse {
-    let servecache: u64 = config::main().cache.lifetimes.served;
+    let servecache: u64 = config.cache.lifetimes.served;
     match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
         Ok(d) if servecache != 0 => HttpResponse::Ok()
             .append_header(("Accept-Charset", "UTF-8"))
@@ -328,8 +330,8 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
     menus
 }
 
-pub(crate) fn fetcher(uri: String) -> String {
-    let cachelifetime: u64 = config::main().cache.lifetimes.external;
+pub(crate) fn fetcher(uri: String, config: &CynthiaConf) -> String {
+    let cachelifetime: u64 = config.cache.lifetimes.external;
     return match cacheretriever(uri.clone(), cachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => {

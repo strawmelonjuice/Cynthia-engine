@@ -1,5 +1,4 @@
-use crate::logger;
-use crate::structs::PluginMeta;
+use crate::{logger, LoadedData};
 use actix_web::web::Data;
 use actix_web::{post, web, HttpResponse};
 use normalize_path::NormalizePath;
@@ -32,7 +31,7 @@ struct PluginDashRemoveParams {
 #[post("/dashapi/")]
 pub(crate) async fn dashserver(
     data: web::Form<DashAPIData>,
-    _pluginsmex: Data<Mutex<Vec<PluginMeta>>>,
+    _loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
     if data.passkey != passkey().unwrap_or(String::from("")) {
         logger::general_warn(String::from(

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::config::CynthiaConf;
 
 // Serde allows using the output of a function to replace incoherent data. This is why there are
 // some private functions in this file, that just create empty objects or structs.
@@ -236,4 +237,9 @@ pub(crate) struct ModifyOutputHtml {
     #[serde(rename = "type")]
     pub type_field: String,
     pub execute: String,
+}
+
+pub(crate) struct LoadedData {
+    pub plugins: Vec<PluginMeta>,
+    pub config: CynthiaConf,
 }
