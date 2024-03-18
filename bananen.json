@@ -34,6 +34,26 @@
     "unreleased": [],
     "released": [
       {
+        "name": "2.1.2-alpha.0.0",
+        "changes": [
+          {
+            "contents": "PM remove is now a valid subcommand",
+            "type": 1,
+            "breaking": false
+          },
+          {
+            "contents": "Bug that caused successful requests to be ignored",
+            "type": 3,
+            "breaking": false
+          },
+          {
+            "contents": "Extra support for metatags",
+            "type": 1,
+            "breaking": false
+          }
+        ]
+      },
+      {
         "name": "2.1.0-alpha.0.0",
         "changes": [
           {

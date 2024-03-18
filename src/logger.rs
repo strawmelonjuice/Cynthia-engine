@@ -66,7 +66,7 @@ pub(crate) fn general_info(msg: String) {
 
 pub(crate) fn req_ok(msg: String) {
     // Check if these log items are enabled
-    if !config::main().logging.plugin_asset_requests {
+    if !config::main().logging.requests {
         return;
     };
     // Request that on Cynthia's part succeeded (and is so responded to) -- '[CYNGET/OK]'

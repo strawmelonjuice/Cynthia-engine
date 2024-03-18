@@ -3,7 +3,7 @@ name = "cynthiaweb"
 description = "A simple web server and generator based on plain file editing. I hate WordPress."
 documentation = "https://cynthia-docs.strawmelonjuice.com/"
 authors = ["MLC Bloeiman <mar@strawmelonjuice.com>"]
-version = "2.1.1-alpha.0.0"
+version = "2.1.2-alpha.0.0"
 edition = "2021"
 license = "GPL-3.0 OR MIT"
 

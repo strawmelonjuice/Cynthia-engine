@@ -10,6 +10,12 @@ No unreleased changes.
 
 
 
+### 2.1.2-alpha.0.0
+-  **<span style="color: #336600">Addition</span>**: Extra support for metatags
+-  **<span style="color: #9900cc">Fix</span>**: Bug that caused successful requests to be ignored
+-  **<span style="color: #336600">Addition</span>**: PM remove is now a valid subcommand
+
+
 ### 2.1.0-alpha.0.0
 - <span style="color: red; background-color: #ffcc00">BREAKING!</span> **<span style="color: #0033cc">Update</span>**: Switching from `.env` to `cynthia.toml`.
 -  **<span style="color: #0033cc">Update</span>**: Enhanced some HTML-grammar Cynthia was generating.
