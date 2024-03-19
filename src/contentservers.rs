@@ -213,7 +213,7 @@ pub(crate) fn p_server(
     pgid: &String,
     probableurl: String,
     plugins: Vec<PluginMeta>,
-    config: CynthiaConf
+    config: CynthiaConf,
 ) -> HttpResponse {
     let servecache: u64 = config.cache.lifetimes.served;
     match cacheretriever(format!("@web@/p/{}", pgid), servecache) {

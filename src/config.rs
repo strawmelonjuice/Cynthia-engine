@@ -5,7 +5,7 @@ use std::{fs, process};
 
 pub fn main() -> CynthiaConf {
     match fs::read_to_string(Path::new("./cynthia.toml")) {
-        Ok(g) => match toml::from_str(&*g) {
+        Ok(g) => match toml::from_str(&g) {
             Ok(p) => p,
             Err(_e) => {
                 logger::fatal_error(
@@ -52,7 +52,6 @@ pub struct Pages {
     #[serde(default = "c_404")]
     pub notfound_page: String,
 }
-
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -115,7 +114,9 @@ pub struct Logging {
     #[serde(default = "c_bool_true")]
     pub jsr_errors: bool,
 }
-fn c_port() -> u16 {3000}
+fn c_port() -> u16 {
+    3000
+}
 fn c_bool_false() -> bool {
     false
 }
@@ -138,4 +139,6 @@ fn c_cache_lifetime_served() -> u64 {
     50
 }
 
-fn c_404() -> String { String::from("404") }
+fn c_404() -> String {
+    String::from("404")
+}

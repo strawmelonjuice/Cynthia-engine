@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::config::CynthiaConf;
+use serde::{Deserialize, Serialize};
 
 // Serde allows using the output of a function to replace incoherent data. This is why there are
 // some private functions in this file, that just create empty objects or structs.

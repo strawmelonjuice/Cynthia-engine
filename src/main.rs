@@ -32,7 +32,7 @@ pub(crate) const CYNTHIAPLUGINCOMPAT: &str = "2";
 #[get("/p/{id:.*}")]
 async fn serves_p(id: web::Path<String>, loaded_data: Data<Mutex<LoadedData>>) -> HttpResponse {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let config = run.config.clone();
     drop(run);
     let s = id.as_str();
@@ -50,7 +50,7 @@ async fn serves_c(
     loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let _config = run.config.clone();
     drop(run);
     let s = category.as_str();
@@ -68,7 +68,7 @@ async fn serves_s(
     loaded_data: Data<Mutex<LoadedData>>,
 ) -> HttpResponse {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let _config = run.config.clone();
     drop(run);
     let s = searchterm.as_str();
@@ -81,12 +81,9 @@ async fn serves_s(
 }
 
 #[get("/t/{tag:.*}")]
-async fn serves_t(
-    tag: web::Path<String>,
-    loaded_data: Data<Mutex<LoadedData>>,
-) -> HttpResponse {
+async fn serves_t(tag: web::Path<String>, loaded_data: Data<Mutex<LoadedData>>) -> HttpResponse {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let _config = run.config.clone();
     drop(run);
     let s = tag.as_str();
@@ -120,12 +117,9 @@ fn find_mimetype(filename_: &str) -> Mime {
 }
 
 #[get("/ej/{id:.*}")]
-async fn serves_ej(
-    id: web::Path<String>,
-    loaded_data: Data<Mutex<LoadedData>>,
-) -> HttpResponse {
+async fn serves_ej(id: web::Path<String>, loaded_data: Data<Mutex<LoadedData>>) -> HttpResponse {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let _config = run.config.clone();
     drop(run);
     let mut body = String::new();
@@ -166,7 +160,7 @@ async fn serves_e(
     loaded_data: Data<Mutex<LoadedData>>,
 ) -> Result<NamedFile, Error> {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let _config = run.config.clone();
     drop(run);
     for plugin in plugins {
@@ -202,7 +196,7 @@ async fn serves_es(req: HttpRequest, loaded_data: Data<Mutex<LoadedData>>) -> Ht
     let en: String = req.match_info().get("en").unwrap().parse().unwrap();
     let id: String = req.uri().to_string().replacen("/es", "", 1);
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let config = run.config.clone();
     drop(run);
     let mut body = String::new();
@@ -226,7 +220,7 @@ async fn serves_es(req: HttpRequest, loaded_data: Data<Mutex<LoadedData>>) -> Ht
 
 async fn root(loaded_data: Data<Mutex<LoadedData>>) -> impl Responder {
     let run = loaded_data.lock().unwrap();
-    let plugins= run.plugins.clone();
+    let plugins = run.plugins.clone();
     let config = run.config.clone();
     drop(run);
     contentservers::p_server(&"root".to_string(), "/".to_string(), plugins, config)
@@ -568,7 +562,10 @@ As of now, Cynthia has only 4 commands:
             }
         }
     }
-    let compileddata: structs::LoadedData = LoadedData{plugins: pluginlist, config: (config::main())};
+    let compileddata: structs::LoadedData = LoadedData {
+        plugins: pluginlist,
+        config: (config::main()),
+    };
     let data: Data<Mutex<LoadedData>> = Data::new(Mutex::new(compileddata));
     logger::general_log(format!(
         "🆙\tRunning at {} ...",

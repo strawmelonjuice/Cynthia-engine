@@ -1,8 +1,7 @@
 #![allow(dead_code)]
-use std::time::SystemTime;
-
 use crate::config;
 use colored::Colorize;
+use std::time::SystemTime;
 use time::{format_description, OffsetDateTime};
 
 const DATE_FORMAT_STR: &str = "[year]-[month]-[day]-[hour]:[minute]:[second]:[subsecond digits:3]";
@@ -53,7 +52,6 @@ pub(crate) fn req_notfound(msg: String) {
 }
 
 pub(crate) fn req_serve_proxied(msg: String) {
-
     // Proxying a request to a plugin
     log_by_act_num(49038, msg)
 }
@@ -63,18 +61,31 @@ pub(crate) fn req_serve_plugin_asset(msg: String) {
 }
 
 pub(crate) fn log_by_act_num(act: i32, msg: String) {
-    let log = config::main().logging;
-    if !log.enabled {
-        return;
-    };
     let tabs: String = "\t\t".to_string();
     let dt1: OffsetDateTime = SystemTime::now().into();
     let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
     let times = dt1.format(&dt_fmt).unwrap();
-
+    if 5000 == act {
+        let name = format!("[{} - [FATAL ERROR]", times);
+        let spaceleft = if name.chars().count() < SPACES {
+            SPACES - name.chars().count()
+        } else {
+            0
+        };
+        let title = format!("{}", name.bold().red().on_bright_yellow());
+        let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
+        eprintln!("{0}{1}", preq, msg.bright_red());
+        return;
+    };
+    let log = config::main().logging;
+    if !log.enabled {
+        return;
+    };
     match act {
         200 | 2 => {
-            if !log.requests { return; };
+            if !log.requests {
+                return;
+            };
             let name = format!("[{} - [CynGET/OK]", times);
             let spaceleft = if name.chars().count() < SPACES {
                 SPACES - name.chars().count()
@@ -86,7 +97,9 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}👍{DIVVER}{1}", preq, msg);
         }
         3 | 404 => {
-            if !log.requests { return; };
+            if !log.requests {
+                return;
+            };
             let name = format!("[{} - [CynGET/404]", times);
             let spaceleft = if name.chars().count() < SPACES {
                 SPACES - name.chars().count()
@@ -103,17 +116,6 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
                 return;
             };
             let name = format!("[{} - [ERROR]", times);
-            let spaceleft = if name.chars().count() < SPACES {
-                SPACES - name.chars().count()
-            } else {
-                0
-            };
-            let title = format!("{}", name.bold().red().on_bright_yellow());
-            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            eprintln!("{0}{1}", preq, msg.bright_red());
-        }
-        5000 => {
-            let name = format!("[{} - [FATAL ERROR]", times);
             let spaceleft = if name.chars().count() < SPACES {
                 SPACES - name.chars().count()
             } else {
