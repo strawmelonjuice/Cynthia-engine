@@ -34,6 +34,16 @@
     "unreleased": [],
     "released": [
       {
+        "name": "2.1.2-alpha.0.1",
+        "changes": [
+          {
+            "contents": "Several bugs that could break Cynthia entirely",
+            "type": 3,
+            "breaking": false
+          }
+        ]
+      },
+      {
         "name": "2.1.2-alpha.0.0",
         "changes": [
           {

@@ -10,6 +10,10 @@ No unreleased changes.
 
 
 
+### 2.1.2-alpha.0.1
+-  **<span style="color: #9900cc">Fix</span>**: Several bugs that could break Cynthia entirely
+
+
 ### 2.1.2-alpha.0.0
 -  **<span style="color: #336600">Addition</span>**: Extra support for metatags
 -  **<span style="color: #9900cc">Fix</span>**: Bug that caused successful requests to be ignored
