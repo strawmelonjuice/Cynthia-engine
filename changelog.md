@@ -10,6 +10,10 @@ No unreleased changes.
 
 
 
+### 2.1.4-alpha.0.0
+-  **<span style="color: #336600">Addition</span>**: The long awaited file logging feature!
+
+
 ### 2.1.3-alpha.0.0
 -  **<span style="color: #336600">Addition</span>**: 404 pages can now be configured
 

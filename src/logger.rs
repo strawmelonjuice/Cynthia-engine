@@ -1,9 +1,11 @@
 #![allow(dead_code)]
+
 use crate::config;
 use colored::Colorize;
 use std::time::SystemTime;
 use time::{format_description, OffsetDateTime};
 
+use std::io::{prelude::*, Seek, SeekFrom};
 const DATE_FORMAT_STR: &str = "[year]-[month]-[day]-[hour]:[minute]:[second]:[subsecond digits:3]";
 const SPACES: usize = 32;
 const DIVVER: &str = "\t";
@@ -59,7 +61,7 @@ pub(crate) fn req_serve_plugin_asset(msg: String) {
     // Serving a plugin asset
     log_by_act_num(293838, msg)
 }
-
+use std::fs::OpenOptions;
 pub(crate) fn log_by_act_num(act: i32, msg: String) {
     let tabs: String = "\t\t".to_string();
     let dt1: OffsetDateTime = SystemTime::now().into();
@@ -78,12 +80,16 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
         return;
     };
     let log = config::main().logging;
-    if !log.enabled {
+    let clog = log.console.clone();
+    if !clog.enabled {
         return;
     };
+    let mut file = OpenOptions::new().append(true).create(true).open(log.clone().file.filepath).unwrap();
+    file.seek(SeekFrom::End(0)).unwrap();
     match act {
         200 | 2 => {
-            if !log.requests {
+            if log.file.clone().enabled && log.file.clone().requests { file.write_all(format!("[{}]\t200/SUCCESS\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if !clog.requests {
                 return;
             };
             let name = format!("[{} - [CynGET/OK]", times);
@@ -97,7 +103,8 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}👍{DIVVER}{1}", preq, msg);
         }
         3 | 404 => {
-            if !log.requests {
+            if log.file.clone().enabled && log.file.clone().requests { file.write_all(format!("[{}]\t404/NOTFOUND\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if !clog.requests {
                 return;
             };
             let name = format!("[{} - [CynGET/404]", times);
@@ -111,8 +118,9 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}👎{DIVVER}{1}", preq, msg);
         }
         5 => {
+            if log.file.clone().enabled && log.file.clone().error { file.write_all(format!("[{}]\tERROR\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
             // Check if these log items are enabled
-            if !log.error {
+            if !clog.error {
                 return;
             };
             let name = format!("[{} - [ERROR]", times);
@@ -126,8 +134,9 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             eprintln!("{0}{1}", preq, msg.bright_red());
         }
         15 => {
+            if log.file.clone().enabled && log.file.clone().warn { file.write_all(format!("[{}]\tWARNING\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
             // Check if these log items are enabled
-            if !log.warn {
+            if !clog.warn {
                 return;
             };
             let name = format!("[{} - [WARN]", times);
@@ -141,8 +150,9 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             eprintln!("{0}⚠{DIVVER}{1}", preq, msg.on_bright_magenta().black());
         }
         12 => {
+            if log.file.clone().enabled && log.file.clone().jsr_errors { file.write_all(format!("[{}]\tERROR-JS\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
             // Check if these log items are enabled
-            if !log.jsr_errors {
+            if !clog.jsr_errors {
                 return;
             };
             let name = "[JS/ERROR]";
@@ -156,8 +166,9 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             eprintln!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
         }
         49038 => {
+            if log.file.clone().enabled && log.file.clone().proxy_requests { file.write_all(format!("[{}]\tPROXY\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
             // Check if these log items are enabled
-            if !log.proxy_requests {
+            if !clog.proxy_requests {
                 return;
             };
             let name = format!("[{} - [PROXY]", times);
@@ -171,8 +182,10 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         293838 => {
+            if log.file.clone().enabled && log.file.clone().plugin_asset_requests { file.write_all(format!("[{}]\t200/PLUGIN\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+
             // Check if these log items are enabled
-            if !log.plugin_asset_requests {
+            if !clog.plugin_asset_requests {
                 return;
             };
             let name = format!("[{} - [PLUGIN ASSET]", times);
@@ -186,8 +199,9 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         10 => {
+            if log.file.clone().enabled && log.file.clone().info { file.write_all(format!("[{}]\tNOTE\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
             // Check if these log items are enabled
-            if !log.info {
+            if !clog.info {
                 return;
             };
             let name = format!("[{} - [NOTE]", times);
@@ -201,7 +215,8 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         31 => {
-            if !log.cache {
+            if log.file.clone().enabled && log.file.clone().cache { file.write_all(format!("[{}]\tCACHING\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if !clog.cache {
                 return;
             };
             let name = format!("[{} - [CACHE]", times);
@@ -214,18 +229,8 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
             println!("{0}♻️{DIVVER}{1}", preq, msg.bright_white().italic());
         }
-        88 => {
-            let name = String::from("[SILLY]");
-            let spaceleft = if name.chars().count() < SPACES {
-                SPACES - name.chars().count()
-            } else {
-                0
-            };
-            let title = format!("{}", name.bold().bright_magenta());
-            let preq = format!("{0}{2}{1}", title, " ".repeat(spaceleft), tabs);
-            println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
-        }
         _ => {
+            if log.file.clone().enabled { file.write_all(format!("[{}]\tLOG\t\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
             let name = format!("[{} - [LOG]", times).blue();
             let spaceleft = if name.chars().count() < SPACES {
                 SPACES - name.chars().count()

@@ -39,7 +39,7 @@ pub struct CynthiaConf {
     #[serde(default)]
     pub generator: Generator,
     #[serde(alias = "Logging")]
-    #[serde(default)]
+    #[serde(default = "d_logging")]
     pub logging: Logging,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -96,6 +96,45 @@ pub struct Meta {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Logging {
+    #[serde(default = "d_file_logging")]
+    pub(crate) file: FileLogging,
+
+    #[serde(default = "d_console_logging")]
+    pub(crate) console: ConsoleLogging,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileLogging {
+    #[serde(alias = "filename")]
+    #[serde(default = "c_l_filep")]
+    pub filepath: String,
+    #[serde(default = "c_bool_true")]
+    pub enabled: bool,
+    #[serde(default = "c_bool_true")]
+    pub cache: bool,
+    #[serde(default = "c_bool_true")]
+    pub error: bool,
+    #[serde(default = "c_bool_true")]
+    pub warn: bool,
+    #[serde(default = "c_bool_false")]
+    pub info: bool,
+    #[serde(default = "c_bool_true")]
+    pub requests: bool,
+    #[serde(alias = "proxy-requests")]
+    #[serde(default = "c_bool_false")]
+    pub proxy_requests: bool,
+    #[serde(alias = "plugin-asset-requests")]
+    #[serde(default = "c_bool_false")]
+    pub plugin_asset_requests: bool,
+    #[serde(alias = "jsr-errors")]
+    #[serde(default = "c_bool_true")]
+    pub jsr_errors: bool,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConsoleLogging {
     #[serde(default = "c_bool_true")]
     pub enabled: bool,
     #[serde(default = "c_bool_false")]
@@ -145,4 +184,42 @@ fn c_cache_lifetime_served() -> u64 {
 
 fn c_404() -> String {
     String::from("404")
+}
+
+fn c_l_filep() -> String {
+    String::from("./cynthia.log")
+}
+
+fn d_logging () -> Logging {
+    Logging {
+        file: d_file_logging(),
+        console: d_console_logging(),
+    }
+}
+fn d_file_logging () -> FileLogging {
+    FileLogging {
+        filepath: "./cynthia.log".to_string(),
+        enabled: true,
+        cache: true,
+        error: true,
+        warn: true,
+        info: false,
+        requests: true,
+        proxy_requests: false,
+        plugin_asset_requests: false,
+        jsr_errors: true,
+    }
+}
+fn d_console_logging () -> ConsoleLogging {
+    ConsoleLogging {
+        enabled: true,
+        cache: false,
+        error: true,
+        warn: true,
+        info: true,
+        requests: true,
+        proxy_requests: false,
+        plugin_asset_requests: false,
+        jsr_errors: true,
+    }
 }
