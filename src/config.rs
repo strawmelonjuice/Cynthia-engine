@@ -30,12 +30,16 @@ pub struct CynthiaConf {
     #[serde(default = "c_port")]
     pub port: u16,
     #[serde(alias = "Cache")]
+    #[serde(default)]
     pub cache: Cache,
     #[serde(alias = "Pages")]
+    #[serde(default)]
     pub pages: Pages,
     #[serde(alias = "Generator")]
+    #[serde(default)]
     pub generator: Generator,
     #[serde(alias = "Logging")]
+    #[serde(default)]
     pub logging: Logging,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
