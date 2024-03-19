@@ -31,14 +31,18 @@
     }
   },
   "saved_changes": {
-    "unreleased": [
-      {
-        "contents": "Several bugs that could break Cynthia entirely",
-        "type": 3,
-        "breaking": false
-      }
-    ],
+    "unreleased": [],
     "released": [
+      {
+        "name": "2.1.3-alpha.0.0",
+        "changes": [
+          {
+            "contents": "404 pages can now be configured",
+            "type": 1,
+            "breaking": false
+          }
+        ]
+      },
       {
         "name": "2.1.2-alpha.0.1",
         "changes": [

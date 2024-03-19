@@ -4,11 +4,14 @@
 
 ## Unreleased changes
             
--  **<span style="color: #9900cc">Fix</span>**: Several bugs that could break Cynthia entirely
-
+No unreleased changes.
 
 ## Releases
 
+
+
+### 2.1.3-alpha.0.0
+-  **<span style="color: #336600">Addition</span>**: 404 pages can now be configured
 
 
 ### 2.1.2-alpha.0.1

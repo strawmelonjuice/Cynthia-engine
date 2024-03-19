@@ -209,12 +209,36 @@ pub(crate) fn p_content(pgid: String) -> String {
     String::from("404error")
 }
 
+fn fourohfour(
+    pgid: &String,
+    probableurl: String,
+    plugins: Vec<PluginMeta>,
+    config: CynthiaConf,
+) -> HttpResponse {
+    if pgid == &config.pages.notfound_page {
+        return HttpResponse::NotFound().body("Could not find requested page.");
+    }
+    p_server(
+        &config.clone().pages.notfound_page,
+        probableurl,
+        plugins,
+        config,
+    )
+}
+
 pub(crate) fn p_server(
     pgid: &String,
     probableurl: String,
     plugins: Vec<PluginMeta>,
     config: CynthiaConf,
 ) -> HttpResponse {
+    if pgid == &config.pages.notfound_page {
+        logger::req_notfound(format!(
+            "--> {0} ({1})",
+            pgid,
+            probableurl.blue().underline()
+        ));
+    }
     let servecache: u64 = config.cache.lifetimes.served;
     match cacheretriever(format!("@web@/p/{}", pgid), servecache) {
         Ok(d) if servecache != 0 => HttpResponse::Ok()
@@ -231,12 +255,7 @@ pub(crate) fn p_server(
                 plugins.clone(),
             );
             if cynres == *"404error" {
-                logger::req_notfound(format!(
-                    "--> {0} ({1})",
-                    pgid,
-                    probableurl.blue().underline()
-                ));
-                return HttpResponse::NotFound().into();
+                return fourohfour(pgid, probableurl, plugins, config);
             }
             if cynres == *"unknownexeception" {
                 logger::general_error(format!(
@@ -254,11 +273,13 @@ pub(crate) fn p_server(
                 ));
                 return HttpResponse::ExpectationFailed().into();
             }
-            logger::req_ok(format!(
-                "--> {0} ({1})",
-                pgid,
-                probableurl.blue().underline()
-            ));
+            if pgid != &config.pages.notfound_page {
+                logger::req_ok(format!(
+                    "--> {0} ({1})",
+                    pgid,
+                    probableurl.blue().underline()
+                ));
+            }
             if servecache != 0 {
                 HttpResponse::Ok()
                     .append_header(("Accept-Charset", "UTF-8"))

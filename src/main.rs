@@ -226,6 +226,19 @@ async fn root(loaded_data: Data<Mutex<LoadedData>>) -> impl Responder {
     contentservers::p_server(&"root".to_string(), "/".to_string(), plugins, config)
 }
 
+async fn notfound(loaded_data: Data<Mutex<LoadedData>>) -> impl Responder {
+    let run = loaded_data.lock().unwrap();
+    let plugins = run.plugins.clone();
+    let config = run.config.clone();
+    drop(run);
+    contentservers::p_server(
+        &config.clone().pages.notfound_page,
+        "/*".to_string(),
+        plugins,
+        config,
+    )
+}
+
 fn read_published_jsonc() -> Vec<CynthiaContentMetaData> {
     if Path::new("./cynthiaFiles/published.yaml").exists() {
         let file = "./cynthiaFiles/published.yaml".to_owned();
@@ -596,6 +609,7 @@ As of now, Cynthia has only 4 commands:
                 .route("/", web::get().to(root))
                 .app_data(web::Data::clone(&data))
                 .service(dashserver)
+                .default_service(web::get().to(notfound))
         })
         .bind(("127.0.0.1", portnum))?
         .run()
@@ -616,6 +630,7 @@ As of now, Cynthia has only 4 commands:
                 .service(serves_es)
                 .route("/", web::get().to(root))
                 .app_data(web::Data::clone(&data))
+                .default_service(web::get().to(notfound))
         })
         .bind(("127.0.0.1", portnum))?
         .run()
