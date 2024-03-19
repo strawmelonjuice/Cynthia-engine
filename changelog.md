@@ -4,7 +4,8 @@
 
 ## Unreleased changes
             
-No unreleased changes.
+-  **<span style="color: #9900cc">Fix</span>**: Several bugs that could break Cynthia entirely
+
 
 ## Releases
 

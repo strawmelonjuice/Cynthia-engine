@@ -31,7 +31,13 @@
     }
   },
   "saved_changes": {
-    "unreleased": [],
+    "unreleased": [
+      {
+        "contents": "Several bugs that could break Cynthia entirely",
+        "type": 3,
+        "breaking": false
+      }
+    ],
     "released": [
       {
         "name": "2.1.2-alpha.0.0",
