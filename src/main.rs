@@ -369,7 +369,7 @@ As of now, Cynthia has only 4 commands:
             .nth(2)
             .unwrap_or(String::from(""))
             .to_lowercase()
-            == *"add"
+            == *"remove"
         {
             subcommand::plugin_remove(std::env::args().nth(3).unwrap_or(String::from("none")));
         } else if std::env::args()

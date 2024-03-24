@@ -10,6 +10,10 @@ No unreleased changes.
 
 
 
+### 2.1.4-alpha.0.1
+-  **<span style="color: #9900cc">Fix</span>**: adding a plugin would attempt to remove it instead
+
+
 ### 2.1.4-alpha.0.0
 -  **<span style="color: #336600">Addition</span>**: The long awaited file logging feature!
 
