@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
+ *
+ * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
+ */
+
 use crate::structs::CynthiaPluginManifestItem;
 use crate::{
     jsr::{BUN_NPM, BUN_NPM_EX, NODE_NPM},

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
+ *
+ * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
+ */
+
 use actix_files::NamedFile;
 use std::io::{Error, ErrorKind};
 use std::{fs, path::Path, process, sync::Mutex};
@@ -591,7 +597,13 @@ As of now, Cynthia has only 4 commands:
         .italic()
     ));
     if cynthiadashactive {
-        logger::general_warn( String::from("Cynthia dashboard plugin found! The Cynthia Dashboard has additional permissions, so uninstall it if left unused, also check the source  of this plugin."));
+        logger::general_warn(String::from("Cynthia dashboard plugin found!"));
+        logger::general_warn(String::from(
+            "The Cynthia Dashboard has additional permissions,",
+        ));
+        logger::general_warn(String::from(
+            " so uninstall it if left unused. Also check the source of this plugin, is it genuine?",
+        ));
 
         HttpServer::new(move || {
             App::new()

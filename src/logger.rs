@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
+ *
+ * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
+ */
+
 #![allow(dead_code)]
 
 use crate::config;
@@ -84,11 +90,25 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
     if !clog.enabled {
         return;
     };
-    let mut file = OpenOptions::new().append(true).create(true).open(log.clone().file.filepath).unwrap();
+    let mut file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(log.clone().file.filepath)
+        .unwrap();
     file.seek(SeekFrom::End(0)).unwrap();
     match act {
         200 | 2 => {
-            if log.file.clone().enabled && log.file.clone().requests { file.write_all(format!("[{}]\t200/SUCCESS\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().requests {
+                file.write_all(
+                    format!(
+                        "[{}]\t200/SUCCESS\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             if !clog.requests {
                 return;
             };
@@ -103,7 +123,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}👍{DIVVER}{1}", preq, msg);
         }
         3 | 404 => {
-            if log.file.clone().enabled && log.file.clone().requests { file.write_all(format!("[{}]\t404/NOTFOUND\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().requests {
+                file.write_all(
+                    format!(
+                        "[{}]\t404/NOTFOUND\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             if !clog.requests {
                 return;
             };
@@ -118,7 +148,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}👎{DIVVER}{1}", preq, msg);
         }
         5 => {
-            if log.file.clone().enabled && log.file.clone().error { file.write_all(format!("[{}]\tERROR\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().error {
+                file.write_all(
+                    format!(
+                        "[{}]\tERROR\t\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             // Check if these log items are enabled
             if !clog.error {
                 return;
@@ -134,7 +174,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             eprintln!("{0}{1}", preq, msg.bright_red());
         }
         15 => {
-            if log.file.clone().enabled && log.file.clone().warn { file.write_all(format!("[{}]\tWARNING\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().warn {
+                file.write_all(
+                    format!(
+                        "[{}]\tWARNING\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             // Check if these log items are enabled
             if !clog.warn {
                 return;
@@ -150,7 +200,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             eprintln!("{0}⚠{DIVVER}{1}", preq, msg.on_bright_magenta().black());
         }
         12 => {
-            if log.file.clone().enabled && log.file.clone().jsr_errors { file.write_all(format!("[{}]\tERROR-JS\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().jsr_errors {
+                file.write_all(
+                    format!(
+                        "[{}]\tERROR-JS\t\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             // Check if these log items are enabled
             if !clog.jsr_errors {
                 return;
@@ -166,7 +226,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             eprintln!("{0}{1}", preq, msg.bright_red().on_bright_yellow());
         }
         49038 => {
-            if log.file.clone().enabled && log.file.clone().proxy_requests { file.write_all(format!("[{}]\tPROXY\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().proxy_requests {
+                file.write_all(
+                    format!(
+                        "[{}]\tPROXY\t\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             // Check if these log items are enabled
             if !clog.proxy_requests {
                 return;
@@ -182,7 +252,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         293838 => {
-            if log.file.clone().enabled && log.file.clone().plugin_asset_requests { file.write_all(format!("[{}]\t200/PLUGIN\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().plugin_asset_requests {
+                file.write_all(
+                    format!(
+                        "[{}]\t200/PLUGIN\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
 
             // Check if these log items are enabled
             if !clog.plugin_asset_requests {
@@ -199,7 +279,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         10 => {
-            if log.file.clone().enabled && log.file.clone().info { file.write_all(format!("[{}]\tNOTE\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().info {
+                file.write_all(
+                    format!(
+                        "[{}]\tNOTE\t\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             // Check if these log items are enabled
             if !clog.info {
                 return;
@@ -215,7 +305,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}❕{DIVVER}{1}", preq, msg.bright_green());
         }
         31 => {
-            if log.file.clone().enabled && log.file.clone().cache { file.write_all(format!("[{}]\tCACHING\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled && log.file.clone().cache {
+                file.write_all(
+                    format!(
+                        "[{}]\tCACHING\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             if !clog.cache {
                 return;
             };
@@ -230,7 +330,17 @@ pub(crate) fn log_by_act_num(act: i32, msg: String) {
             println!("{0}♻️{DIVVER}{1}", preq, msg.bright_white().italic());
         }
         _ => {
-            if log.file.clone().enabled { file.write_all(format!("[{}]\tLOG\t\t\t\t{}\n", times, strip_ansi_escapes::strip_str(msg.clone().as_str())).as_bytes()).unwrap(); };
+            if log.file.clone().enabled {
+                file.write_all(
+                    format!(
+                        "[{}]\tLOG\t\t\t\t{}\n",
+                        times,
+                        strip_ansi_escapes::strip_str(msg.clone().as_str())
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            };
             let name = format!("[{} - [LOG]", times).blue();
             let spaceleft = if name.chars().count() < SPACES {
                 SPACES - name.chars().count()

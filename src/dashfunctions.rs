@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
+ *
+ * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
+ */
+
 use crate::{logger, LoadedData};
 use actix_web::web::Data;
 use actix_web::{post, web, HttpResponse};
@@ -19,10 +25,8 @@ struct DashAPIData {
 }
 
 #[derive(Deserialize)]
-struct PluginDashInstallParams {
-    plugin_name: String,
-    plugin_version: String,
-}
+struct PluginDashInstallParams(String, Option<String>);
+
 #[derive(Deserialize)]
 struct PluginDashRemoveParams {
     plugin_name: String,
@@ -63,12 +67,13 @@ pub(crate) async fn dashserver(
                 Ok(s) => {
                     let plugindata: PluginDashInstallParams = s;
                     crate::subcommand::plugin_install(
-                        plugindata.plugin_name,
-                        plugindata.plugin_version,
+                        plugindata.0,
+                        plugindata.1.unwrap_or("latest".parse().unwrap()),
                     );
                 }
 
                 Err(_e) => {
+                    println!("{}", data.params);
                     return HttpResponse::BadRequest().body(String::from("Invalid plugin."));
                 }
             },

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
+ *
+ * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
+ */
+
 use crate::logger;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -190,13 +196,13 @@ fn c_l_filep() -> String {
     String::from("./cynthia.log")
 }
 
-fn d_logging () -> Logging {
+fn d_logging() -> Logging {
     Logging {
         file: d_file_logging(),
         console: d_console_logging(),
     }
 }
-fn d_file_logging () -> FileLogging {
+fn d_file_logging() -> FileLogging {
     FileLogging {
         filepath: "./cynthia.log".to_string(),
         enabled: true,
@@ -210,7 +216,7 @@ fn d_file_logging () -> FileLogging {
         jsr_errors: true,
     }
 }
-fn d_console_logging () -> ConsoleLogging {
+fn d_console_logging() -> ConsoleLogging {
     ConsoleLogging {
         enabled: true,
         cache: false,

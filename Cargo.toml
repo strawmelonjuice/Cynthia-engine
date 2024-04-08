@@ -5,7 +5,7 @@ documentation = "https://cynthia-docs.strawmelonjuice.com/"
 authors = ["MLC Bloeiman <mar@strawmelonjuice.com>"]
 version = "2.1.4-alpha.0.1"
 edition = "2021"
-license = "GPL-3.0 OR MIT"
+license = "AGPL-3"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
