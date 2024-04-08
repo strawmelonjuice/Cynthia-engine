@@ -76,6 +76,7 @@ fn empty_menulist() -> Vec<Menulink> {
 pub(crate) struct Handlebar {
     pub post: String,
     pub page: String,
+    pub postlist: Option<String>,
 }
 
 // Menulinks that'll be send to the client in an Array, allowing it to generate navigation menus.
@@ -248,4 +249,12 @@ pub(crate) struct ModifyOutputHtml {
 pub(crate) struct LoadedData {
     pub plugins: Vec<PluginMeta>,
     pub config: CynthiaConf,
+}
+#[derive(Deserialize, Debug, Serialize)]
+pub (crate) struct PostlistPost {
+    pub(crate) id: String,
+    pub(crate) title: String,
+    pub(crate) category: String,
+    pub(crate) description: String,
+    pub(crate) timestamp: i64,
 }

@@ -4,6 +4,7 @@
     - [x] Make Javascript RE available as a function
     - [ ] Add bin mode to modifiers
 - [x] Reimplement postlist pages and filters
+  - [ ] Parse them through a handlebars loop, instead of pregenerating an html table.
 - [x] Add HTML meta tags to each post
 - [ ] Add RSS/Atom feeds functionality
 - [ ] Add sitemap.xml generation
