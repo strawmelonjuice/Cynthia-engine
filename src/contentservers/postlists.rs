@@ -2,8 +2,9 @@ use crate::{logger, structs::*};
 
 use markdown::{to_html_with_options, CompileOptions, Options};
 
-
 //noinspection Duplicated
+
+#[allow(dead_code)]
 pub(crate) fn postlist_vec_gen(postlistobject: Postlist) -> Vec<PostlistPost> {
     let published_jsonc = crate::read_published_jsonc();
     let mut lastdatestamp: i64 = 1;

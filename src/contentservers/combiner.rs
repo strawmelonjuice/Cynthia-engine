@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
-use crate::files::{import_css_minified, import_js_minified};
-use crate::{config, jsr, logger, structs::*};
-use handlebars::Handlebars;
 use std::string::String;
-use serde::{Deserialize, Serialize};
+
+use handlebars::Handlebars;
+
+use crate::{config, jsr, logger, structs::*};
+use crate::files::{import_css_minified, import_js_minified};
 
 pub(crate) fn combine_content(
     pgid: String,
@@ -179,6 +179,8 @@ pub(crate) fn combine_content(
     // logger(3, String::from("Can't find that page."));
     contents
 }
+
+#[allow(dead_code)]
 
 pub(crate) fn postlistcombine(
     postlist: Vec<PostlistPost>,
