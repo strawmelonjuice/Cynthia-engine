@@ -18,7 +18,7 @@ The philosophy?
 
 Sure, WordPress can be useful, and can be the best way to set up your website.
 But if you like tinkering about with configuration files and like writing your pages in markdown (yes, that's Cynthia's default format!), then join the Cynthia side (basically Jekyll but less... Jekyll, and no Ruby).
-Oh! Aaand, for those who like using a panel or app to change their site, yes. It will come. But as a plugin!
+Oh! Aaand, for those who like using a panel or app to change their site, yes. It will come. But opt-in, not opt-out.
 ## Getting started
 
 _The docs for this will come, when cynthia is ready for usage!_
