@@ -251,7 +251,7 @@ pub(crate) struct LoadedData {
     pub config: CynthiaConf,
 }
 #[derive(Deserialize, Debug, Serialize)]
-pub (crate) struct PostlistPost {
+pub(crate) struct PostlistPost {
     pub(crate) id: String,
     pub(crate) title: String,
     pub(crate) category: String,

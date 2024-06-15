@@ -9,3 +9,5 @@
 - [ ] Add RSS/Atom feeds functionality
 - [ ] Add sitemap.xml generation
 - [ ] Write logs to files, too.
+- [ ] CynthiaDash reimplementation as setting instead of plugin
+- [ ] Major refactor (as of )

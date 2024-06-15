@@ -2,8 +2,8 @@ use std::string::String;
 
 use handlebars::Handlebars;
 
-use crate::{config, jsr, logger, structs::*};
 use crate::files::{import_css_minified, import_js_minified};
+use crate::{config, jsr, logger, structs::*};
 
 pub(crate) fn combine_content(
     pgid: String,
@@ -188,7 +188,14 @@ pub(crate) fn postlistcombine(
     plugins: Vec<PluginMeta>,
 ) -> String {
     let pgid = String::from("root");
-     if postlist.is_empty() { return combine_content(pgid, str::to_string("No posts found for these criteria."), menus, plugins); };
+    if postlist.is_empty() {
+        return combine_content(
+            pgid,
+            str::to_string("No posts found for these criteria."),
+            menus,
+            plugins,
+        );
+    };
     let mut published_jsonc = crate::read_published_jsonc();
     for p_met in &mut published_jsonc {
         if p_met.id == pgid {
@@ -204,9 +211,12 @@ pub(crate) fn postlistcombine(
                 import_css_minified(format!("./cynthiaFiles/styles/{}", currentmode.stylefile));
             let handlebarfile = format!(
                 "./cynthiaFiles/templates/{}.handlebars",
-                currentmode.handlebar.postlist.unwrap_or(currentmode.handlebar.page)
+                currentmode
+                    .handlebar
+                    .postlist
+                    .unwrap_or(currentmode.handlebar.page)
             )
-                .to_owned();
+            .to_owned();
             let source = std::fs::read_to_string(handlebarfile)
                 .expect("Couldn't find or load handlebars file.");
             let handlebars = Handlebars::new();
@@ -265,7 +275,7 @@ pub(crate) fn postlistcombine(
                         config::main().generator.site_baseurl,
                         "\n"
                     )
-                        .as_str(),
+                    .as_str(),
                 )
             }
             if config::main().generator.og_sitename != *"" {
@@ -275,7 +285,7 @@ pub(crate) fn postlistcombine(
                         config::main().generator.og_sitename,
                         "\n"
                     )
-                        .as_str(),
+                    .as_str(),
                 )
             }
 
@@ -301,13 +311,13 @@ pub(crate) fn postlistcombine(
     "#,
                     pagemetainfojson,
                 )
-                    .as_str(),
+                .as_str(),
             );
 
             let pageinfosidebarthing = if (p_met.kind == *"post")
                 || p_met
-                .pageinfooverride
-                .unwrap_or(currentmode.pageinfooverride.unwrap_or(false))
+                    .pageinfooverride
+                    .unwrap_or(currentmode.pageinfooverride.unwrap_or(false))
             {
                 r#"<span class="pageinfosidebar" id="pageinfosidebartoggle" style="transition: all 1s ease-out 0s; width: 0px; font-size: 3em; bottom: 215px; display: none; text-align: right; padding: 0px; cursor: pointer;" onclick="pageinfosidebar_rollout()">&#x27A7;</span>
 	<div class="pageinfosidebar" id="cynthiapageinfoshowdummyelem"></div>"#
@@ -322,11 +332,32 @@ pub(crate) fn postlistcombine(
                 menu2: String,
                 infoshow: String,
             }
-            let PageData { head: head0, postlist: postlist0, menu1, menu2, infoshow } = PageData { head, postlist, menu1: menus.menu1, menu2: menus.menu2, infoshow:  String::from(pageinfosidebarthing)};
+            let PageData {
+                head: head0,
+                postlist: postlist0,
+                menu1,
+                menu2,
+                infoshow,
+            } = PageData {
+                head,
+                postlist,
+                menu1: menus.menu1,
+                menu2: menus.menu2,
+                infoshow: String::from(pageinfosidebarthing),
+            };
             let mut k = format!(
                 "\n{}\n</html>",
                 handlebars
-                    .render_template(&source.to_string(), &PageData { head: head0, postlist: postlist0, menu1, menu2, infoshow })
+                    .render_template(
+                        &source.to_string(),
+                        &PageData {
+                            head: head0,
+                            postlist: postlist0,
+                            menu1,
+                            menu2,
+                            infoshow
+                        }
+                    )
                     .unwrap()
             );
             k = runners_output(plugins.clone(), k);
@@ -341,13 +372,18 @@ pub(crate) fn postlistcombine(
                 "#,
                     import_js_minified("./cynthiaFiles/assets/scripts/client.js".to_string())
                 )
-                    .as_str(),
+                .as_str(),
             );
             return format!("<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{}, by Strawmelonjuice.\nAlso see:\t<https://github.com/strawmelonjuice/CynthiaWebsiteEngine/blob/main/README.MD>\n\n-->\n\n\n\n\r{j}", env!("CARGO_PKG_VERSION"));
         }
     }
     // logger(3, String::from("Can't find that page."));
-    combine_content(pgid, str::to_string("No posts found for these criteria."), menus, plugins)
+    combine_content(
+        pgid,
+        str::to_string("No posts found for these criteria."),
+        menus,
+        plugins,
+    )
 }
 
 fn runner_content(plugins: Vec<PluginMeta>, mut contents: String) -> String {
@@ -390,7 +426,7 @@ fn runner_content(plugins: Vec<PluginMeta>, mut contents: String) -> String {
     contents
 }
 
-fn runners_output (plugins: Vec<PluginMeta>, mut k: String) -> String {
+fn runners_output(plugins: Vec<PluginMeta>, mut k: String) -> String {
     for plugin in plugins {
         match &plugin.runners.modify_output_html {
             Some(p) => {
@@ -438,7 +474,7 @@ fn runnners_head(plugins: Vec<PluginMeta>, mut head: String) -> String {
                         "returndirect".to_string(),
                         crate::escape_json(&head).to_string(),
                     ]
-                        .to_vec(),
+                    .to_vec(),
                 );
                 let mut cmd: Vec<&str> = vec![];
                 for com in &cmds {

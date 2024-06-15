@@ -115,22 +115,22 @@ pub(crate) fn postlist_vec_gen(postlistobject: Postlist) -> Vec<PostlistPost> {
         };
 
         let additional: PostlistPost = PostlistPost {
-                id: post.id.clone(),
-                title: post.title.clone(),
-                category: category.to_string(),
-                description:  to_html_with_options(
-                    description,
-                    &Options {
-                        compile: CompileOptions {
-                            allow_dangerous_html: false,
-                            ..CompileOptions::default()
-                        },
-                        ..Options::default()
+            id: post.id.clone(),
+            title: post.title.clone(),
+            category: category.to_string(),
+            description: to_html_with_options(
+                description,
+                &Options {
+                    compile: CompileOptions {
+                        allow_dangerous_html: false,
+                        ..CompileOptions::default()
                     },
-                )
-                    .unwrap(),
-                timestamp,
-            };
+                    ..Options::default()
+                },
+            )
+            .unwrap(),
+            timestamp,
+        };
         table_hb.push(additional);
     }
     table_hb
@@ -255,7 +255,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                     ..Options::default()
                 },
             )
-                .unwrap(),
+            .unwrap(),
             category,
             to_html_with_options(
                 description,
@@ -267,7 +267,7 @@ pub(crate) fn postlist_table_gen(postlistobject: Postlist) -> String {
                     ..Options::default()
                 },
             )
-                .unwrap()
+            .unwrap()
         );
         table_html.push_str(addition.as_str());
     }

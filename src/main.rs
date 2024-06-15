@@ -5,7 +5,9 @@
  */
 
 use actix_files::NamedFile;
-use std::io::{Error, ErrorKind};
+use async_std::task;
+use std::io::{Error, ErrorKind, Write};
+use std::time::Duration;
 use std::{fs, path::Path, process, sync::Mutex};
 
 use actix_web::{
@@ -18,7 +20,6 @@ use colored::Colorize;
 use jsonc_parser::parse_to_serde_value;
 use mime::Mime;
 
-use crate::dashfunctions::dashserver;
 use crate::files::import_js_minified;
 use structs::*;
 
@@ -29,7 +30,7 @@ mod logger;
 
 mod config;
 mod contentservers;
-mod dashfunctions;
+mod dash;
 mod files;
 mod jsr;
 
@@ -301,8 +302,8 @@ fn load_mode(mode_name: String) -> CynthiaModeObject {
     serde_json::from_value(parsed_json.into()).unwrap()
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() {
     println!(
         "{} - version {}\n by {}{}{} {}!",
         "CynthiaEngine".bold().bright_purple(),
@@ -528,11 +529,12 @@ As of now, Cynthia has only 4 commands:
                                                 ["returndirect".to_string().to_string()].to_vec(),
                                             );
                                         if f.name == "cynthia-dash" {
-                                            cmds.push(
-                                                dashfunctions::passkey()
-                                                    .unwrap_or(String::from("")),
-                                            );
-                                            cynthiadashactive = true;
+                                            todo!("Remove this. Safely.")
+                                            //     cmds.push(
+                                            //         dash::passkey()
+                                            //             .unwrap_or(String::from("")),
+                                            //     );
+                                            //     cynthiadashactive = true;
                                         }
                                         let mut cmd: Vec<&str> = vec![];
                                         for com in &cmds {
@@ -596,57 +598,55 @@ As of now, Cynthia has only 4 commands:
         .yellow()
         .italic()
     ));
-    if cynthiadashactive {
-        logger::general_warn(String::from("Cynthia dashboard plugin found!"));
-        logger::general_warn(String::from(
-            "The Cynthia Dashboard has additional permissions,",
-        ));
-        logger::general_warn(String::from(
-            " so uninstall it if left unused. Also check the source of this plugin, is it genuine?",
-        ));
-
-        HttpServer::new(move || {
-            App::new()
-                .service(
-                    actix_files::Files::new("/assets", "./cynthiaFiles/assets")
-                        .show_files_listing(),
-                )
-                .service(serves_p)
-                .service(serves_c)
-                .service(serves_t)
-                .service(serves_s)
-                .route("/e/{id:.*}", web::get().to(serves_e))
-                .service(serves_ej)
-                .service(serves_es)
-                .route("/", web::get().to(root))
-                .app_data(web::Data::clone(&data))
-                .service(dashserver)
-                .default_service(web::get().to(notfound))
-        })
-        .bind(("127.0.0.1", portnum))?
-        .run()
-        .await
-    } else {
-        HttpServer::new(move || {
-            App::new()
-                .service(
-                    actix_files::Files::new("/assets", "./cynthiaFiles/assets")
-                        .show_files_listing(),
-                )
-                .service(serves_p)
-                .service(serves_c)
-                .service(serves_t)
-                .service(serves_s)
-                .route("/e/{id:.*}", web::get().to(serves_e))
-                .service(serves_ej)
-                .service(serves_es)
-                .route("/", web::get().to(root))
-                .app_data(web::Data::clone(&data))
-                .default_service(web::get().to(notfound))
-        })
-        .bind(("127.0.0.1", portnum))?
-        .run()
-        .await
+    let main_server = match HttpServer::new(move || {
+        App::new()
+            .service(
+                actix_files::Files::new("/assets", "./cynthiaFiles/assets").show_files_listing(),
+            )
+            .service(serves_p)
+            .service(serves_c)
+            .service(serves_t)
+            .service(serves_s)
+            .route("/e/{id:.*}", web::get().to(serves_e))
+            .service(serves_ej)
+            .service(serves_es)
+            .route("/", web::get().to(root))
+            .app_data(web::Data::clone(&data))
+            .default_service(web::get().to(notfound))
+    })
+    .bind(("127.0.0.1", portnum)) {
+        Ok(a) => a,
+        Err(e) => {
+            logger::fatal_error(String::from("Cannot bind to address!"));
+            process::exit(1);
+        }
+    }
+    .run();
+    let _ = futures::join!(crate::dash::d_main(cynthiadashactive), main_server, closerkeys());
+}
+async fn closerkeys() {
+    let msg = format!("Type [{}] and then [{}] to exit or use '{}' to show more available Lumina server runtime commands.","q".blue(), "return".bright_magenta(), "help".bright_blue()).bright_yellow();
+    println!("{}", msg);
+    let mut input = String::new();
+    let mut waiting = true;
+    while waiting {
+        input.clear();
+        let _ = std::io::stdout().flush();
+        std::io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+        if input == *"\r\n" {
+            waiting = false;
+        }
+        input = input.replace(['\n', '\r'], "");
+        let split_input = input.as_str().split(' ').collect::<Vec<&str>>();
+        match split_input[0].to_lowercase().as_str() {
+            "q" | "x" | "exit" => {
+                println!("Bye!");
+                process::exit(0);
+            }
+            _ => println!("{}", msg),
+        }
     }
 }
 
