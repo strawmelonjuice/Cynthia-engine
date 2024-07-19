@@ -16,3 +16,5 @@ src/client.js
 
 # Ignore editor files
 /.idea/
+/tryout
+*.dump
