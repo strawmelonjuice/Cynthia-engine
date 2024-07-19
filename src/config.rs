@@ -71,7 +71,7 @@ pub struct Lifetimes {
     #[serde(default = "c_cache_lifetime_js")]
     pub javascript: u64,
     #[serde(default = "c_cache_lifetime_external")]
-    pub external: u64,
+    pub forwarded: u64,
     #[serde(default = "c_cache_lifetime_served")]
     pub served: u64,
 }

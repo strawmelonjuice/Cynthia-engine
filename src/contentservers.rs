@@ -358,7 +358,7 @@ pub(crate) fn generate_menus(pgid: String, probableurl: &String) -> Menulist {
 }
 
 pub(crate) fn fetcher(uri: String, config: &CynthiaConf) -> String {
-    let cachelifetime: u64 = config.cache.lifetimes.external;
+    let cachelifetime: u64 = config.cache.lifetimes.forwarded;
     return match cacheretriever(uri.clone(), cachelifetime) {
         Ok(o) => fs::read_to_string(o).expect("Couldn't find or open a JS file."),
         Err(_) => {
