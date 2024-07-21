@@ -10,13 +10,6 @@ use serde::{Deserialize, Serialize};
 // Serde allows using the output of a function to replace incoherent data. This is why there are
 // some private functions in this file, that just create empty objects or structs.
 
-// Cache index, used in cache-indexes saved on disk as JSON.
-#[derive(Deserialize, Debug, Serialize, Clone)]
-pub(crate) struct CynthiaCacheIndexObject {
-    pub(crate) fileid: String,
-    pub(crate) cachepath: std::path::PathBuf,
-    pub(crate) timestamp: u64,
-}
 // Plugin information as stored in the Cynthia Plugin Repo
 #[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct CynthiaPluginRepoItem {
@@ -194,7 +187,7 @@ fn nonestring() -> String {
     String::from("none")
 }
 
-// Plugin runners, tell the plugin executor (JSR, PYR or binairy mode) what to execute and when.
+// Plugin runners, tell the plugin executor (JSRUNTIME, PYR or binairy mode) what to execute and when.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PluginRunners {

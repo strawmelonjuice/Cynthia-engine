@@ -11,14 +11,14 @@ use crate::logger;
 // Javascript runtimes:
 //     NodeJS:
 #[cfg(windows)]
-pub const NODEJSR: &str = "node.exe";
+pub const NODEJSRUNTIME: &str = "node.exe";
 #[cfg(not(windows))]
-pub const NODEJSR: &str = "node";
+pub const NODEJSRUNTIME: &str = "node";
 //     Bun:
 #[cfg(windows)]
-pub const BUNJSR: &str = "bun.exe";
+pub const BUNJSRUNTIME: &str = "bun.exe";
 #[cfg(not(windows))]
-pub const BUNJSR: &str = "bun";
+pub const BUNJSRUNTIME: &str = "bun";
 
 // Javascript package managers:
 //     NPM:
@@ -38,15 +38,15 @@ pub const BUN_NPM_EX: &str = "bunx";
 
 //     NodeJS:
 #[cfg(windows)]
-pub const NODEJSR_EX: &str = "npx.cmd";
+pub const NODEJSRUNTIME_EX: &str = "npx.cmd";
 #[cfg(not(windows))]
-pub const NODEJSR_EX: &str = "npx";
+pub const NODEJSRUNTIME_EX: &str = "npx";
 pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
     if args[0] == "returndirect" {
-        logger::general_warn( String::from("Directreturn called on the JSR, this usually means something inside of Cynthia's Plugin Loader went wrong."));
+        logger::general_warn( String::from("Directreturn called on the JSRUNTIME, this usually means something inside of Cynthia's Plugin Loader went wrong."));
         return args[1].to_string();
     }
-    let output = match std::process::Command::new(jsruntime(false))
+    let output = match std::process::Command::new(jsruntimeuntime(false))
         .args(args.clone())
         .current_dir(cwd)
         .output()
@@ -63,16 +63,16 @@ pub(crate) fn noderunner(args: Vec<&str>, cwd: std::path::PathBuf) -> String {
             .to_string();
     } else {
         println!("Script failed.");
-        logger::jsr_error(String::from_utf8_lossy(&output.stderr).to_string());
+        logger::jsruntime_error(String::from_utf8_lossy(&output.stderr).to_string());
     }
     String::from("")
 }
 
-pub(crate) fn jsruntime(mayfail: bool) -> &'static str {
-    return match std::process::Command::new(BUNJSR).arg("-v").output() {
-        Ok(_t) => BUNJSR,
-        Err(_err) => match std::process::Command::new(NODEJSR).arg("-v").output() {
-            Ok(_t) => NODEJSR,
+pub(crate) fn jsruntimeuntime(mayfail: bool) -> &'static str {
+    return match std::process::Command::new(BUNJSRUNTIME).arg("-v").output() {
+        Ok(_t) => BUNJSRUNTIME,
+        Err(_err) => match std::process::Command::new(NODEJSRUNTIME).arg("-v").output() {
+            Ok(_t) => NODEJSRUNTIME,
             Err(_err) => {
                 if !mayfail {
                     logger::general_error(String::from(
