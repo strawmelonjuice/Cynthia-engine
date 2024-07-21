@@ -102,7 +102,7 @@
             "breaking": false
           },
           {
-            "contents": "Switching from `.env` to `cynthia.toml`.",
+            "contents": "Switching from `.env` to `Cynthia.toml`.",
             "type": 2,
             "breaking": true
           }

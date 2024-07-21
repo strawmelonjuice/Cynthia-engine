@@ -34,8 +34,6 @@ struct PluginDashRemoveParams {
     plugin_name: String,
 }
 
-
-
 pub(crate) async fn main() {
     // As long as we don't have anything to fill this with.
     task::sleep(Duration::from_secs(1)).await;
@@ -44,7 +42,7 @@ pub(crate) async fn main() {
 pub(crate) async fn d_main(enabled: bool) {
     if !enabled {
         task::sleep(Duration::from_secs(1)).await;
-        logger::general_info(String::from("CynthiaDash is disabled."));
+        info!(String::from("CynthiaDash is disabled."));
     } else {
         main().await
     }
