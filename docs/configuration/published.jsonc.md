@@ -42,12 +42,13 @@ From there on, you can start filling in the publication's metadata.
 [
   {
     "page": {
+      "id": "page-id",
       "title": "My page title!",
       "description": "This page contains a heading!",
       "content": {
         "inline": {
           "as": "markdown",
-          "content": "# This is a heading!\n\nAnd that was about it...",
+          "value": "# This is a heading!\n\nAnd that was about it...",
         },
       },
       "dates": {
@@ -65,6 +66,7 @@ From there on, you can start filling in the publication's metadata.
 
 Within a `page` object, you can define the following properties:
 
+- `id`: The unique identifier of the page.
 - `title`: The title of the page.
 - `description`: A short description of the content of the page.
 - `content`: A content object, see more of this in the [content objects doc](./published.jsonc/object-content.md).
@@ -79,6 +81,7 @@ A post publication is essentially a page publication with extra exposure.
 [
   {
     "post": {
+      "id": "post-id",
       "title": "My first post!",
       "short": "In this post I will tell you about me and my blog!",
       "content": {
@@ -100,6 +103,7 @@ A post publication is essentially a page publication with extra exposure.
 
 Within a `page` object, you can define the following properties:
 
+- `id`: The unique identifier of the post.
 - `title`: The title of the page.
 - `short`: A short description of the page.
 - `category`: The category this page belongs to.
