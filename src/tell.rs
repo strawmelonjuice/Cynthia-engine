@@ -71,5 +71,5 @@ impl Logging {
     }
 }
 pub(crate) fn horizline() -> String {
-    format!("{}","\u{2500}".repeat(termsize::get().unwrap().cols as usize))
+    ("\u{2500}".repeat(termsize::get().unwrap().cols as usize)).to_string()
 }

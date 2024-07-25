@@ -4,18 +4,18 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::{fs, process};
 use std::fs::File;
 use std::path::PathBuf;
+use std::{fs, process};
 
-use actix_web::{App, HttpServer, web};
 use actix_web::web::Data;
+use actix_web::{App, HttpServer};
 use colored::Colorize;
 use log::error;
 #[allow(unused_imports)]
 use log::info;
 use log::LevelFilter;
-use simplelog::{ColorChoice, CombinedLogger, TerminalMode, TermLogger, WriteLogger};
+use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use tokio::sync::Mutex;
 
 use crate::config::CynthiaConf;
@@ -24,10 +24,10 @@ use crate::tell::horizline;
 
 mod config;
 mod files;
+mod publications;
+mod renders;
 mod requestresponse;
 mod tell;
-mod publications;
-mod generations;
 
 pub struct LogSets {
     pub file_loglevel: LevelFilter,
@@ -35,7 +35,7 @@ pub struct LogSets {
     pub logfile: PathBuf,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug)]
 /// Server context, containing the configuration and cache. Also implements a `tell` method for easy logging.
 struct ServerContext {
     config: CynthiaConf,
@@ -47,27 +47,25 @@ async fn main() {
     let args: Vec<String> = std::env::args().collect();
     println!(
         " \u{21E2} cynthiaweb {}",
-        args.iter()
-            .skip(1)
-            .next()
+        args.get(1)
             .unwrap_or(&String::from(""))
             .to_ascii_lowercase()
             .as_str()
     );
+    println!("{}", horizline().purple());
+
     println!(
         "{} - version {}\n by {}{}{} {}!",
-        "CynthiaEngine".bold().bright_purple(),
+        "CynthiaWeb".bold().bright_purple(),
         env!("CARGO_PKG_VERSION").to_string().green(),
         "Straw".bright_red(),
         "melon".green(),
         "juice".bright_yellow(),
         "Mar".magenta()
     );
-    println!("{}",horizline().white());
+    println!("{}", horizline().purple());
     match args
-        .iter()
-        .skip(1)
-        .next()
+        .get(1)
         .unwrap_or(&String::from(""))
         .to_ascii_lowercase()
         .as_str()
@@ -75,16 +73,27 @@ async fn main() {
         "help" => {
             println!(
                 "{}",
-                "Cynthia - a simple site server with a focus on performance and ease of use. Targeted at smaller sites and personal projects.".bright_magenta()
+                "Cynthia - a simple site generator/server with a focus on performance and ease of use. Targeted at smaller sites and personal projects.".bright_magenta()
             );
-            println!("{}", "Usage: cynthiaweb [command]\n\nCommands:".bright_green());
-            println!("\t{}{}", "help".bold().yellow(),": Displays this message.".bright_green());
-            println!("\t{}{}", "start".bold().yellow(),": Starts the server.".bright_green());
+            println!(
+                "{}",
+                "Usage: cynthiaweb [command]\n\nCommands:".bright_green()
+            );
+            println!(
+                "\t{}{}",
+                "help".bold().yellow(),
+                ": Displays this message.".bright_green()
+            );
+            println!(
+                "\t{}{}",
+                "start".bold().yellow(),
+                ": Starts the server.".bright_green()
+            );
             println!("\t{} {{{}}} <{}> ({})
             Available subcommands:
                 - Add:
                     Installs a new plugin as registered in the Cynthia Plugin Index. (Does not save it to the manifest file.)
-        
+
                     Options:
                         - <{}>
                             Specifies the name of the plugin to install. Is required.
@@ -96,7 +105,7 @@ async fn main() {
                      "PM".bold().yellow(),"subcommand".bright_green(),"plugin name".bright_yellow(), "plugin version".bright_purple(),
                      "plugin name".bright_yellow(),
                      "plugin version".bright_purple(),
-                
+
             "cynthiapluginmanifest.json".bright_green(),);
             process::exit(0);
         }
@@ -109,7 +118,7 @@ async fn start() {
     let cynthiaconfpath = cd.join("Cynthia.toml");
     if !cynthiaconfpath.exists() {
         eprintln!("Could not find cynthia-configuration at `{}`! Have you initialised a Cynthia setup here? To do so, run `{}`.",
-                  cynthiaconfpath.clone().to_string_lossy().replace("\\\\?\\", ""),
+                  cynthiaconfpath.clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan(),
                   "cynthiaweb init".bright_green());
         process::exit(1);
     }
@@ -204,8 +213,9 @@ async fn start() {
         ),
     ])
     .unwrap();
+    use crate::config::CynthiaConfig;
     let server_context: ServerContext = ServerContext {
-        config: config.clone(),
+        config: config.hard_clone(),
         cache: vec![],
     };
     let _ = &server_context.tell(format!(
@@ -219,30 +229,28 @@ async fn start() {
     ));
     let server_context_: Data<Mutex<ServerContext>> = Data::new(Mutex::new(server_context));
     use requestresponse::serve;
-    let main_server = match HttpServer::new(move || {
-        App::new()
-            .service(serve)
-            .app_data(server_context_.clone())
-    })
-    .bind(("localhost", config.port))
-    {
-        Ok(o) => {
-            println!("Running on http://localhost:{}", config.port);
-            o
+    let main_server =
+        match HttpServer::new(move || App::new().service(serve).app_data(server_context_.clone()))
+            .bind(("localhost", config.port))
+        {
+            Ok(o) => {
+                println!("Running on http://localhost:{}", config.port);
+                o
+            }
+            Err(s) => {
+                error!(
+                    "Could not bind to port {}, error message: {}",
+                    config.port, s
+                );
+                process::exit(1);
+            }
         }
-        Err(s) => {
-            error!(
-                "Could not bind to port {}, error message: {}",
-                config.port, s
-            );
-            process::exit(1);
-        }
-    }
-    .run();
+        .run();
     let _ = futures::join!(main_server, close());
 }
 async fn close() {
     let _ = tokio::signal::ctrl_c().await;
     println!("\n\n\nBye!\n");
+    println!("{}", horizline().bright_purple());
     process::exit(0);
 }
