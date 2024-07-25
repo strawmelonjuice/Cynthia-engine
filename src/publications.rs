@@ -8,16 +8,107 @@ use std::path::Path;
 use std::{fs, process};
 
 use jsonc_parser::parse_to_serde_value;
-use log::error;
+use log::{error, warn};
 use serde::{Deserialize, Serialize};
+
+use crate::config::{CynthiaConfClone, CynthiaConfig};
 
 pub(crate) type CynthiaPublicationList = Vec<CynthiaPublication>;
 pub(crate) trait CynthiaPublicationListTrait {
+    fn get_notfound(&self, config: CynthiaConfClone) -> Option<CynthiaPublication>;
+    fn get_root(&self) -> Option<CynthiaPublication>;
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication>;
+    fn validate(&self, config: CynthiaConfClone) -> bool;
 }
 impl CynthiaPublicationListTrait for CynthiaPublicationList {
+    fn get_notfound(&self, config: CynthiaConfClone) -> Option<CynthiaPublication> {
+        self.iter()
+            .find(|x| {
+                let notfound = config.clone().pages.notfound_page;
+                if x.get_id() == notfound {
+                    match x {
+                        CynthiaPublication::Page { .. } => true,
+                        _ => {
+                            warn!("Page id reserved for notfound responses (\"404\", \"notfound\"), was not a page.");
+                            false
+                        }
+                    }
+                } else {
+
+                match x.get_id().as_str() {
+                    "404" | "notfound" => match x {
+                        CynthiaPublication::Page { .. } => true,
+                        _ => {
+                            warn!("Page id reserved for notfound responses (\"404\", \"notfound\"), was not a page.");
+                            false
+                        }
+                    },
+                    _ => false,
+                }
+                 }
+            })
+            .cloned()
+    }
+    fn get_root(&self) -> Option<CynthiaPublication> {
+        self.iter()
+            .find(|x| match x.get_id().as_str() {
+                "root" | "" | "/" => match x {
+                    CynthiaPublication::Page { .. } => true,
+                    _ => {
+                        warn!("Page using a reserved id for root pages (\"/\", \"root\" or \"\") was not a page.");
+                        false
+                },
+                },
+                _ => false,
+            })
+            .cloned()
+    }
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication> {
         self.iter().find(|x| x.get_id() == id).cloned()
+    }
+    fn validate(&self, config: CynthiaConfClone) -> bool {
+        // Collect validation results in a vector
+        let mut valid: Vec<bool> = vec![];
+
+        // Check for duplicate ids
+        let mut ids: Vec<String> = vec![];
+        let duplication = self.iter().all(|x| {
+            let id = x.get_id();
+            if ids.contains(&id) {
+                error!("Duplicate id found in published.jsonc: {}", id);
+                false
+            } else {
+                ids.push(id);
+                true
+            }
+        });
+        valid.push(duplication);
+        // Checking for required pages:
+        // - 404 page
+        let notfound_exists = self.get_notfound(config).is_some();
+        if !notfound_exists {
+            error!("404 page not found in published.jsonc: Add a page with id being either \"404\" or \"notfound\" or the id specified in the config.");
+        }
+        valid.push(notfound_exists);
+
+        // - Root page
+        let root_exists = self.get_root().is_some();
+        if !root_exists {
+            error!("Root page not found in published.jsonc: Add a page with id being either \"root\" or \"/\"");
+        }
+        valid.push(root_exists);
+
+        // An empty list is not valid
+        let itemsin = if self.is_empty() {
+            error!("No correct publications found in publication list.");
+            false
+        } else {
+            true
+        };
+        valid.push(itemsin);
+
+        // Return true if all checks passed
+        return valid.iter().all(|x| *x);
     }
 }
 
@@ -27,10 +118,10 @@ pub(crate) enum CynthiaPublication {
     Page {
         id: String,
         title: String,
-        short: Option<String>,
+        description: Option<String>,
         thumbnail: Option<String>,
         #[serde(alias = "content")]
-        pagecontent: PageContent,
+        pagecontent: PublicationContent,
     },
     #[serde(alias = "post")]
     Post {
@@ -38,6 +129,8 @@ pub(crate) enum CynthiaPublication {
         title: String,
         short: Option<String>,
         thumbnail: Option<String>,
+        #[serde(alias = "content")]
+        pagecontent: PublicationContent,
     },
     #[serde(alias = "postlist")]
     #[serde(alias = "selection")]
@@ -46,7 +139,6 @@ pub(crate) enum CynthiaPublication {
         id: String,
         title: String,
         short: Option<String>,
-        thumbnail: Option<String>,
         filter: PostListFilter,
     },
 }
@@ -76,7 +168,7 @@ pub(crate) enum PostListFilter {
     Search(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub(crate) enum PageContent {
+pub(crate) enum PublicationContent {
     #[serde(alias = "inline")]
     Inline(ContentType),
     External {
@@ -89,9 +181,24 @@ pub(crate) enum PageContent {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "as", content = "value")]
 pub(crate) enum ContentType {
+    #[serde(alias = "html")]
     Html(String),
+    #[serde(alias = "markdown")]
+    #[serde(alias = "md")]
+    #[serde(alias = "MD")]
     Markdown(String),
+    #[serde(alias = "plaintext")]
+    #[serde(alias = "text")]
     PlainText(String),
+}
+impl ContentType {
+    pub fn get_inner(&self) -> String {
+        match self {
+            ContentType::Html(c) => c.to_string(),
+            ContentType::Markdown(c) => c.to_string(),
+            ContentType::PlainText(c) => c.to_string(),
+        }
+    }
 }
 pub(crate) fn read_published_jsonc() -> CynthiaPublicationList {
     if Path::new("./cynthiaFiles/published.yaml").exists() {
@@ -120,9 +227,9 @@ pub(crate) fn read_published_jsonc() -> CynthiaPublicationList {
                 }
             };
         serde_json::from_value(parsed_json.into()).unwrap_or_else(|e| {
-            error!("Published.json contains invalid Cynthia-instructions.\n\n\t\t{e}",);
+            let k = e.line();
+            error!("Published.json contains invalid Cynthia-instructions.\n\n\t\t{e}, {k}",);
             Vec::new()
         })
     }
 }
-

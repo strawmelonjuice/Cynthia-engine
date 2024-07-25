@@ -1,14 +1,5 @@
-/*
- * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
- *
- * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
- */
-use std::{fs, process};
-use std::path::Path;
-use jsonc_parser::parse_to_serde_value;
-use log::error;
 use serde::{Deserialize, Serialize};
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CynthiaConf {
     #[serde(alias = "PORT")]
@@ -27,6 +18,73 @@ pub struct CynthiaConf {
     #[serde(alias = "Logs")]
     pub logs: Option<Logging>,
 }
+/// A clone of the CynthiaConf struct
+pub struct CynthiaConfClone {
+    pub port: u16,
+    pub cache: Cache,
+    pub pages: Pages,
+    pub generator: Generator,
+    pub logs: Option<Logging>,
+}
+
+impl CynthiaConfig for CynthiaConfClone {
+    fn hard_clone(&self) -> CynthiaConf {
+        CynthiaConf {
+            port: self.port,
+            cache: self.cache.clone(),
+            pages: self.pages.clone(),
+            generator: self.generator.clone(),
+            logs: self.logs.clone(),
+        }
+    }
+    fn clone(&self) -> CynthiaConfClone {
+        CynthiaConfClone {
+            port: self.port,
+            cache: self.cache.clone(),
+            pages: self.pages.clone(),
+            generator: self.generator.clone(),
+            logs: self.logs.clone(),
+        }
+    }
+}
+impl CynthiaConfig for CynthiaConf {
+    fn clone(&self) -> CynthiaConfClone {
+        CynthiaConfClone {
+            port: self.port,
+            cache: self.cache.clone(),
+            pages: self.pages.clone(),
+            generator: self.generator.clone(),
+            logs: self.logs.clone(),
+        }
+    }
+    fn hard_clone(&self) -> CynthiaConf {
+        CynthiaConf {
+            port: self.port,
+            cache: self.cache.clone(),
+            pages: self.pages.clone(),
+            generator: self.generator.clone(),
+            logs: self.logs.clone(),
+        }
+    }
+}
+#[allow(unused)]
+pub trait CynthiaConfig {
+    fn hard_clone(&self) -> CynthiaConf;
+    fn clone(&self) -> CynthiaConfClone;
+}
+
+impl CynthiaConf {
+    pub fn clone(&self) -> CynthiaConfClone {
+        CynthiaConfClone {
+            port: self.port,
+            cache: self.cache.clone(),
+            pages: self.pages.clone(),
+            generator: self.generator.clone(),
+            logs: self.logs.clone(),
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Cache {
@@ -121,4 +179,3 @@ fn c_cache_lifetime_served() -> u64 {
 fn c_404() -> String {
     String::from("404")
 }
-
