@@ -115,32 +115,47 @@ mod in_renderer {
     ) -> RenderrerResponse {
         // Extract the content from the publication, if it's a pagish publication, we can just
         // unwrap the result if we know it's a page or post. If it's not, we'll ignore this
-        // variable later.
+        // (then `None`) variable later.
         let content = match publication {
             CynthiaPublication::Page { pagecontent, .. } => Some(fetch_content(pagecontent)),
             CynthiaPublication::Post { pagecontent, .. } => Some(fetch_content(pagecontent)),
             _ => None,
+        }
+        // Normally, we'd check if the publication is pagish, but we're merely testing to build
+        // pages and posts here, so we'll just unwrap the result.
+        .unwrap();
+        let innerhtml = match content {
+            FetchedContent::Ok(c) => match c {
+                ContentType::Html(h) => h,
+                _ => {
+                    error!("Seems like an error occurred while rendering the content.");
+                    return RenderrerResponse::Error;
+                }
+            },
+            FetchedContent::Error => {
+                error!("An error occurred while fetching the content.");
+                return RenderrerResponse::Error;
+            }
         };
-        RenderrerResponse::Ok(format!("{:#?}", content.unwrap().unwrap()))
+
+        // content.unwrap().unwrap_html();
+        RenderrerResponse::Ok(innerhtml)
     }
     #[derive(Debug)]
     enum FetchedContent {
         Error,
         Ok(ContentType),
     }
-
-    impl FetchedContent {
-        fn unwrap(self) -> ContentType {
-            match self {
-                FetchedContent::Ok(c) => c,
-                FetchedContent::Error => ContentType::PlainText(String::from("An error occurred.")),
-            }
-        }
+    struct ContentSource {
+        inner: String,
+        target_type: crate::publications::ContentType,
     }
-
     fn fetch_content(content: PublicationContent) -> FetchedContent {
-        let contenttype = match content {
-            PublicationContent::Inline(c) => c,
+        let content_output = match content {
+            PublicationContent::Inline(c) => ContentSource {
+                inner: c.get_inner(),
+                target_type: c,
+            },
             PublicationContent::External { source } => {
                 let output = match reqwest::blocking::get(source.get_inner()) {
                     Ok(w) => match w.text() {
@@ -161,12 +176,9 @@ mod in_renderer {
                         return FetchedContent::Error;
                     }
                 };
-                match source {
-                    crate::publications::ContentType::Html(_) => ContentType::Html(output),
-                    crate::publications::ContentType::Markdown(_) => ContentType::Markdown(output),
-                    crate::publications::ContentType::PlainText(_) => {
-                        ContentType::PlainText(output)
-                    }
+                ContentSource {
+                    inner: output,
+                    target_type: source,
                 }
             }
             PublicationContent::Local { source } => {
@@ -186,16 +198,32 @@ mod in_renderer {
                         return FetchedContent::Error;
                     }
                 };
-
-                match source {
-                    crate::publications::ContentType::Html(_) => ContentType::Html(output),
-                    crate::publications::ContentType::Markdown(_) => ContentType::Markdown(output),
-                    crate::publications::ContentType::PlainText(_) => {
-                        ContentType::PlainText(output)
-                    }
+                ContentSource {
+                    inner: output,
+                    target_type: source,
                 }
             }
         };
+        let contenttype = match content_output.target_type {
+            crate::publications::ContentType::Html(_) => ContentType::Html(content_output.inner),
+            crate::publications::ContentType::Markdown(_) => {
+                let html = match markdown::to_html_with_options(
+                    content_output.inner.as_str(),
+                    &markdown::Options::gfm(),
+                ) {
+                    Ok(html) => html,
+                    Err(_) => {
+                        error!("An error occurred while rendering the markdown.");
+                        return FetchedContent::Error;
+                    }
+                };
+                ContentType::Html(html)
+            }
+            crate::publications::ContentType::PlainText(_) => {
+                ContentType::Html(format!("<pre>{}</pre>", content_output.inner))
+            }
+        };
+
         FetchedContent::Ok(contenttype)
     }
 }
