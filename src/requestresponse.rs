@@ -38,7 +38,8 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             server_context.tell(format!(
-                "Request/200\t{:>45.47}\t\t{}\t{}",
+                "{}\t{:>45.47}\t\t{}\t{}",
+                "Request/200".bright_green(),
                 req.path(),
                 ip,
                 {
@@ -58,7 +59,12 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
 
-            warn!("Request/404\t{:>45.47}\t\t{}", req.path(), ip);
+            warn!(
+                "{}\t{:>45.47}\t\t{}",
+                "Request/404".bright_red(),
+                req.path(),
+                ip
+            );
             HttpResponse::NotFound().body(
                 render_from_pgid(
                     server_context.config.clone().pages.notfound_page.clone(),
