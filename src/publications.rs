@@ -29,7 +29,7 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
                     match x {
                         CynthiaPublication::Page { .. } => true,
                         _ => {
-                            warn!("Page id reserved for notfound responses (\"404\", \"notfound\"), was not a page.");
+                            warn!("Page id reserved for notfound responses ({notfound}), was not a page.");
                             false
                         }
                     }
@@ -122,6 +122,9 @@ pub(crate) enum CynthiaPublication {
         thumbnail: Option<String>,
         #[serde(alias = "content")]
         pagecontent: PublicationContent,
+        #[serde(alias = "scene")]
+        #[serde(alias = "scene-override")]
+        scene_override: Option<String>,
     },
     #[serde(alias = "post")]
     Post {
@@ -131,6 +134,9 @@ pub(crate) enum CynthiaPublication {
         thumbnail: Option<String>,
         #[serde(alias = "content")]
         pagecontent: PublicationContent,
+        #[serde(alias = "scene")]
+        #[serde(alias = "scene-override")]
+        scene_override: Option<String>,
     },
     #[serde(alias = "postlist")]
     #[serde(alias = "selection")]
@@ -140,6 +146,9 @@ pub(crate) enum CynthiaPublication {
         title: String,
         short: Option<String>,
         filter: PostListFilter,
+        #[serde(alias = "scene")]
+        #[serde(alias = "scene-override")]
+        scene_override: Option<String>,
     },
 }
 impl CynthiaPublication {
