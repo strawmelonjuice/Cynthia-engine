@@ -106,13 +106,21 @@ pub(crate) fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> Render
 mod in_renderer {
     use std::{fs, path::Path};
 
-    use crate::publications::{ContentType, CynthiaPublication, PublicationContent};
+    use crate::{
+        config::{CynthiaConfig, Scene, SceneCollectionTrait},
+        publications::{ContentType, CynthiaPublication, PublicationContent},
+    };
 
     use super::*;
     pub(super) fn render_controller(
         publication: CynthiaPublication,
-        _config: CynthiaConfClone,
+        config: CynthiaConfClone,
     ) -> RenderrerResponse {
+        let scene = fetch_scene(publication.clone(), config.clone());
+        if scene.is_none() {
+            error!("No scene found for publication.");
+            return RenderrerResponse::Error;
+        };
         // Extract the content from the publication, if it's a pagish publication, we can just
         // unwrap the result if we know it's a page or post. If it's not, we'll ignore this
         // (then `None`) variable later.
@@ -141,6 +149,25 @@ mod in_renderer {
         // content.unwrap().unwrap_html();
         RenderrerResponse::Ok(innerhtml)
     }
+    fn fetch_scene(publication: CynthiaPublication, config: CynthiaConfClone) -> Option<Scene> {
+        let scene = publication.get_scene_name();
+        match scene {
+            Some(s) => {
+                let fetched_scene = config.scenes.get_by_name(s.as_str());
+                if fetched_scene.is_none() {
+                    error!("Scene \"{}\" not found in the configuration file.", s);
+                    None
+                } else {
+                    fetched_scene
+                }
+            }
+            None => {
+                let fetched_scene = config.scenes.get_default();
+                Some(fetched_scene)
+            }
+        }
+    }
+
     #[derive(Debug)]
     enum FetchedContent {
         Error,
