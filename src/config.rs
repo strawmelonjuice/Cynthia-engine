@@ -1,3 +1,4 @@
+use log::{error, warn};
 use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,25 +19,47 @@ pub struct CynthiaConf {
     #[serde(alias = "Logs")]
     pub logs: Option<Logging>,
     #[serde(alias = "Scenes")]
+    #[serde(default = "c_emptyscenelist")]
     pub scenes: SceneCollection,
 }
 pub(crate) type SceneCollection = Vec<Scene>;
 pub(crate) trait SceneCollectionTrait {
+    fn get_by_name(&self, name: &str) -> Option<Scene>;
     fn get_default(&self) -> Scene;
+    fn validate(&self) -> bool;
 }
 impl Scene {
-    pub fn get_name(&self) -> String {
+    pub(crate) fn get_name(&self) -> String {
         self.name.to_string()
     }
 }
 impl SceneCollectionTrait for SceneCollection {
+    fn get_by_name(&self, name: &str) -> Option<Scene> {
+        for scene in self {
+            if scene.get_name() == name {
+                return Some(scene.clone());
+            }
+        }
+        None
+    }
     fn get_default(&self) -> Scene {
         for scene in self {
             if scene.get_name() == "default" {
                 return scene.clone();
             }
         }
+        if self.is_empty() {
+            warn!("No scenes found in the configuration file, making up a default scene.");
+            return Scene::default();
+        }
         self[0].clone()
+    }
+    fn validate(&self) -> bool {
+        if self.is_empty() {
+            error!("No scenes found in the configuration file");
+            return false;
+        }
+        true
     }
 }
 
@@ -182,13 +205,27 @@ pub struct Logging {
     pub logfile: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Scene {
     pub name: String,
-    pub sitename: String,
-    pub stylefile: String,
+    pub sitename: Option<String>,
+    pub stylefile: Option<String>,
     pub templates: Templates,
+}
+impl Default for Scene {
+    fn default() -> Self {
+        Scene {
+            name: String::from("default"),
+            sitename: Some(String::from("My Cynthia Site")),
+            stylefile: None,
+            templates: Templates {
+                post: String::from("post"),
+                page: String::from("page"),
+                postlist: String::from("postlist"),
+            },
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -223,4 +260,7 @@ fn c_cache_lifetime_served() -> u64 {
 
 fn c_404() -> String {
     String::from("404")
+}
+fn c_emptyscenelist() -> Vec<Scene> {
+    Vec::new()
 }

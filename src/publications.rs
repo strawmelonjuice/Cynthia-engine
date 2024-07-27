@@ -159,6 +159,14 @@ impl CynthiaPublication {
             CynthiaPublication::PostList { id, .. } => id.to_string(),
         }
     }
+
+    pub(crate) fn get_scene_name(&self) -> Option<String> {
+        match self {
+            CynthiaPublication::Page { scene_override, .. } => scene_override.clone(),
+            CynthiaPublication::Post { scene_override, .. } => scene_override.clone(),
+            CynthiaPublication::PostList { scene_override, .. } => scene_override.clone(),
+        }
+    }
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) enum PostListFilter {
