@@ -17,7 +17,29 @@ pub struct CynthiaConf {
     pub generator: Generator,
     #[serde(alias = "Logs")]
     pub logs: Option<Logging>,
+    #[serde(alias = "Scenes")]
+    pub scenes: SceneCollection,
 }
+pub(crate) type SceneCollection = Vec<Scene>;
+pub(crate) trait SceneCollectionTrait {
+    fn get_default(&self) -> Scene;
+}
+impl Scene {
+    pub fn get_name(&self) -> String {
+        self.name.to_string()
+    }
+}
+impl SceneCollectionTrait for SceneCollection {
+    fn get_default(&self) -> Scene {
+        for scene in self {
+            if scene.get_name() == "default" {
+                return scene.clone();
+            }
+        }
+        self[0].clone()
+    }
+}
+
 /// A clone of the CynthiaConf struct
 pub struct CynthiaConfClone {
     pub port: u16,
@@ -25,6 +47,7 @@ pub struct CynthiaConfClone {
     pub pages: Pages,
     pub generator: Generator,
     pub logs: Option<Logging>,
+    pub scenes: SceneCollection,
 }
 
 impl CynthiaConfig for CynthiaConfClone {
@@ -35,6 +58,7 @@ impl CynthiaConfig for CynthiaConfClone {
             pages: self.pages.clone(),
             generator: self.generator.clone(),
             logs: self.logs.clone(),
+            scenes: self.scenes.clone(),
         }
     }
     fn clone(&self) -> CynthiaConfClone {
@@ -44,6 +68,7 @@ impl CynthiaConfig for CynthiaConfClone {
             pages: self.pages.clone(),
             generator: self.generator.clone(),
             logs: self.logs.clone(),
+            scenes: self.scenes.clone(),
         }
     }
 }
@@ -55,6 +80,7 @@ impl CynthiaConfig for CynthiaConf {
             pages: self.pages.clone(),
             generator: self.generator.clone(),
             logs: self.logs.clone(),
+            scenes: self.scenes.clone(),
         }
     }
     fn hard_clone(&self) -> CynthiaConf {
@@ -64,6 +90,7 @@ impl CynthiaConfig for CynthiaConf {
             pages: self.pages.clone(),
             generator: self.generator.clone(),
             logs: self.logs.clone(),
+            scenes: self.scenes.clone(),
         }
     }
 }
@@ -81,6 +108,7 @@ impl CynthiaConf {
             pages: self.pages.clone(),
             generator: self.generator.clone(),
             logs: self.logs.clone(),
+            scenes: self.scenes.clone(),
         }
     }
 }
@@ -152,6 +180,23 @@ pub struct Logging {
     #[serde(alias = "file")]
     #[serde(alias = "filename")]
     pub logfile: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Scene {
+    pub name: String,
+    pub sitename: String,
+    pub stylefile: String,
+    pub templates: Templates,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Templates {
+    pub post: String,
+    pub page: String,
+    pub postlist: String,
 }
 
 fn c_port() -> u16 {
