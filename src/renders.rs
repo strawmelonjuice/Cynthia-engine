@@ -83,7 +83,7 @@ pub(crate) fn check_pgid(
         PGIDCheckResponse::Ok
     }
 }
-pub(crate) fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> RenderrerResponse {
+pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> RenderrerResponse {
     let published = read_published_jsonc();
     let publication = if pgid == *"" {
         published.get_root()
@@ -97,22 +97,21 @@ pub(crate) fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> Render
             RenderrerResponse::NotFound
         }
     } else if let Some(pb) = publication {
-        in_renderer::render_controller(pb, config)
+        in_renderer::render_controller(pb, config).await
     } else {
         RenderrerResponse::Error
     }
 }
 
 mod in_renderer {
-    use std::{fs, path::Path};
-
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
     };
+    use std::{fs, path::Path};
 
     use super::*;
-    pub(super) fn render_controller(
+    pub(super) async fn render_controller(
         publication: CynthiaPublication,
         config: CynthiaConfClone,
     ) -> RenderrerResponse {
@@ -125,8 +124,8 @@ mod in_renderer {
         // unwrap the result if we know it's a page or post. If it's not, we'll ignore this
         // (then `None`) variable later.
         let content = match publication {
-            CynthiaPublication::Page { pagecontent, .. } => Some(fetch_content(pagecontent)),
-            CynthiaPublication::Post { pagecontent, .. } => Some(fetch_content(pagecontent)),
+            CynthiaPublication::Page { pagecontent, .. } => Some(fetch_content(pagecontent).await),
+            CynthiaPublication::Post { pagecontent, .. } => Some(fetch_content(pagecontent).await),
             _ => None,
         }
         // Normally, we'd check if the publication is pagish, but we're merely testing to build
@@ -177,15 +176,16 @@ mod in_renderer {
         inner: String,
         target_type: crate::publications::ContentType,
     }
-    fn fetch_content(content: PublicationContent) -> FetchedContent {
+    async fn fetch_content(content: PublicationContent) -> FetchedContent {
         let content_output = match content {
             PublicationContent::Inline(c) => ContentSource {
                 inner: c.get_inner(),
                 target_type: c,
             },
             PublicationContent::External { source } => {
-                let output = match reqwest::blocking::get(source.get_inner()) {
-                    Ok(w) => match w.text() {
+                let a = reqwest::get(source.get_inner()).await;
+                let output = match a {
+                    Ok(w) => match w.text().await {
                         Ok(o) => o,
                         Err(e) => {
                             error!(

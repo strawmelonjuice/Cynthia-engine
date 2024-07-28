@@ -30,7 +30,8 @@ pub(crate) async fn serve(
                 None => {
                     from_cache = false;
                     let page =
-                        render_from_pgid(page_id.parse().unwrap(), server_context.config.clone());
+                        render_from_pgid(page_id.parse().unwrap(), server_context.config.clone())
+                            .await;
                     server_context.store_cache(page_id, page.unwrap().as_bytes(), 15);
                     server_context.get_cache(page_id, 0).unwrap()
                 }
@@ -65,11 +66,13 @@ pub(crate) async fn serve(
                 req.path(),
                 ip
             );
+            drop(coninfo);
             HttpResponse::NotFound().body(
                 render_from_pgid(
                     server_context.config.clone().pages.notfound_page.clone(),
                     server_context.config.clone(),
                 )
+                .await
                 .unwrap(),
             )
         }
