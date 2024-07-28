@@ -188,12 +188,10 @@ pub(crate) enum PostListFilter {
 pub(crate) enum PublicationContent {
     #[serde(alias = "inline")]
     Inline(ContentType),
-    External {
-        source: ContentType,
-    },
-    Local {
-        source: ContentType,
-    },
+    #[serde(alias = "external")]
+    External { source: ContentType },
+    #[serde(alias = "local")]
+    Local { source: ContentType },
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "as", content = "value")]
