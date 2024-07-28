@@ -57,16 +57,14 @@ pub(crate) async fn serve(
             HttpResponse::InternalServerError().body("Internal server error.")
         }
         renders::PGIDCheckResponse::NotFound => {
-            let coninfo = req.connection_info();
+            let coninfo = req.connection_info().clone();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
-
             warn!(
                 "{}\t{:>45.47}\t\t{}",
                 "Request/404".bright_red(),
                 req.path(),
                 ip
             );
-            drop(coninfo);
             HttpResponse::NotFound().body(
                 render_from_pgid(
                     server_context.config.clone().pages.notfound_page.clone(),
