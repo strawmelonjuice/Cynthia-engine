@@ -1,9 +1,9 @@
-use crate::config::CynthiaConfClone;
 /*
  * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
+use crate::config::CynthiaConfClone;
 use crate::publications::{read_published_jsonc, CynthiaPublicationListTrait};
 use crate::ServerContext;
 use log::error;
