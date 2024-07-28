@@ -177,7 +177,6 @@ async fn start() {
         process::exit(1);
     }
     debug!("Configuration: {:?}", config);
-
     let logsets: LogSets = {
         fn matchlogmode(o: u8) -> LevelFilter {
             match o {
