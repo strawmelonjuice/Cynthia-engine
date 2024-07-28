@@ -11,14 +11,14 @@ use std::{fs, process};
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use colored::Colorize;
-use log::error;
 #[allow(unused_imports)]
 use log::info;
 use log::LevelFilter;
+use log::{debug, error};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use tokio::sync::Mutex;
 
-use crate::config::CynthiaConf;
+use crate::config::{CynthiaConf, SceneCollectionTrait};
 use crate::files::CynthiaCache;
 use crate::tell::horizline;
 
@@ -157,6 +157,27 @@ async fn start() {
             process::exit(1);
         }
     };
+    // Validate the configuration
+    if config.port == 0 {
+        eprintln!(
+            "{} Could not set port to 0! Please set it to a valid port.",
+            "error:".red()
+        );
+        process::exit(1);
+    }
+    if config.logs.is_none() {
+        eprintln!("No log configuration found, using defaults");
+    }
+    // Validate scenes
+    if !config.scenes.validate() {
+        eprintln!(
+            "{} Could not validate scenes! Please check your configuration.",
+            "error:".red()
+        );
+        process::exit(1);
+    }
+    debug!("Configuration: {:?}", config);
+
     let logsets: LogSets = {
         fn matchlogmode(o: u8) -> LevelFilter {
             match o {
