@@ -277,7 +277,7 @@ async fn start() {
             }
         }
         .run();
-    let _ = join!(main_server, close(server_context_arc_mutex.clone()), start_timer(server_context_arc_mutex.clone()));
+    let _ = join!(main_server, close(server_context_arc_mutex.clone()), start_timer(server_context_arc_mutex.clone()), externalpluginservers::main());
 }
 async fn start_timer(server_context_mutex: Arc<Mutex<ServerContext>>) {
     let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
@@ -301,7 +301,8 @@ async fn close(
     let run_time_minutes = total_run_time_locale.num_minutes() - (total_run_time_locale.num_hours() * 60);
     let run_time_seconds = total_run_time_locale.num_seconds() - (total_run_time_locale.num_minutes() * 60);
     let run_time_string = format!("{}h {}m {}s", run_time_hours, run_time_minutes, run_time_seconds);
-    server_context.tell(format!("Closing:\n\n\n\nBye! I served {} requests in this run of {}!\n", server_context.request_count, run_time_string));
+    let s = if server_context.request_count == 1 { "" } else { "s" };
+    server_context.tell(format!("Closing:\n\n\n\nBye! I served {} request{s} in this run of {}!\n", server_context.request_count, run_time_string));
     println!("{}", horizline().bright_purple());
     process::exit(0);
 }

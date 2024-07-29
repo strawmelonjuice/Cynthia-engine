@@ -103,6 +103,15 @@ pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> 
     }
 }
 
+/// This struct is a stripped down version of the Scene struct in the config module.
+/// It stores only the necessary data for rendering a single publication.
+struct PublicationScene {
+    name: String,
+    template: String,
+    stylesheet: Option<String>,
+    script: Option<String>,
+}
+
 mod in_renderer {
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
@@ -116,6 +125,7 @@ mod in_renderer {
         config: CynthiaConfClone,
     ) -> RenderrerResponse {
         let scene = fetch_scene(publication.clone(), config.clone());
+
         if scene.is_none() {
             error!("No scene found for publication.");
             return RenderrerResponse::Error;
