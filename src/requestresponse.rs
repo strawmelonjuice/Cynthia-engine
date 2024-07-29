@@ -3,7 +3,7 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-
+use std::sync::Arc;
 use crate::renders::render_from_pgid;
 use crate::{renders, ServerContext};
 use actix_web::web::Data;
@@ -14,10 +14,11 @@ use tokio::sync::{Mutex, MutexGuard};
 #[get("/{a:.*}")]
 #[doc = r"Serves pages included in CynthiaConfig, or a default page if not found."]
 pub(crate) async fn serve(
-    server_context_mutex: Data<Mutex<ServerContext>>,
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: HttpRequest,
 ) -> impl Responder {
     let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    server_context.request_count += 1;
     let page_id = req.match_info().get("a").unwrap_or("root");
     match renders::check_pgid(page_id.to_string(), &server_context) {
         renders::PGIDCheckResponse::Ok => {
