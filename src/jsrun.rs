@@ -4,7 +4,7 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use boa_engine::{Context, JsResult, Source};
+use boa_engine::{Context, JsResult, JsValue, Source};
 #[test]
 fn test() {
     println!(
@@ -45,9 +45,9 @@ JSON.stringify(result);
     let mut context = Context::default();
 
     // Parse the source code
-    context.module_loader()
+    let _ = context.module_loader();
     let resultstr = context.eval(Source::from_bytes(js_code))?;
-    let resultstring = format!("{}", &resultstr.display()).clone();
+    let resultstring: String = format!("{}", &JsValue::display(&resultstr)).clone();
     let resultjson = {
         let mut o = resultstring.chars();
         o.next();
