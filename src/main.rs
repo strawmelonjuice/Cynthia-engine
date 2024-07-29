@@ -7,16 +7,18 @@
 use std::fs::File;
 use std::path::PathBuf;
 use std::{fs, process};
-
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use colored::Colorize;
+use futures::join;
 #[allow(unused_imports)]
 use log::info;
 use log::LevelFilter;
 use log::{debug, error};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::{CynthiaConf, SceneCollectionTrait};
 use crate::files::CynthiaCache;
@@ -28,8 +30,10 @@ mod publications;
 mod renders;
 mod requestresponse;
 mod tell;
+mod externalpluginservers;
+// mod jsrun;
 
-pub struct LogSets {
+struct LogSets {
     pub file_loglevel: LevelFilter,
     pub term_loglevel: LevelFilter,
     pub logfile: PathBuf,
@@ -40,6 +44,8 @@ pub struct LogSets {
 struct ServerContext {
     config: CynthiaConf,
     cache: CynthiaCache,
+    request_count: u64,
+    start_time: u128,
 }
 
 #[tokio::main]
@@ -109,8 +115,7 @@ async fn main() {
             "cynthiapluginmanifest.json".bright_green(),);
             process::exit(0);
         }
-        "start" => start().await,
-        _ => start().await,
+        "start" | _ => start().await,
     }
 }
 async fn start() {
@@ -234,9 +239,12 @@ async fn start() {
     ])
     .unwrap();
     use crate::config::CynthiaConfig;
+    // Initialise context
     let server_context: ServerContext = ServerContext {
         config: config.hard_clone(),
         cache: vec![],
+        request_count: 0,
+        start_time: 0,
     };
     let _ = &server_context.tell(format!(
         "Logging to {}",
@@ -247,10 +255,13 @@ async fn start() {
             .to_string_lossy()
             .replace("\\\\?\\", "")
     ));
-    let server_context_: Data<Mutex<ServerContext>> = Data::new(Mutex::new(server_context));
+    let server_context_arc_mutex: Arc<Mutex<ServerContext>> = Arc::new(Mutex::new(server_context));
+    let server_context_data: Data<Arc<Mutex<ServerContext>>> = Data::new(server_context_arc_mutex.clone());
     use requestresponse::serve;
     let main_server =
-        match HttpServer::new(move || App::new().service(serve).app_data(server_context_.clone()))
+        match HttpServer::new(move || {
+            App::new().service(serve).app_data(server_context_data.clone())
+        })
             .bind(("localhost", config.port))
         {
             Ok(o) => {
@@ -266,11 +277,31 @@ async fn start() {
             }
         }
         .run();
-    let _ = futures::join!(main_server, close());
+    let _ = join!(main_server, close(server_context_arc_mutex.clone()), start_timer(server_context_arc_mutex.clone()));
 }
-async fn close() {
+async fn start_timer(server_context_mutex: Arc<Mutex<ServerContext>>) {
+    let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    server_context.start_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+}
+async fn close(
+    server_context_mutex: Arc<Mutex<ServerContext>>
+) {
     let _ = tokio::signal::ctrl_c().await;
-    println!("\n\n\nBye!\n");
+    let server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    let total_run_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        - server_context.start_time;
+    let total_run_time_locale = chrono::Duration::milliseconds(total_run_time as i64);
+    let run_time_hours = total_run_time_locale.num_hours();
+    let run_time_minutes = total_run_time_locale.num_minutes() - (total_run_time_locale.num_hours() * 60);
+    let run_time_seconds = total_run_time_locale.num_seconds() - (total_run_time_locale.num_minutes() * 60);
+    let run_time_string = format!("{}h {}m {}s", run_time_hours, run_time_minutes, run_time_seconds);
+    server_context.tell(format!("Closing:\n\n\n\nBye! I served {} requests in this run of {}!\n", server_context.request_count, run_time_string));
     println!("{}", horizline().bright_purple());
     process::exit(0);
 }
