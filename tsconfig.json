@@ -18,5 +18,5 @@
 	"exclude": [
 		"./target/generated/js/"
 	],
-	 "include": ["./source/Plugin-runners/node-plugin-runner/src/", "./source/Plugin-runners/node-plugin-api/src"]
+	 "include": ["./source/Plugin-runners/node-plugin-runner/src/"]
 }

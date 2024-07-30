@@ -87,7 +87,7 @@ pub struct CynthiaConfClone {
     pub generator: Generator,
     pub logs: Option<Logging>,
     pub scenes: SceneCollection,
-    pub runtimes: Runtimes
+    pub runtimes: Runtimes,
 }
 
 impl CynthiaConfig for CynthiaConfClone {
@@ -99,7 +99,7 @@ impl CynthiaConfig for CynthiaConfClone {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
-            runtimes: self.runtimes.clone()
+            runtimes: self.runtimes.clone(),
         }
     }
     fn clone(&self) -> CynthiaConfClone {
@@ -110,7 +110,7 @@ impl CynthiaConfig for CynthiaConfClone {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
-            runtimes: self.runtimes.clone()
+            runtimes: self.runtimes.clone(),
         }
     }
 }
@@ -123,7 +123,7 @@ impl CynthiaConfig for CynthiaConf {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
-            runtimes: self.runtimes.clone()
+            runtimes: self.runtimes.clone(),
         }
     }
     fn clone(&self) -> CynthiaConfClone {
@@ -134,7 +134,7 @@ impl CynthiaConfig for CynthiaConf {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
-            runtimes: self.runtimes.clone()
+            runtimes: self.runtimes.clone(),
         }
     }
 }
@@ -152,7 +152,7 @@ impl CynthiaConf {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
-            runtimes:  self.runtimes.clone(),
+            runtimes: self.runtimes.clone(),
         }
     }
 }

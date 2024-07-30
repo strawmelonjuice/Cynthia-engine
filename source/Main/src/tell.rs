@@ -13,7 +13,7 @@ use colored::Colorize;
 use log::info;
 use time::{format_description, OffsetDateTime};
 
-use crate::config::Logging;
+use crate::config::{CynthiaConfClone, Logging};
 use crate::ServerContext;
 
 const DATE_FORMAT_STR: &str = "[hour]:[minute]:[second]";
@@ -23,6 +23,29 @@ impl ServerContext {
     pub(crate) fn tell(&self, rmsg: impl AsRef<str>) {
         let msg = rmsg.as_ref();
         match &self.config.logs.clone() {
+            None => {
+                println!("{}", self.format_tell(msg));
+                info!("{}", msg);
+            }
+            Some(l) => {
+                l.clone().to_owned().tell(rmsg);
+            }
+        }
+    }
+
+    pub(crate) fn format_tell(&self, rmsg: impl AsRef<str>) -> String {
+        let msg = rmsg.as_ref();
+        let dt1: OffsetDateTime = SystemTime::now().into();
+        let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
+        let times = dt1.format(&dt_fmt).unwrap();
+        format!("{} {} {}", times, "[LOG] ".magenta(), msg)
+    }
+}
+/// For when context is unavailable to be locked, confclone should be able to tell too.
+impl CynthiaConfClone {
+    pub(crate) fn tell(&self, rmsg: impl AsRef<str>) {
+        let msg = rmsg.as_ref();
+        match &self.logs.clone() {
             None => {
                 println!("{}", self.format_tell(msg));
                 info!("{}", msg);

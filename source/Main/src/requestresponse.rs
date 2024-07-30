@@ -3,20 +3,28 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-use std::sync::Arc;
 use crate::renders::render_from_pgid;
 use crate::{renders, ServerContext};
 use actix_web::web::Data;
 use actix_web::{get, HttpRequest, HttpResponse, Responder};
 use colored::Colorize;
 use log::warn;
+use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard};
+use crate::externalpluginservers::{contact_eps, EPSRequestBody};
+
 #[get("/{a:.*}")]
 #[doc = r"Serves pages included in CynthiaConfig, or a default page if not found."]
 pub(crate) async fn serve(
     server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: HttpRequest,
 ) -> impl Responder {
+    {
+        let testje = EPSRequestBody::Test {
+            test: String::from("Hello, World!"),
+        };
+        println!( "{:?}", contact_eps(server_context_mutex.clone(), testje).await);
+    }
     let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
     server_context.request_count += 1;
     let page_id = req.match_info().get("a").unwrap_or("root");
