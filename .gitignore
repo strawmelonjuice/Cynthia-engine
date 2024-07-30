@@ -17,3 +17,4 @@ src/client.js
 /.idea/
 /tryout
 *.dump
+/source/Plugin-runners/node-plugin-api/dist/

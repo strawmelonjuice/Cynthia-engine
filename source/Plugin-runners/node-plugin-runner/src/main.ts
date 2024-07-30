@@ -6,7 +6,8 @@
 
 import * as CynthiaPluginAPI from "cynthia-plugin-api/main";
 import {Cynthia} from "cynthia-plugin-api/main";
-
+import {terminalOut as console} from "../../node-plugin-api/main";
+console.info("Node plugin server starting...");
 const cynthiabase = {
 	modifyOutputHTML: [
 		(htmlin: string, Cynthia: typeof CynthiaPluginAPI.Cynthia) => {

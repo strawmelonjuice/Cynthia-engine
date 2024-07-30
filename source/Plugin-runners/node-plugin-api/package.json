@@ -1,14 +1,17 @@
 {
   "name": "cynthia-plugin-api",
+  "type": "module",
   "version": "1.0.0",
   "module": "main.js",
   "description": "Contains some classes and functions to help you create CynthiaWeb plugins.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
   },
   "author": "MLC Bloeiman",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "latest"
+    "@types/node": "latest",
+    "typescript": "^5.0.0"
   }
 }

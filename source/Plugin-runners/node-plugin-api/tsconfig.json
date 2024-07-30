@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"target": "ES5",
+		"lib": [
+			"dom",
+			"ES2021",
+			"ES2023"
+		],
+		"declaration": true,
+		"outDir": "./dist/",
+		"sourceMap": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noImplicitAny": false
+	},
+	"exclude": [
+		"./dist/"
+	],
+	 "include": ["./"]
+}

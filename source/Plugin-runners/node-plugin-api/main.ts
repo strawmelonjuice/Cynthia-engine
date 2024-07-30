@@ -3,6 +3,8 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
+
+
 export interface Request {
     id: number
     body: TestRequestBody | unknown;
@@ -70,10 +72,30 @@ export interface ErrorResponse {
         message?: string;
     };
 }
+export namespace terminalOut {
+    export function log(str: string) {
+        console.log(`log: ${str}`);
+    }
+    export function error(str: string) {
+        console.log(`error: ${str}`);
+    }
+    export function warn(str: string) {
+        console.log(`warn: ${str}`);
+    }
+    export function info(str: string) {
+        console.log(`info: ${str}`);
+    }
+    export function debug(str: string) {
+        console.log(`debug: ${str}`);
+    }
+}
+;
+
 export const Cynthia = {
     send: (res: EmptyOKResponse | OkStringResponseType | OkJSONResponse | ErrorResponse) => {
         console.log(`parse: ${JSON.stringify(res)}`);
     },
+    console: console
 };
 export namespace Incoming {
     export interface WebRequest {

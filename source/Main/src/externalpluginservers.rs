@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use actix_web::web::Data;
 use interactive_process::InteractiveProcess;
-use log::debug;
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use tokio::sync::mpsc::Receiver;
@@ -93,13 +93,23 @@ pub(crate) async fn main(
                     }
                 } else {
                     if o.replace("\n", "").is_empty() {
-                        //     Just wait for the next line lol
+                        //     Just wait for the next line
                     } else {
                         let mut z = y.lock().unwrap();
                         z.clear();
-                        config_clone
-                            .clone()
-                            .tell(format!("[JsPluginRuntime]: {}", o));
+                        if o.starts_with("info: ") {
+                            info!("[JsPluginRuntime]: {}", o.split("info: ").collect::<Vec<&str>>()[1]);
+                        } else if o.starts_with("debug: ") {
+                            debug!("[JsPluginRuntime]: {}", o.split("debug: ").collect::<Vec<&str>>()[1]);
+                        } else if o.starts_with("error: ") {
+                            error!("[JsPluginRuntime]: {}", o.split("error: ").collect::<Vec<&str>>()[1]);
+                        } else if o.starts_with("warn: ") {
+                            warn!("[JsPluginRuntime]: {}", o.split("warn: ").collect::<Vec<&str>>()[1]);
+                        } else if o.starts_with("log: "){
+                            config_clone
+                                .clone()
+                                .tell(format!("[JsPluginRuntime]: {}", o.split("log: ").collect::<Vec<&str>>()[1]));
+                        }
                     }
                 }
             }
