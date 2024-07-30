@@ -7,7 +7,11 @@
     "typescript": "^5.0.0",
     "postcss-cli": "^11.0.0",
     "@biomejs/biome": "latest",
+    "@types/node": "latest",
     "clean-css-cli": "4"
+  },
+  "dependencies": {
+    "cynthia-plugin-api": "file:source/Plugin-runners/node-plugin-api/"
   },
   "scripts": {
     "build": "npm run build:deps && npm run build:rs",
@@ -23,6 +27,6 @@
     "minify-disabled": "npm run minify:js && npm run minify:css",
     "minify:js": "npx terser src-frontend/js/prefetch.js > ./target/generated/js/prefetch.min.js && npx terser src-frontend/js/login.js > ./target/generated/js/login.min.js && npx terser src-frontend/js/login.js > ./target/generated/js/login.min.js && npx terser src-frontend/js/site-home.js > ./target/generated/js/site-home.min.js && npx terser src-frontend/js/site-index.js > ./target/generated/js/site-index.min.js && npx terser src-frontend/js/signup.js > ./target/generated/js/signup.min.js",
     "minify:css": "npx cleancss -O1 specialComments:all --inline none ./target/generated/css/main.css > ./target/generated/css/main.min.css",
-    "start": "cargo run"
+    "start": "npm run build && cargo run"
   }
 }

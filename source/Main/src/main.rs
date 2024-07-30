@@ -4,12 +4,6 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::fs::File;
-use std::path::PathBuf;
-use std::{fs, process};
-use std::sync::Arc;
-use std::sync::mpsc::Sender;
-use std::time::{SystemTime, UNIX_EPOCH};
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use colored::Colorize;
@@ -19,6 +13,12 @@ use log::info;
 use log::LevelFilter;
 use log::{debug, error};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
+use std::fs::File;
+use std::option::Option;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::{fs, process};
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::{CynthiaConf, SceneCollectionTrait};
@@ -27,12 +27,12 @@ use crate::files::CynthiaCache;
 use crate::tell::horizline;
 
 mod config;
+mod externalpluginservers;
 mod files;
 mod publications;
 mod renders;
 mod requestresponse;
 mod tell;
-mod externalpluginservers;
 // mod jsrun;
 
 struct LogSets {
@@ -48,7 +48,18 @@ struct ServerContext {
     cache: CynthiaCache,
     request_count: u64,
     start_time: u128,
-    external_plugin_server: tokio::sync::mpsc::Sender<EPSRequest>,
+    external_plugin_server: EPSCommunicationMemory
+}
+type EPSCommunicationsID = u32;
+
+#[derive(Debug)]
+struct EPSCommunicationMemory {
+    /// The sender to the (NodeJS) external plugin server not to be used directly.
+    pub(crate) sender: tokio::sync::mpsc::Sender<externalpluginservers::EPSRequest>,
+    /// The responses from the external plugin servers
+    pub(crate) response_queue: Vec<Option<externalpluginservers::EPSResponse>>,
+    /// The IDs that have been sent to the external plugin servers but have not been returned yet.
+    pub(crate) unreturned_ids: Vec<EPSCommunicationsID>,
 }
 
 #[tokio::main]
@@ -243,15 +254,18 @@ async fn start() {
     .unwrap();
     use crate::config::CynthiaConfig;
 
-        let (eps_s, eps_r) = tokio::sync::mpsc::channel::<EPSRequest>(100);
-
+    let (to_eps_s, to_eps_r) = tokio::sync::mpsc::channel::<EPSRequest>(100);
     // Initialise context
     let server_context: ServerContext = ServerContext {
         config: config.hard_clone(),
         cache: vec![],
         request_count: 0,
         start_time: 0,
-        external_plugin_server: eps_s,
+        external_plugin_server: EPSCommunicationMemory {
+            sender: to_eps_s,
+            response_queue: vec![],
+            unreturned_ids: vec![],
+        },
     };
     let _ = &server_context.tell(format!(
         "Logging to {}",
@@ -262,29 +276,47 @@ async fn start() {
             .to_string_lossy()
             .replace("\\\\?\\", "")
     ));
-    let server_context_arc_mutex: Arc<Mutex<ServerContext>> = Arc::new(Mutex::new(server_context));
-    let server_context_data: Data<Arc<Mutex<ServerContext>>> = Data::new(server_context_arc_mutex.clone());
-    use requestresponse::serve;
-    let main_server =
-        match HttpServer::new(move || {
-            App::new().service(serve).app_data(server_context_data.clone())
-        })
-            .bind(("localhost", config.port))
-        {
-            Ok(o) => {
-                println!("Running on http://localhost:{}", config.port);
-                o
-            }
-            Err(s) => {
-                error!(
-                    "Could not bind to port {}, error message: {}",
-                    config.port, s
-                );
-                process::exit(1);
-            }
+    let _ = fs::remove_dir_all("./.cynthiaTemp");
+    match fs::create_dir_all("./.cynthiaTemp") {
+        Ok(_) => {}
+        Err(e) => {
+            error!(
+                "Could not create the Cynthia temp folder! Error: {}",
+                e.to_string().bright_red()
+            );
+            process::exit(1);
         }
-        .run();
-    let _ = join!(main_server, close(server_context_arc_mutex.clone()), start_timer(server_context_arc_mutex.clone()), externalpluginservers::main(server_context_arc_mutex.clone(), eps_r));
+    }
+    let server_context_arc_mutex: Arc<Mutex<ServerContext>> = Arc::new(Mutex::new(server_context));
+    let server_context_data: Data<Arc<Mutex<ServerContext>>> =
+        Data::new(server_context_arc_mutex.clone());
+    use requestresponse::serve;
+    let main_server = match HttpServer::new(move || {
+        App::new()
+            .service(serve)
+            .app_data(server_context_data.clone())
+    })
+    .bind(("localhost", config.port))
+    {
+        Ok(o) => {
+            println!("Running on http://localhost:{}", config.port);
+            o
+        }
+        Err(s) => {
+            error!(
+                "Could not bind to port {}, error message: {}",
+                config.port, s
+            );
+            process::exit(1);
+        }
+    }
+    .run();
+    let _ = join!(
+        main_server,
+        close(server_context_arc_mutex.clone()),
+        start_timer(server_context_arc_mutex.clone()),
+        externalpluginservers::main(server_context_arc_mutex.clone(), to_eps_r)
+    );
 }
 async fn start_timer(server_context_mutex: Arc<Mutex<ServerContext>>) {
     let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
@@ -293,16 +325,17 @@ async fn start_timer(server_context_mutex: Arc<Mutex<ServerContext>>) {
         .unwrap()
         .as_millis();
 }
-async fn close(
-    server_context_mutex: Arc<Mutex<ServerContext>>
-) {
+async fn close(server_context_mutex: Arc<Mutex<ServerContext>>) {
     let _ = tokio::signal::ctrl_c().await;
     let server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
     // Basically now that we block the main thread, we have all the time lol
-    server_context.external_plugin_server.send(EPSRequest {
-        id: 0,
-        command: "close".to_string(),
-    }).await.unwrap();
+    // let _ = server_context
+    //     .external_plugin_server
+    //     .request_channel_sender
+    //     .send(EPSRequest {
+    //         id: 0,
+    //         command: "close".to_string(),
+    //     });
     let total_run_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -310,11 +343,23 @@ async fn close(
         - server_context.start_time;
     let total_run_time_locale = chrono::Duration::milliseconds(total_run_time as i64);
     let run_time_hours = total_run_time_locale.num_hours();
-    let run_time_minutes = total_run_time_locale.num_minutes() - (total_run_time_locale.num_hours() * 60);
-    let run_time_seconds = total_run_time_locale.num_seconds() - (total_run_time_locale.num_minutes() * 60);
-    let run_time_string = format!("{}h {}m {}s", run_time_hours, run_time_minutes, run_time_seconds);
-    let s = if server_context.request_count == 1 { "" } else { "s" };
-    server_context.tell(format!("Closing:\n\n\n\nBye! I served {} request{s} in this run of {}!\n", server_context.request_count, run_time_string));
+    let run_time_minutes =
+        total_run_time_locale.num_minutes() - (total_run_time_locale.num_hours() * 60);
+    let run_time_seconds =
+        total_run_time_locale.num_seconds() - (total_run_time_locale.num_minutes() * 60);
+    let run_time_string = format!(
+        "{}h {}m {}s",
+        run_time_hours, run_time_minutes, run_time_seconds
+    );
+    let s = if server_context.request_count == 1 {
+        ""
+    } else {
+        "s"
+    };
+    server_context.tell(format!(
+        "Closing:\n\n\n\nBye! I served {} request{s} in this run of {}!\n",
+        server_context.request_count, run_time_string
+    ));
     println!("{}", horizline().bright_purple());
     process::exit(0);
 }
