@@ -3,10 +3,12 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-
+use std::fs;
+use std::path::PathBuf;
 use crate::ServerContext;
 use log::{debug, trace};
 use std::time::{SystemTime, UNIX_EPOCH};
+use normalize_path::NormalizePath;
 
 pub(super) type CynthiaCache = Vec<CynthiaCacheObject>;
 #[derive(Debug, Clone)]
@@ -80,4 +82,21 @@ impl ServerContext {
     pub fn estimate_cache_size(&self) -> usize {
         self.cache.iter().map(|x| x.content.len()).sum()
     }
+}
+#[allow(dead_code)]
+fn cachefolder() -> PathBuf {
+    let fl = tempfolder()
+        .join(format!("{}", std::process::id()))
+        .normalize();
+    // logger(31, format!("Cache folder: {}", fl.display()));
+    fs::create_dir_all(&fl).unwrap();
+    fl
+}
+pub(crate) fn tempfolder() -> PathBuf {
+    let fl = PathBuf::from("./.cynthiaTemp/")
+        .join(format!("{}", std::process::id()))
+        .normalize();
+    // logger(31, format!("Cache folder: {}", fl.display()));
+    fs::create_dir_all(&fl).unwrap();
+    fl
 }

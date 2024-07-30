@@ -12,7 +12,6 @@ pnpm-lock.yaml
 /GETTINGSTARTED.MD
 /cynthiapmanifest.json
 src/client.js
-/plugins/
 
 # Ignore editor files
 /.idea/
