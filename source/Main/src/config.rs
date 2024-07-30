@@ -21,7 +21,23 @@ pub struct CynthiaConf {
     #[serde(alias = "Scenes")]
     #[serde(default = "c_emptyscenelist")]
     pub scenes: SceneCollection,
+    #[serde(alias = "Runtimes")]
+    #[serde(alias = "runners")]
+    #[serde(default)]
+    pub runtimes: Runtimes,
 }
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub(crate) struct Runtimes {
+    pub(crate) node: String,
+}
+impl Default for Runtimes {
+    fn default() -> Self {
+        Runtimes {
+            node: String::from("bun"),
+        }
+    }
+}
+
 pub(crate) type SceneCollection = Vec<Scene>;
 pub(crate) trait SceneCollectionTrait {
     fn get_by_name(&self, name: &str) -> Option<Scene>;
@@ -71,6 +87,7 @@ pub struct CynthiaConfClone {
     pub generator: Generator,
     pub logs: Option<Logging>,
     pub scenes: SceneCollection,
+    pub runtimes: Runtimes
 }
 
 impl CynthiaConfig for CynthiaConfClone {
@@ -82,6 +99,7 @@ impl CynthiaConfig for CynthiaConfClone {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
+            runtimes: self.runtimes.clone()
         }
     }
     fn clone(&self) -> CynthiaConfClone {
@@ -92,20 +110,11 @@ impl CynthiaConfig for CynthiaConfClone {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
+            runtimes: self.runtimes.clone()
         }
     }
 }
 impl CynthiaConfig for CynthiaConf {
-    fn clone(&self) -> CynthiaConfClone {
-        CynthiaConfClone {
-            port: self.port,
-            cache: self.cache.clone(),
-            pages: self.pages.clone(),
-            generator: self.generator.clone(),
-            logs: self.logs.clone(),
-            scenes: self.scenes.clone(),
-        }
-    }
     fn hard_clone(&self) -> CynthiaConf {
         CynthiaConf {
             port: self.port,
@@ -114,10 +123,21 @@ impl CynthiaConfig for CynthiaConf {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
+            runtimes: self.runtimes.clone()
+        }
+    }
+    fn clone(&self) -> CynthiaConfClone {
+        CynthiaConfClone {
+            port: self.port,
+            cache: self.cache.clone(),
+            pages: self.pages.clone(),
+            generator: self.generator.clone(),
+            logs: self.logs.clone(),
+            scenes: self.scenes.clone(),
+            runtimes: self.runtimes.clone()
         }
     }
 }
-#[allow(unused)]
 pub trait CynthiaConfig {
     fn hard_clone(&self) -> CynthiaConf;
     fn clone(&self) -> CynthiaConfClone;
@@ -132,6 +152,7 @@ impl CynthiaConf {
             generator: self.generator.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
+            runtimes:  self.runtimes.clone(),
         }
     }
 }

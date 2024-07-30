@@ -8,6 +8,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::{fs, process};
 use std::sync::Arc;
+use std::sync::mpsc::Sender;
 use std::time::{SystemTime, UNIX_EPOCH};
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
@@ -21,6 +22,7 @@ use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogg
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::{CynthiaConf, SceneCollectionTrait};
+use crate::externalpluginservers::EPSRequest;
 use crate::files::CynthiaCache;
 use crate::tell::horizline;
 
@@ -39,13 +41,14 @@ struct LogSets {
     pub logfile: PathBuf,
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 /// Server context, containing the configuration and cache. Also implements a `tell` method for easy logging.
 struct ServerContext {
     config: CynthiaConf,
     cache: CynthiaCache,
     request_count: u64,
     start_time: u128,
+    external_plugin_server: tokio::sync::mpsc::Sender<EPSRequest>,
 }
 
 #[tokio::main]
@@ -239,12 +242,16 @@ async fn start() {
     ])
     .unwrap();
     use crate::config::CynthiaConfig;
+
+        let (eps_s, eps_r) = tokio::sync::mpsc::channel::<EPSRequest>(100);
+
     // Initialise context
     let server_context: ServerContext = ServerContext {
         config: config.hard_clone(),
         cache: vec![],
         request_count: 0,
         start_time: 0,
+        external_plugin_server: eps_s,
     };
     let _ = &server_context.tell(format!(
         "Logging to {}",
@@ -277,7 +284,7 @@ async fn start() {
             }
         }
         .run();
-    let _ = join!(main_server, close(server_context_arc_mutex.clone()), start_timer(server_context_arc_mutex.clone()), externalpluginservers::main());
+    let _ = join!(main_server, close(server_context_arc_mutex.clone()), start_timer(server_context_arc_mutex.clone()), externalpluginservers::main(server_context_arc_mutex.clone(), eps_r));
 }
 async fn start_timer(server_context_mutex: Arc<Mutex<ServerContext>>) {
     let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
@@ -291,6 +298,11 @@ async fn close(
 ) {
     let _ = tokio::signal::ctrl_c().await;
     let server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    // Basically now that we block the main thread, we have all the time lol
+    server_context.external_plugin_server.send(EPSRequest {
+        id: 0,
+        command: "close".to_string(),
+    }).await.unwrap();
     let total_run_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
