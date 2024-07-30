@@ -5,6 +5,7 @@
  */
 
 use boa_engine::{Context, JsResult, JsValue, Source};
+
 #[test]
 fn test() {
     println!(

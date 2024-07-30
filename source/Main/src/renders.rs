@@ -3,11 +3,12 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-use crate::config::CynthiaConfClone;
-use crate::publications::{read_published_jsonc, CynthiaPublicationListTrait};
-use crate::ServerContext;
 use log::error;
 use tokio::sync::MutexGuard;
+
+use crate::config::CynthiaConfClone;
+use crate::publications::{CynthiaPublicationListTrait, read_published_jsonc};
+use crate::ServerContext;
 
 pub(crate) enum PGIDCheckResponse {
     Ok,
@@ -113,13 +114,15 @@ struct PublicationScene {
 }
 
 mod in_renderer {
+    use std::{fs, path::Path};
+
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
     };
-    use std::{fs, path::Path};
 
     use super::*;
+
     pub(super) async fn render_controller(
         publication: CynthiaPublication,
         config: CynthiaConfClone,

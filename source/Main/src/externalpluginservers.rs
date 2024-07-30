@@ -11,6 +11,21 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 
+use std::process::Command;
+use std::sync::Arc;
+
+use actix_web::web::Data;
+use interactive_process::InteractiveProcess;
+use log::debug;
+use serde::{Deserialize, Serialize};
+use serde_json::from_str;
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::Mutex;
+
+use crate::{EPSCommunicationsID, ServerContext};
+use crate::config::CynthiaConfig;
+use crate::files::tempfolder;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct EPSRequest {
     id: EPSCommunicationsID,
@@ -37,20 +52,6 @@ pub(crate) enum EPSResponseBody {
     Error { message: Option<String> },
 }
 
-use crate::config::CynthiaConfig;
-use crate::files::tempfolder;
-use crate::{EPSCommunicationsID, ServerContext};
-use actix_web::web::Data;
-use futures::FutureExt;
-use interactive_process::InteractiveProcess;
-use log::debug;
-use serde::{Deserialize, Serialize};
-use serde_json::from_str;
-use std::process::Command;
-use std::sync::Arc;
-use tokio::sync::mpsc::Receiver;
-use tokio::sync::Mutex;
-
 pub(crate) async fn main(
     _server_context_mutex: Arc<Mutex<ServerContext>>,
     mut eps_r: Receiver<EPSRequest>,
@@ -65,7 +66,7 @@ pub(crate) async fn main(
     // We gotta write the javascript to a temporary file and then run it.
     let jstempfolder = tempfolder().join("js");
     std::fs::create_dir_all(&jstempfolder).unwrap();
-    let jsfile = include_bytes!("../../../target/generated/js/main.js");
+    let jsfile = include_bytes!("../../../target/generated/js/plugins-runtime.js");
     std::fs::write(jstempfolder.join("main.js"), jsfile).unwrap();
     // now we can run the javascript
     let node_runtime: &str = config_clone.runtimes.node.as_ref();

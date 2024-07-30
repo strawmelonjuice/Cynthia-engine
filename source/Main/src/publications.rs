@@ -4,8 +4,8 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::path::Path;
 use std::{fs, process};
+use std::path::Path;
 
 use jsonc_parser::parse_to_serde_value;
 use log::{error, warn};

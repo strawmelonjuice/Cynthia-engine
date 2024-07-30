@@ -18,14 +18,13 @@
     "build:deps": "npm run build:css && npm run build:jsts && npm run minify",
     "build:css-disabled": "postcss -o ./target/generated/css/main.css src-frontend/styles/main.pcss",
     "build:css": "echo tailwind compilation is disabled.",
-    "build:jsts": "tsc",
+    "build:jsts": "npx -y bun build './source/Plugin-runners/node-plugin-runner/src/main.ts' --minify --target=bun --outfile './target/generated/js/plugins-runtime.js'",
     "build:rs": "cargo build",
     "format": "npm run format:rs && npm run format:ts && npm run minify:css",
     "format:rs": "cargo fmt",
     "format:ts": "npx biome format \"./src-frontend/ts/main.ts\" --write",
     "minify": "echo minification is disabled.",
     "minify-disabled": "npm run minify:js && npm run minify:css",
-    "minify:js": "npx terser src-frontend/js/prefetch.js > ./target/generated/js/prefetch.min.js && npx terser src-frontend/js/login.js > ./target/generated/js/login.min.js && npx terser src-frontend/js/login.js > ./target/generated/js/login.min.js && npx terser src-frontend/js/site-home.js > ./target/generated/js/site-home.min.js && npx terser src-frontend/js/site-index.js > ./target/generated/js/site-index.min.js && npx terser src-frontend/js/signup.js > ./target/generated/js/signup.min.js",
     "minify:css": "npx cleancss -O1 specialComments:all --inline none ./target/generated/css/main.css > ./target/generated/css/main.min.css",
     "start": "npm run build && cargo run"
   }

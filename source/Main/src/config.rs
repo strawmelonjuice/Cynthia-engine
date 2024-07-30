@@ -1,5 +1,6 @@
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
+
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CynthiaConf {

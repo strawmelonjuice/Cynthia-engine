@@ -9,6 +9,6 @@
   "author": "MLC Bloeiman",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "latest",
+    "@types/node": "latest"
   }
 }
