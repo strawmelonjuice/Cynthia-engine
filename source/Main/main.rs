@@ -4,22 +4,22 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::{fs, process};
 use std::fs::File;
 use std::option::Option;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::{fs, process};
 
-use actix_web::{App, HttpServer};
 use actix_web::web::Data;
+use actix_web::{App, HttpServer};
 use colored::Colorize;
 use futures::join;
-use log::{debug, error};
 #[allow(unused_imports)]
 use log::info;
 use log::LevelFilter;
-use simplelog::{ColorChoice, CombinedLogger, TerminalMode, TermLogger, WriteLogger};
+use log::{debug, error};
+use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::{CynthiaConf, SceneCollectionTrait};
@@ -49,7 +49,7 @@ struct ServerContext {
     cache: CynthiaCache,
     request_count: u64,
     start_time: u128,
-    external_plugin_server: EPSCommunicationMemory
+    external_plugin_server: EPSCommunicationMemory,
 }
 type EPSCommunicationsID = u32;
 
@@ -130,7 +130,15 @@ async fn main() {
             "cynthiapluginmanifest.json".bright_green(),);
             process::exit(0);
         }
-        "start" | _ => start().await,
+        "start" => start().await,
+        _ => {
+            eprintln!(
+            "{} Could not interpret command `{}`! Please run `cynthiaweb help` for a list of commands.",
+            "error:".red(),
+            args.get(1).unwrap_or(&String::from("")).to_ascii_lowercase()
+            );
+            process::exit(1);
+        }
     }
 }
 async fn start() {

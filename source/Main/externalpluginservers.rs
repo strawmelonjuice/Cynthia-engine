@@ -22,9 +22,9 @@ use serde_json::from_str;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::Mutex;
 
-use crate::{EPSCommunicationsID, ServerContext};
 use crate::config::CynthiaConfig;
 use crate::files::tempfolder;
+use crate::{EPSCommunicationsID, ServerContext};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct EPSRequest {
@@ -66,7 +66,7 @@ pub(crate) async fn main(
     // We gotta write the javascript to a temporary file and then run it.
     let jstempfolder = tempfolder().join("js");
     std::fs::create_dir_all(&jstempfolder).unwrap();
-    let jsfile = include_bytes!("../../../target/generated/js/plugins-runtime.js");
+    let jsfile = include_bytes!("../../target/generated/js/plugins-runtime.js");
     std::fs::write(jstempfolder.join("main.js"), jsfile).unwrap();
     // now we can run the javascript
     let node_runtime: &str = config_clone.runtimes.node.as_ref();
@@ -75,57 +75,59 @@ pub(crate) async fn main(
     let p = Arc::new(std::sync::Mutex::new(String::new()));
     let mut proc = InteractiveProcess::new(&mut r, move |line| {
         let y = p.clone();
-        match line {
-            Ok(o) => {
-                if o.starts_with("parse: ") {
-                    let l = o.split("parse: ").collect::<Vec<&str>>()[1];
-                    let mut z = y.lock().unwrap();
-                    z.push_str(l);
-                    debug!("JsPluginRuntime is now parsing `{l}` of `{z}`");
-                    let q = from_str::<EPSResponse>(z.as_str());
-                    match q {
-                        Ok(o) => {
-                            debug!("JsPluginRuntime parsed a response: {:?}", o);
-                            rt.spawn(and_now(o, _server_context_mutex.clone()));
-                            z.clear();
-                        }
-                        _ => {}
-                    }
-                } else {
-                    if o.replace("\n", "").is_empty() {
-                        //     Just wait for the next line
-                    } else {
-                        let mut z = y.lock().unwrap();
-                        z.clear();
-                        if o.starts_with("info: ") {
-                            info!("[JsPluginRuntime]: {}", o.split("info: ").collect::<Vec<&str>>()[1]);
-                        } else if o.starts_with("debug: ") {
-                            debug!("[JsPluginRuntime]: {}", o.split("debug: ").collect::<Vec<&str>>()[1]);
-                        } else if o.starts_with("error: ") {
-                            error!("[JsPluginRuntime]: {}", o.split("error: ").collect::<Vec<&str>>()[1]);
-                        } else if o.starts_with("warn: ") {
-                            warn!("[JsPluginRuntime]: {}", o.split("warn: ").collect::<Vec<&str>>()[1]);
-                        } else if o.starts_with("log: "){
-                            config_clone
-                                .clone()
-                                .tell(format!("[JsPluginRuntime]: {}", o.split("log: ").collect::<Vec<&str>>()[1]));
-                        }
-                    }
+        if let Ok(o) = line {
+            if o.starts_with("parse: ") {
+                let l = o.split("parse: ").collect::<Vec<&str>>()[1];
+                let mut z = y.lock().unwrap();
+                z.push_str(l);
+                debug!("JsPluginRuntime is now parsing `{l}` of `{z}`");
+                let q = from_str::<EPSResponse>(z.as_str());
+                if let Ok(o) = q {
+                    debug!("JsPluginRuntime parsed a response: {:?}", o);
+                    rt.spawn(and_now(o, _server_context_mutex.clone()));
+                    z.clear();
+                }
+            } else if o.replace("\n", "").is_empty() {
+                //     Just wait for the next line
+            } else {
+                let mut z = y.lock().unwrap();
+                z.clear();
+                if o.starts_with("info: ") {
+                    info!(
+                        "[JsPluginRuntime]: {}",
+                        o.split("info: ").collect::<Vec<&str>>()[1]
+                    );
+                } else if o.starts_with("debug: ") {
+                    debug!(
+                        "[JsPluginRuntime]: {}",
+                        o.split("debug: ").collect::<Vec<&str>>()[1]
+                    );
+                } else if o.starts_with("error: ") {
+                    error!(
+                        "[JsPluginRuntime]: {}",
+                        o.split("error: ").collect::<Vec<&str>>()[1]
+                    );
+                } else if o.starts_with("warn: ") {
+                    warn!(
+                        "[JsPluginRuntime]: {}",
+                        o.split("warn: ").collect::<Vec<&str>>()[1]
+                    );
+                } else if o.starts_with("log: ") {
+                    config_clone.clone().tell(format!(
+                        "[JsPluginRuntime]: {}",
+                        o.split("log: ").collect::<Vec<&str>>()[1]
+                    ));
                 }
             }
-            _ => {}
         }
     })
     .unwrap();
     loop {
-        match eps_r.recv().await {
-            Some(o) => {
-                let mut s = String::from("parse: ");
-                s.push_str(serde_json::to_string(&o).unwrap().as_str());
-                debug!("Sending to JsPluginRuntime: `{}`", s);
-                proc.send(s.as_str()).unwrap();
-            }
-            _ => {}
+        if let Some(o) = eps_r.recv().await {
+            let mut s = String::from("parse: ");
+            s.push_str(serde_json::to_string(&o).unwrap().as_str());
+            debug!("Sending to JsPluginRuntime: `{}`", s);
+            proc.send(s.as_str()).unwrap();
         }
     }
 }
@@ -161,7 +163,7 @@ pub(crate) async fn contact_eps(
             {
                 // It's unique! Now add it to the vector to claim it.
                 server_context.external_plugin_server.unreturned_ids.push(d);
-                break
+                break;
             } else {
                 continue;
             };
@@ -199,10 +201,7 @@ pub(crate) async fn contact_eps(
             server_context
                 .external_plugin_server
                 .response_queue
-                .retain(|o| match o {
-                    Some(_) => true,
-                    None => false,
-                });
+                .retain(|o| o.is_some());
 
             let left_threads = server_context.external_plugin_server.unreturned_ids.len();
             for o in server_context
@@ -220,9 +219,10 @@ pub(crate) async fn contact_eps(
                         drop(server_context);
                         {
                             let mut server_context = _server_context_mutex.lock().await;
-                            server_context.external_plugin_server.unreturned_ids.retain(
-                                |a| a != &random_id
-                            );
+                            server_context
+                                .external_plugin_server
+                                .unreturned_ids
+                                .retain(|a| a != &random_id);
                             return p;
                         }
                     } else {
