@@ -27,14 +27,43 @@ pub struct CynthiaConf {
     #[serde(default)]
     pub runtimes: Runtimes,
 }
+pub(crate) type NodeRuntime = String;
+trait NodeRuntimeTrait {
+    fn auto() -> NodeRuntime;
+}
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub(crate) struct Runtimes {
-    pub(crate) node: String,
+    pub(crate) node: NodeRuntime,
+}
+
+impl NodeRuntimeTrait for NodeRuntime {
+    fn auto() -> Self {
+        let node = match if cfg!(windows) {
+            ["bun.exe", "node.exe"]
+        } else {
+            ["bun", "node"]
+        }
+        .iter()
+        .find(|&runtime| {
+            std::process::Command::new(runtime)
+                .arg("-v")
+                .output()
+                .map(|output| output.status.success())
+                .unwrap_or(false)
+        }) {
+            Some(a) => *a,
+            None => {
+                error!("Failed to find a node runtime to use and none set. Please set a valid `node` path under `[runtimes]` in the configuration.");
+                std::process::exit(1);
+            }
+        };
+        String::from(node)
+    }
 }
 impl Default for Runtimes {
     fn default() -> Self {
         Runtimes {
-            node: String::from("bun"),
+            node: NodeRuntime::auto(),
         }
     }
 }
