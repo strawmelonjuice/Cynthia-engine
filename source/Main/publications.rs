@@ -4,8 +4,8 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::{fs, process};
 use std::path::Path;
+use std::{fs, process};
 
 use jsonc_parser::parse_to_serde_value;
 use log::{error, warn};
@@ -120,6 +120,7 @@ pub(crate) enum CynthiaPublication {
         title: String,
         description: Option<String>,
         thumbnail: Option<String>,
+        dates: CynthiaPublicationDates,
         #[serde(alias = "content")]
         pagecontent: PublicationContent,
         #[serde(alias = "scene")]
@@ -131,9 +132,12 @@ pub(crate) enum CynthiaPublication {
         id: String,
         title: String,
         short: Option<String>,
+        dates: CynthiaPublicationDates,
         thumbnail: Option<String>,
+        category: Option<String>,
+        author: Option<Author>,
         #[serde(alias = "content")]
-        pagecontent: PublicationContent,
+        postcontent: PublicationContent,
         #[serde(alias = "scene")]
         #[serde(alias = "scene-override")]
         scene_override: Option<String>,
@@ -167,6 +171,11 @@ impl CynthiaPublication {
             CynthiaPublication::PostList { scene_override, .. } => scene_override.clone(),
         }
     }
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct CynthiaPublicationDates {
+    pub(crate) altered: u64,
+    pub(crate) published: u64,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) enum PostListFilter {
@@ -214,6 +223,12 @@ impl ContentType {
             ContentType::PlainText(c) => c.to_string(),
         }
     }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct Author {
+    pub(crate) name: Option<String>,
+    pub(crate) thumbnail: Option<String>,
+    pub(crate) link: Option<String>,
 }
 pub(crate) fn read_published_jsonc() -> CynthiaPublicationList {
     if Path::new("./cynthiaFiles/published.yaml").exists() {

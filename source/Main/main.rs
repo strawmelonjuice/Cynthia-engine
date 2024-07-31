@@ -5,7 +5,6 @@
  */
 
 use std::fs::File;
-use std::option::Option;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -49,19 +48,44 @@ struct ServerContext {
     cache: CynthiaCache,
     request_count: u64,
     start_time: u128,
-    external_plugin_server: EPSCommunicationMemory,
+    external_plugin_server: EPSCommunicationData,
 }
+trait LockCallback {
+    async fn lock_callback<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut MutexGuard<ServerContext>) -> T;
+}
+impl LockCallback for Mutex<ServerContext> {
+    async fn lock_callback<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut MutexGuard<ServerContext>) -> T,
+    {
+        let mut s = self.lock().await;
+        f(&mut s)
+    }
+}
+impl LockCallback for Arc<Mutex<ServerContext>> {
+    async fn lock_callback<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut MutexGuard<ServerContext>) -> T,
+    {
+        let mut s = self.lock().await;
+        f(&mut s)
+    }
+}
+impl LockCallback for Data<Arc<Mutex<ServerContext>>> {
+    async fn lock_callback<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut MutexGuard<ServerContext>) -> T,
+    {
+        let mut s = self.lock().await;
+        f(&mut s)
+    }
+}
+
 type EPSCommunicationsID = u32;
 
-#[derive(Debug)]
-struct EPSCommunicationMemory {
-    /// The sender to the (NodeJS) external plugin server not to be used directly.
-    pub(crate) sender: tokio::sync::mpsc::Sender<externalpluginservers::EPSRequest>,
-    /// The responses from the external plugin servers
-    pub(crate) response_queue: Vec<Option<externalpluginservers::EPSResponse>>,
-    /// The IDs that have been sent to the external plugin servers but have not been returned yet.
-    pub(crate) unreturned_ids: Vec<EPSCommunicationsID>,
-}
+use crate::externalpluginservers::EPSCommunicationData;
 
 #[tokio::main]
 async fn main() {
@@ -270,11 +294,7 @@ async fn start() {
         cache: vec![],
         request_count: 0,
         start_time: 0,
-        external_plugin_server: EPSCommunicationMemory {
-            sender: to_eps_s,
-            response_queue: vec![],
-            unreturned_ids: vec![],
-        },
+        external_plugin_server: EPSCommunicationData::new(to_eps_s),
     };
     let _ = &server_context.tell(format!(
         "Logging to {}",

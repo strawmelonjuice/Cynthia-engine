@@ -262,6 +262,7 @@ pub struct Scene {
     pub name: String,
     pub sitename: Option<String>,
     pub stylefile: Option<String>,
+    pub script: Option<String>,
     pub templates: Templates,
 }
 impl Default for Scene {
@@ -270,6 +271,7 @@ impl Default for Scene {
             name: String::from("default"),
             sitename: Some(String::from("My Cynthia Site")),
             stylefile: None,
+            script: None,
             templates: Templates {
                 post: String::from("post"),
                 page: String::from("page"),

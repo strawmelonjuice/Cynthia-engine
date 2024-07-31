@@ -11,6 +11,26 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 
+#[derive(Debug)]
+pub(crate) struct EPSCommunicationData {
+    /// The sender to the (NodeJS) external plugin server not to be used directly.
+    sender: tokio::sync::mpsc::Sender<EPSRequest>,
+    /// The responses from the external plugin servers
+    response_queue: Vec<Option<EPSResponse>>,
+    /// The IDs that have been sent to the external plugin servers but have not been returned yet.
+    unreturned_ids: Vec<EPSCommunicationsID>,
+}
+
+impl EPSCommunicationData {
+    pub(crate) fn new(sender: tokio::sync::mpsc::Sender<EPSRequest>) -> Self {
+        Self {
+            sender,
+            response_queue: vec![],
+            unreturned_ids: vec![],
+        }
+    }
+}
+
 use std::process::Command;
 use std::sync::Arc;
 
@@ -35,11 +55,17 @@ pub(crate) struct EPSRequest {
 #[serde(tag = "for")]
 pub(crate) enum EPSRequestBody {
     Close,
-    Test { test: String },
+    Test {
+        test: String,
+    },
+    WebRequest {
+        page_id: String,
+        headers: Vec<(String, String)>, // Name, Value
+        method: String,
+    },
 }
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct EPSResponse {
+struct EPSResponse {
     id: EPSCommunicationsID,
     pub(crate) body: EPSResponseBody,
 }
@@ -141,11 +167,14 @@ async fn and_now(res: EPSResponse, _server_context_mutex: Arc<Mutex<ServerContex
     debug!("Added response to external plugin server queue.");
     // panic!("The function runs! Finally! It runs!");
 }
-
+/**
+This function sends a request over mpsc to the externalpluginservers::main function, then periodically locks the server mutex and checks if a corresponding response (matched by `id`) is added, if not, it will try again.
+It is recommended to use this function instead of other methods of sending requests to the external plugin server.
+*/
 pub(crate) async fn contact_eps(
     _server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: EPSRequestBody,
-) -> EPSResponse {
+) -> EPSResponseBody {
     let random_id = {
         let mut d: EPSCommunicationsID;
         loop {
@@ -189,7 +218,6 @@ pub(crate) async fn contact_eps(
             panic!("Failed to send request to external plugin server.");
         }
     };
-    // This function sends a request over mpsc to the externalpluginservers::main function, then periodically locks the server mutex and checks if a corresponding response (matched by `id`) is added, if not, it will try again.
     // After sending, check for received responses.
     let mut wait = tokio::time::interval(tokio::time::Duration::from_micros(60));
     loop {
@@ -215,7 +243,7 @@ pub(crate) async fn contact_eps(
                         // Match! Return the response and remove it from the vector.
                         drop(wait);
                         // Remove it from the unreturned vec
-                        let p = o.take().unwrap();
+                        let p = o.take().unwrap().body;
                         drop(server_context);
                         {
                             let mut server_context = _server_context_mutex.lock().await;

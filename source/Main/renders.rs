@@ -4,11 +4,15 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 use log::error;
+use serde::{Deserialize, Serialize};
 use tokio::sync::MutexGuard;
 
 use crate::config::CynthiaConfClone;
-use crate::publications::{CynthiaPublicationListTrait, read_published_jsonc};
+use crate::publications::{
+    read_published_jsonc, Author, CynthiaPublicationDates, CynthiaPublicationListTrait,
+};
 use crate::ServerContext;
+use colored::Colorize;
 
 pub(crate) enum PGIDCheckResponse {
     Ok,
@@ -107,14 +111,34 @@ pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> 
 /// This struct is a stripped down version of the Scene struct in the config module.
 /// It stores only the necessary data for rendering a single publication.
 struct PublicationScene {
-    name: String,
     template: String,
+    // Not used yet. Will be used in the future when implementing stylesheets.
+    //  I know these lints are there so I won't forget, but I'm not forgetting.
+    #[allow(unused)]
     stylesheet: Option<String>,
+    // Not used yet. Will be used in the future when implementing custom scripts.
+    #[allow(unused)]
     script: Option<String>,
 }
-
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct PageLikePublicationTemplateData {
+    meta: PageLikePublicationTemplateDataMeta,
+    content: String,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct PageLikePublicationTemplateDataMeta {
+    id: String,
+    title: String,
+    desc: Option<String>,
+    category: Option<String>,
+    author: Option<Author>,
+    dates: CynthiaPublicationDates,
+    thumbnail: Option<String>,
+}
 mod in_renderer {
     use std::{fs, path::Path};
+
+    use handlebars::{handlebars_helper, Handlebars};
 
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
@@ -133,33 +157,136 @@ mod in_renderer {
             error!("No scene found for publication.");
             return RenderrerResponse::Error;
         };
-        // Extract the content from the publication, if it's a pagish publication, we can just
-        // unwrap the result if we know it's a page or post. If it's not, we'll ignore this
-        // (then `None`) variable later.
-        let content = match publication {
-            CynthiaPublication::Page { pagecontent, .. } => Some(fetch_content(pagecontent).await),
-            CynthiaPublication::Post { pagecontent, .. } => Some(fetch_content(pagecontent).await),
-            _ => None,
-        }
-        // Normally, we'd check if the publication is pagish, but we're merely testing to build
-        // pages and posts here, so we'll just unwrap the result.
-        .unwrap();
-        let innerhtml = match content {
-            FetchedContent::Ok(c) => match c {
-                ContentType::Html(h) => h,
-                _ => {
-                    error!("Seems like an error occurred while rendering the content.");
-                    return RenderrerResponse::Error;
-                }
+        let scene = scene.unwrap();
+        let scène = match publication {
+            CynthiaPublication::Page { .. } => PublicationScene {
+                template: scene.templates.page.clone(),
+                stylesheet: scene.stylefile.clone(),
+                script: scene.script.clone(),
             },
-            FetchedContent::Error => {
-                error!("An error occurred while fetching the content.");
+            CynthiaPublication::Post { .. } => PublicationScene {
+                template: scene.templates.post.clone(),
+                stylesheet: scene.stylefile.clone(),
+                script: scene.script.clone(),
+            },
+            CynthiaPublication::PostList { .. } => PublicationScene {
+                template: scene.templates.postlist.clone(),
+                stylesheet: scene.stylefile.clone(),
+                script: scene.script.clone(),
+            },
+        };
+        let mut template = Handlebars::new();
+        // Num = equal helper
+        // This helper checks if two numbers are equal.
+        // Usage: {{#if (numequal posttype 2)}} ... {{/if}}
+        handlebars_helper!(num_is_equal: |x: usize, y: usize| x == y);
+        template.register_helper("numequal", Box::new(num_is_equal));
+        // Extract the content from the publication, for pagelists, this would be the list of posts.
+        //
+
+        // todo:
+        // Check this out later, see if it can be used.
+        // https://docs.rs/handlebars/latest/handlebars/#template-inheritance
+        match template.register_template_file("base", &scène.template) {
+            Ok(_) => {}
+            Err(e) => {
+                error!(
+                    "Error reading template file:\n\n{}",
+                    format!("{}", e).bright_red()
+                );
                 return RenderrerResponse::Error;
             }
         };
+        let outerhtml: String = match publication {
+            CynthiaPublication::Page {
+                pagecontent,
+                id,
+                title,
+                thumbnail,
+                description,
+                dates,
+                ..
+            } => {
+                let htmlbody = match template.render(
+                    "base",
+                    &PageLikePublicationTemplateData {
+                        content: match fetch_page_ish_content(pagecontent).await.unwrap_html() {
+                            RenderrerResponse::Ok(s) => s,
+                            _ => return RenderrerResponse::Error,
+                        },
+                        meta: PageLikePublicationTemplateDataMeta {
+                            id: id.clone(),
+                            title: title.clone(),
+                            desc: description.clone(),
+                            category: None,
+                            author: None,
+                            dates: dates.clone(),
+                            thumbnail: thumbnail.clone(),
+                        },
+                    },
+                ) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!(
+                            "Error rendering template:\n\n{}",
+                            format!("{}", e).bright_red()
+                        );
+                        return RenderrerResponse::Error;
+                    }
+                };
+                format!(
+                    "<html><head><title>{title}</title></head><body>{}</body></html>",
+                    htmlbody
+                )
+            }
+            CynthiaPublication::Post {
+                id,
+                title,
+                short,
+                dates,
+                thumbnail,
+                category,
+                author,
+                postcontent,
+                ..
+            } => {
+                let htmlbody = match template.render(
+                    "base",
+                    &PageLikePublicationTemplateData {
+                        content: match fetch_page_ish_content(postcontent).await.unwrap_html() {
+                            RenderrerResponse::Ok(s) => s,
+                            _ => return RenderrerResponse::Error,
+                        },
+                        meta: PageLikePublicationTemplateDataMeta {
+                            id: id.clone(),
+                            title: title.clone(),
+                            desc: short.clone(),
+                            category: category.clone(),
+                            author: author.clone(),
+                            dates: dates.clone(),
+                            thumbnail: thumbnail.clone(),
+                        },
+                    },
+                ) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!(
+                            "Error rendering template:\n\n{}",
+                            format!("{}", e).bright_red()
+                        );
+                        return RenderrerResponse::Error;
+                    }
+                };
+                format!(
+                    "<html><head><title>{title}</title></head><body>{}</body></html>",
+                    htmlbody
+                )
+            }
+            _ => todo!("Implement fetching content for postlists."),
+        };
 
         // content.unwrap().unwrap_html();
-        RenderrerResponse::Ok(innerhtml)
+        RenderrerResponse::Ok(outerhtml)
     }
     fn fetch_scene(publication: CynthiaPublication, config: CynthiaConfClone) -> Option<Scene> {
         let scene = publication.get_scene_name();
@@ -185,11 +312,30 @@ mod in_renderer {
         Error,
         Ok(ContentType),
     }
+
+    impl FetchedContent {
+        fn unwrap_html(self) -> RenderrerResponse {
+            match self {
+                FetchedContent::Ok(c) => match c {
+                    ContentType::Html(h) => RenderrerResponse::Ok(h),
+                    _ => {
+                        error!("An error occurred while unwrapping the content.");
+                        RenderrerResponse::Error
+                    }
+                },
+                FetchedContent::Error => {
+                    error!("An error occurred while unwrapping the content.");
+                    RenderrerResponse::Error
+                }
+            }
+        }
+    }
     struct ContentSource {
         inner: String,
         target_type: crate::publications::ContentType,
     }
-    async fn fetch_content(content: PublicationContent) -> FetchedContent {
+    #[doc = "Fetches the content of a pageish (a post or a page) publication."]
+    async fn fetch_page_ish_content(content: PublicationContent) -> FetchedContent {
         let content_output = match content {
             PublicationContent::Inline(c) => ContentSource {
                 inner: c.get_inner(),
