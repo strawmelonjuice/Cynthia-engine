@@ -1,37 +1,38 @@
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
+use serde_dhall::StaticType;
 
-#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CynthiaConf {
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct CynthiaConf {
     #[serde(alias = "PORT")]
     #[serde(alias = "Port")]
     #[serde(default = "c_port")]
-    pub port: u16,
+    pub(crate) port: u16,
     #[serde(alias = "Cache")]
     #[serde(default)]
-    pub cache: Cache,
+    pub(crate) cache: Cache,
     #[serde(alias = "Pages")]
     #[serde(default)]
-    pub pages: Pages,
+    pub(crate) pages: Pages,
     #[serde(alias = "Generator")]
     #[serde(default)]
-    pub generator: Generator,
+    pub(crate) generator: Generator,
     #[serde(alias = "Logs")]
-    pub logs: Option<Logging>,
+    pub(crate) logs: Option<Logging>,
     #[serde(alias = "Scenes")]
     #[serde(default = "c_emptyscenelist")]
-    pub scenes: SceneCollection,
+    pub(crate) scenes: SceneCollection,
     #[serde(alias = "Runtimes")]
     #[serde(alias = "runners")]
     #[serde(default)]
-    pub runtimes: Runtimes,
+    pub(crate) runtimes: Runtimes,
 }
 pub(crate) type NodeRuntime = String;
 trait NodeRuntimeTrait {
     fn auto() -> NodeRuntime;
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, StaticType, Clone)]
 pub(crate) struct Runtimes {
     pub(crate) node: NodeRuntime,
 }
@@ -110,14 +111,14 @@ impl SceneCollectionTrait for SceneCollection {
 }
 
 /// A clone of the CynthiaConf struct
-pub struct CynthiaConfClone {
-    pub port: u16,
-    pub cache: Cache,
-    pub pages: Pages,
-    pub generator: Generator,
-    pub logs: Option<Logging>,
-    pub scenes: SceneCollection,
-    pub runtimes: Runtimes,
+pub(crate) struct CynthiaConfClone {
+    pub(crate) port: u16,
+    pub(crate) cache: Cache,
+    pub(crate) pages: Pages,
+    pub(crate) generator: Generator,
+    pub(crate) logs: Option<Logging>,
+    pub(crate) scenes: SceneCollection,
+    pub(crate) runtimes: Runtimes,
 }
 
 impl CynthiaConfig for CynthiaConfClone {
@@ -168,13 +169,13 @@ impl CynthiaConfig for CynthiaConf {
         }
     }
 }
-pub trait CynthiaConfig {
+pub(crate) trait CynthiaConfig {
     fn hard_clone(&self) -> CynthiaConf;
     fn clone(&self) -> CynthiaConfClone;
 }
 
 impl CynthiaConf {
-    pub fn clone(&self) -> CynthiaConfClone {
+    pub(crate) fn clone(&self) -> CynthiaConfClone {
         CynthiaConfClone {
             port: self.port,
             cache: self.cache.clone(),
@@ -187,83 +188,83 @@ impl CynthiaConf {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Cache {
-    pub lifetimes: Lifetimes,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Cache {
+    pub(crate) lifetimes: Lifetimes,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Pages {
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Pages {
     #[serde(alias = "404-page")]
     #[serde(alias = "notfound-page")]
     #[serde(default = "c_404")]
-    pub notfound_page: String,
+    pub(crate) notfound_page: String,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Lifetimes {
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Lifetimes {
     #[serde(default = "c_cache_lifetime_stylesheets")]
-    pub stylesheets: u64,
+    pub(crate) stylesheets: u64,
     #[serde(default = "c_cache_lifetime_js")]
-    pub javascript: u64,
+    pub(crate) javascript: u64,
     #[serde(default = "c_cache_lifetime_external")]
     #[serde(alias = "external")]
-    pub forwarded: u64,
+    pub(crate) forwarded: u64,
     #[serde(default = "c_cache_lifetime_served")]
-    pub served: u64,
+    pub(crate) served: u64,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Generator {
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Generator {
     #[serde(alias = "site-baseurl")]
     #[serde(default = "c_emptystring")]
-    pub site_baseurl: String,
+    pub(crate) site_baseurl: String,
 
     #[serde(alias = "og-site-name")]
     #[serde(alias = "sitename")]
     #[serde(default = "c_emptystring")]
-    pub og_sitename: String,
+    pub(crate) og_sitename: String,
 
-    pub meta: Meta,
+    pub(crate) meta: Meta,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Meta {
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+pub(crate) struct Meta {
     #[serde(alias = "enable-tags")]
+    #[serde(alias = "enableTags")]
     #[serde(default = "c_bool_false")]
-    pub enable_tags: bool,
+    pub(crate) enable_tags: bool,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Logging {
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Logging {
     #[serde(alias = "file-loglevel")]
     #[serde(alias = "file-log-level")]
-    pub file_loglevel: Option<u8>,
+    pub(crate) file_loglevel: Option<u16>,
     #[serde(alias = "term-loglevel")]
     #[serde(alias = "term-log-level")]
     #[serde(alias = "console-loglevel")]
     #[serde(alias = "console-log-level")]
-    pub term_loglevel: Option<u8>,
+    pub(crate) term_loglevel: Option<u16>,
 
     #[serde(alias = "file")]
     #[serde(alias = "filename")]
-    pub logfile: Option<String>,
+    pub(crate) logfile: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Scene {
-    pub name: String,
-    pub sitename: Option<String>,
-    pub stylefile: Option<String>,
-    pub script: Option<String>,
-    pub templates: Templates,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Scene {
+    pub(crate) name: String,
+    pub(crate) sitename: Option<String>,
+    pub(crate) stylefile: Option<String>,
+    pub(crate) script: Option<String>,
+    pub(crate) templates: Templates,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -281,12 +282,12 @@ impl Default for Scene {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Templates {
-    pub post: String,
-    pub page: String,
-    pub postlist: String,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+// #[serde(rename_all = "camelCase")]
+pub(crate) struct Templates {
+    pub(crate) post: String,
+    pub(crate) page: String,
+    pub(crate) postlist: String,
 }
 
 fn c_port() -> u16 {

@@ -4,12 +4,6 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::fs::File;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{fs, process};
-
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use colored::Colorize;
@@ -19,9 +13,15 @@ use log::info;
 use log::LevelFilter;
 use log::{debug, error};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
+use std::fs::File;
+use std::ops::Add;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::{fs, process};
 use tokio::sync::{Mutex, MutexGuard};
 
-use crate::config::{CynthiaConf, SceneCollectionTrait};
+use crate::config::{CynthiaConf, CynthiaConfig, SceneCollectionTrait};
 use crate::externalpluginservers::EPSRequest;
 use crate::files::CynthiaCache;
 use crate::tell::horizline;
@@ -137,6 +137,12 @@ async fn main() {
                 "start".bold().yellow(),
                 ": Starts the server.".bright_green()
             );
+            println!(
+                "\t{}{}\n\t\t{}",
+                "convert [format]".bold().yellow(),
+                ": Converts the configuration to the specified format.".bright_green(),
+                "Available formats: `dhall`, `toml`, `json`."
+            );
             println!("\t{} {{{}}} <{}> ({})
             Available subcommands:
                 - Add:
@@ -158,6 +164,16 @@ async fn main() {
             process::exit(0);
         }
         "start" => start().await,
+        "convert" => {
+            if args.len() < 3 {
+                eprintln!(
+                    "{} No format specified! Please run `cynthiaweb help` for a list of commands.",
+                    "error:".red()
+                );
+                process::exit(1);
+            }
+            convert_config(args.get(2).unwrap());
+        }
         "" => {
             eprintln!(
                 "{} No command specified! Please run `cynthiaweb help` for a list of commands.\n\nRunning: `cynthiaweb start` from here on.",
@@ -176,50 +192,156 @@ async fn main() {
         }
     }
 }
-async fn start() {
-    let cd = std::env::current_dir().unwrap();
-    let cynthiaconfpath = cd.join("Cynthia.toml");
-    if !cynthiaconfpath.exists() {
+const CONFIG_LOCATIONS: [&str; 3] = [("Cynthia.dhall"), ("Cynthia.toml"), ("Cynthia.json")];
+
+fn load_config() -> CynthiaConf {
+    let unfound = || {
         eprintln!("Could not find cynthia-configuration at `{}`! Have you initialised a Cynthia setup here? To do so, run `{}`.",
-                  cynthiaconfpath.clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan(),
+                  std::env::current_dir().unwrap().join("Cynthia.toml").clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan(),
                   "cynthiaweb init".bright_green());
         process::exit(1);
+    };
+    let cd = std::env::current_dir().unwrap();
+    // In order of preference for Cynthia. I personally prefer TOML, but Cynthia would prefer Dhall. Besides, Dhall is far more powerful.
+    let config_locations: Vec<PathBuf> = CONFIG_LOCATIONS.iter().map(|p| cd.join(p)).collect();
+    let chosen_config_location = config_locations.iter().position(|p| p.exists());
+    if let None = chosen_config_location {
+        unfound();
     }
-    let config: CynthiaConf = match fs::read_to_string(cynthiaconfpath.clone()) {
-        Ok(g) => match toml::from_str(&g) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!(
-                    "{}\n\nReason:\n{}",
-                    format!(
-                        "Could not interpret cynthia-configuration at `{}`!",
-                        cynthiaconfpath
-                            .clone()
-                            .to_string_lossy()
-                            .replace("\\\\?\\", "")
-                    )
-                    .bright_red(),
-                    e
-                );
-                process::exit(1);
+    return match chosen_config_location.unwrap() {
+        2 => {
+            let cynthiaconfpathjson: PathBuf = config_locations
+                .get(chosen_config_location.unwrap())
+                .unwrap()
+                .clone();
+            match fs::read_to_string(cynthiaconfpathjson.clone()) {
+                Ok(g) => match serde_json::from_str(&g) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        eprintln!(
+                            "{}\n\nReason:\n{}",
+                            format!(
+                                "Could not interpret cynthia-configuration at `{}`!",
+                                cynthiaconfpathjson
+                                    .clone()
+                                    .to_string_lossy()
+                                    .replace("\\\\?\\", "")
+                            )
+                            .bright_red(),
+                            e
+                        );
+                        process::exit(1);
+                    }
+                },
+                Err(e) => {
+                    eprintln!(
+                        "{}\n\nReason:\n{}",
+                        format!(
+                            "Could not interpret cynthia-configuration at `{}`!",
+                            cynthiaconfpathjson
+                                .clone()
+                                .to_string_lossy()
+                                .replace("\\\\?\\", "")
+                        )
+                        .bright_red(),
+                        format!("{}", e).on_red()
+                    );
+                    process::exit(1);
+                }
             }
-        },
-        Err(e) => {
-            eprintln!(
-                "{}\n\nReason:\n{}",
-                format!(
-                    "Could not interpret cynthia-configuration at `{}`!",
-                    cynthiaconfpath
-                        .clone()
-                        .to_string_lossy()
-                        .replace("\\\\?\\", "")
-                )
-                .bright_red(),
-                format!("{}", e).on_red()
-            );
-            process::exit(1);
+        }
+        1 => {
+            let cynthiaconfpathtoml: PathBuf = config_locations
+                .get(chosen_config_location.unwrap())
+                .unwrap()
+                .clone();
+            match fs::read_to_string(cynthiaconfpathtoml.clone()) {
+                Ok(g) => match toml::from_str(&g) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        eprintln!(
+                            "{}\n\nReason:\n{}",
+                            format!(
+                                "Could not interpret cynthia-configuration at `{}`!",
+                                cynthiaconfpathtoml
+                                    .clone()
+                                    .to_string_lossy()
+                                    .replace("\\\\?\\", "")
+                            )
+                            .bright_red(),
+                            e
+                        );
+                        process::exit(1);
+                    }
+                },
+                Err(e) => {
+                    eprintln!(
+                        "{}\n\nReason:\n{}",
+                        format!(
+                            "Could not interpret cynthia-configuration at `{}`!",
+                            cynthiaconfpathtoml
+                                .clone()
+                                .to_string_lossy()
+                                .replace("\\\\?\\", "")
+                        )
+                        .bright_red(),
+                        format!("{}", e).on_red()
+                    );
+                    process::exit(1);
+                }
+            }
+        }
+        0 => {
+            let cynthiaconfpathdhall: PathBuf = config_locations
+                .get(chosen_config_location.unwrap())
+                .unwrap()
+                .clone();
+            match fs::read_to_string(cynthiaconfpathdhall.clone()) {
+                Ok(g) => match serde_dhall::from_str(&g).parse() {
+                    Ok(p) => p,
+                    Err(e) => {
+                        eprintln!(
+                            "{}\n\nReason:\n{}",
+                            format!(
+                                "Could not interpret cynthia-configuration at `{}`!",
+                                cynthiaconfpathdhall
+                                    .clone()
+                                    .to_string_lossy()
+                                    .replace("\\\\?\\", "")
+                            )
+                            .bright_red(),
+                            e
+                        );
+                        process::exit(1);
+                    }
+                },
+                Err(e) => {
+                    eprintln!(
+                        "{}\n\nReason:\n{}",
+                        format!(
+                            "Could not interpret cynthia-configuration at `{}`!",
+                            cynthiaconfpathdhall
+                                .clone()
+                                .to_string_lossy()
+                                .replace("\\\\?\\", "")
+                        )
+                        .bright_red(),
+                        format!("{}", e).on_red()
+                    );
+                    process::exit(1);
+                }
+            }
+        }
+        _ => {
+            unfound();
+            unreachable!();
         }
     };
+}
+
+async fn start() {
+    let cd = std::env::current_dir().unwrap();
+    let config = load_config();
     // Validate the configuration
     if config.port == 0 {
         eprintln!(
@@ -241,7 +363,7 @@ async fn start() {
     }
     debug!("Configuration: {:?}", config);
     let logsets: LogSets = {
-        fn matchlogmode(o: u8) -> LevelFilter {
+        fn matchlogmode(o: u16) -> LevelFilter {
             match o {
                 0 => LevelFilter::Off,
                 1 => LevelFilter::Error,
@@ -404,4 +526,87 @@ async fn close(server_context_mutex: Arc<Mutex<ServerContext>>) {
     ));
     println!("{}", horizline().bright_purple());
     process::exit(0);
+}
+
+fn convert_config(to: &str) {
+    let cd = std::env::current_dir().unwrap();
+    let config = load_config().hard_clone();
+    let config_serialised = match to {
+        "dhall" => {
+            // Dhall is a bit more complex, so we need to do some extra work here.
+            // Besides, we need to add some comments to the Dhall file.
+            // todo!("Add all comments to the Dhall file");
+            
+            let mut o = String::from("{\n\t{-\n\t\tThis is the configuration file for Cynthia. It is written in Dhall, a Haskell-like language that is able to contain functions and types.\n\n\t-}\n");
+            o.push_str(
+                serde_dhall::serialize(&config)
+                    .static_type_annotation()
+                    .to_string()
+                    .unwrap()
+                    .replace(",", "\n,")
+                    .replace("{", "{\n")
+                    .replace("}", "\n}\n")
+                    .chars()
+                    .skip(1)
+                    .collect::<String>()
+                    .as_str(),
+            );
+            o.replace("cache =", "{-\nThese rules are set for a reason: The higher they are set, the less requests we have to do to Node, external servers, etc.\nHigh caching lifetimes can speed up Cynthia a whole lot, so think wisely before you lower any of these numbers!\n-}\n cache =")
+        }
+        "toml" => { 
+            todo!("Add all comments to the TOML file");
+            toml::to_string_pretty(&config).unwrap() },
+        "json" => { 
+            todo!("Add all comments to the JSON file");
+            serde_json::to_string_pretty(&config).unwrap() },
+        _ => {
+            eprintln!(
+                "{} Could not interpret format `{}`! Please use either `dhall` or `toml`.",
+                "error:".red(),
+                to
+            );
+            process::exit(1);
+        }
+    };
+    let config_file = cd.join("Cynthia.".to_string() + to);
+    match fs::write(config_file, config_serialised) {
+        Ok(_) => {
+            println!(
+                "{} Successfully converted the configuration to {}!",
+                "Success:".green(),
+                to
+            );
+        }
+        Err(e) => {
+            eprintln!(
+                "{} Could not write the configuration to `{}`! Error: {}",
+                "error:".red(),
+                cd.join("Cynthia.".to_string() + to)
+                    .to_string_lossy()
+                    .replace("\\\\?\\", ""),
+                e
+            );
+            process::exit(1);
+        }
+    };
+    // Remove old format(s)
+    let config_file = cd.join("Cynthia.".to_string() + to);
+
+    let mut config_locations: Vec<PathBuf> = CONFIG_LOCATIONS.iter().map(|p| cd.join(p)).collect();
+    config_locations.retain(|p| p.exists());
+    config_locations.retain(|p| p != &config_file);
+    for p in config_locations {
+        match fs::remove_file(p.clone()) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!(
+                    "{} Could not remove the old configuration file at `{}`! Error: {}",
+                    "error:".red(),
+                    p.to_string_lossy().replace("\\\\?\\", ""),
+                    e
+                );
+                process::exit(1);
+            }
+        }
+    }
 }
