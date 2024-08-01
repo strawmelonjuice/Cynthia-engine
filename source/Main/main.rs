@@ -48,6 +48,8 @@ struct ServerContext {
     cache: CynthiaCache,
     request_count: u64,
     start_time: u128,
+
+    #[cfg(feature = "node")]
     external_plugin_server: EPSCommunicationData,
 }
 trait LockCallback {
@@ -85,6 +87,7 @@ impl LockCallback for Data<Arc<Mutex<ServerContext>>> {
 
 type EPSCommunicationsID = u32;
 
+#[cfg(feature = "node")]
 use crate::externalpluginservers::EPSCommunicationData;
 
 #[tokio::main]
@@ -155,6 +158,14 @@ async fn main() {
             process::exit(0);
         }
         "start" => start().await,
+        "" => {
+            eprintln!(
+                "{} No command specified! Please run `cynthiaweb help` for a list of commands.\n\nRunning: `cynthiaweb start` from here on.",
+                "error:".red()
+            );
+            start().await;
+            println!("And next time, try to use the `start` command directly!");
+        }
         _ => {
             eprintln!(
             "{} Could not interpret command `{}`! Please run `cynthiaweb help` for a list of commands.",
@@ -287,14 +298,16 @@ async fn start() {
     .unwrap();
     use crate::config::CynthiaConfig;
 
-    let (to_eps_s, to_eps_r) = tokio::sync::mpsc::channel::<EPSRequest>(100);
+    let (_to_eps_s, to_eps_r) = tokio::sync::mpsc::channel::<EPSRequest>(100);
     // Initialise context
     let server_context: ServerContext = ServerContext {
         config: config.hard_clone(),
         cache: vec![],
         request_count: 0,
         start_time: 0,
-        external_plugin_server: EPSCommunicationData::new(to_eps_s),
+
+        #[cfg(feature = "node")]
+        external_plugin_server: EPSCommunicationData::new(_to_eps_s),
     };
     let _ = &server_context.tell(format!(
         "Logging to {}",

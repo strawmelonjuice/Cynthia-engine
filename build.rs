@@ -7,24 +7,30 @@
 const FILES: [&str; 1] = [""];
 
 fn main() {
-    p(
-        &["-v"],
-        "bunx or npx not found. Please install bunx or npx to build this project.",
-    );
-    p(
-        &["i"],
-        "Failed to install node dependencies. Please re-run `bun install` manually.",
-    );
-    p(
+    #[cfg(not(feature = "node"))]
+    println!("cargo:warning=Node features are disabled. This means you won't need a node runtime to build or run Cynthia. It also means that some features are disabled.");
+
+    #[cfg(feature = "node")]
+    {
+        exec_runx(
+            &["-v"],
+            "bunx or npx not found. Please install bunx or npx to build this project, or disable the node feature. <https://doc.rust-lang.org/cargo/reference/features.html#command-line-feature-options>",
+        );
+        exec_runx(
+            &["i"],
+            "Failed to install node dependencies. Please re-run `bun install` manually.",
+        );
+        exec_runx(
         &["--bun", "run", "build:deps"],
         "Failed to build dependencies with any runtime. Please re-run `bun run build:deps` manually.",
-    );
+        );
+    }
     for file in FILES.iter() {
         println!("cargo:rerun-if-changed={}", file);
     }
 }
-
-fn p(args: &[&str], if_fails: &str) {
+#[cfg(feature = "node")]
+fn exec_runx(args: &[&str], if_fails: &str) {
     match if cfg!(windows) {
         ["bunx.exe", "npx.cmd"]
     } else {

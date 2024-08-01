@@ -38,13 +38,13 @@ pub(crate) struct Runtimes {
 
 impl NodeRuntimeTrait for NodeRuntime {
     fn auto() -> Self {
-        let node = match if cfg!(windows) {
-            ["bun.exe", "node.exe"]
-        } else {
-            ["bun", "node"]
-        }
-        .iter()
-        .find(|&runtime| {
+        let available_runtimes = (|| {
+            #[cfg(windows)]
+            return ["bun.exe", "node.exe"];
+            #[cfg(not(windows))]
+            return ["deno", "bun", "node"];
+        })();
+        let node = match available_runtimes.iter().find(|&runtime| {
             std::process::Command::new(runtime)
                 .arg("-v")
                 .output()

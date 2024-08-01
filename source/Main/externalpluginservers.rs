@@ -11,17 +11,23 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 
+#[cfg(feature = "node")]
 #[derive(Debug)]
 pub(crate) struct EPSCommunicationData {
+    #[cfg(feature = "node")]
     /// The sender to the (NodeJS) external plugin server not to be used directly.
     sender: tokio::sync::mpsc::Sender<EPSRequest>,
     /// The responses from the external plugin servers
+    #[cfg(feature = "node")]
     response_queue: Vec<Option<EPSResponse>>,
     /// The IDs that have been sent to the external plugin servers but have not been returned yet.
+    #[cfg(feature = "node")]
     unreturned_ids: Vec<EPSCommunicationsID>,
 }
 
+#[cfg(feature = "node")]
 impl EPSCommunicationData {
+    #[cfg(feature = "node")]
     pub(crate) fn new(sender: tokio::sync::mpsc::Sender<EPSRequest>) -> Self {
         Self {
             sender,
@@ -30,21 +36,29 @@ impl EPSCommunicationData {
         }
     }
 }
-
+#[cfg(feature = "node")]
 use std::process::Command;
 use std::sync::Arc;
 
 use actix_web::web::Data;
+
+#[cfg(feature = "node")]
 use interactive_process::InteractiveProcess;
-use log::{debug, error, info, warn};
+
+use log::warn;
+#[cfg(feature = "node")]
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "node")]
 use serde_json::from_str;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::Mutex;
 
-use crate::config::CynthiaConfig;
-use crate::files::tempfolder;
-use crate::{EPSCommunicationsID, ServerContext};
+use crate::EPSCommunicationsID;
+use crate::ServerContext;
+#[cfg(feature = "node")]
+use crate::{config::CynthiaConfig, files::tempfolder};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct EPSRequest {
@@ -76,17 +90,24 @@ pub(crate) enum EPSResponseBody {
     OkString { value: String },
     Json { value: String },
     Error { message: Option<String> },
+    Disabled,
 }
 
+#[cfg(not(feature = "node"))]
+pub(crate) async fn main(_: Arc<Mutex<ServerContext>>, _: Receiver<EPSRequest>) {
+    warn!("The NodeJS runtime is not enabled. The external node plugin servers will not work.");
+}
+
+#[cfg(feature = "node")]
 pub(crate) async fn main(
-    _server_context_mutex: Arc<Mutex<ServerContext>>,
+    server_context_mutex: Arc<Mutex<ServerContext>>,
     mut eps_r: Receiver<EPSRequest>,
 ) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
     let config_clone = {
         // We need to clone the config because we can't hold the lock while we're in the tokio runtime.
-        let server_context = _server_context_mutex.lock().await;
+        let server_context = server_context_mutex.lock().await;
         server_context.config.clone()
     };
     // We gotta write the javascript to a temporary file and then run it.
@@ -110,7 +131,7 @@ pub(crate) async fn main(
                 let q = from_str::<EPSResponse>(z.as_str());
                 if let Ok(o) = q {
                     debug!("JsPluginRuntime parsed a response: {:?}", o);
-                    rt.spawn(and_now(o, _server_context_mutex.clone()));
+                    rt.spawn(and_now(o, server_context_mutex.clone()));
                     z.clear();
                 }
             } else if o.replace("\n", "").is_empty() {
@@ -158,6 +179,7 @@ pub(crate) async fn main(
     }
 }
 
+#[cfg(feature = "node")]
 async fn and_now(res: EPSResponse, _server_context_mutex: Arc<Mutex<ServerContext>>) {
     let mut server_context = _server_context_mutex.lock().await;
     server_context
@@ -171,8 +193,9 @@ async fn and_now(res: EPSResponse, _server_context_mutex: Arc<Mutex<ServerContex
 This function sends a request over mpsc to the externalpluginservers::main function, then periodically locks the server mutex and checks if a corresponding response (matched by `id`) is added, if not, it will try again.
 It is recommended to use this function instead of other methods of sending requests to the external plugin server.
 */
+#[cfg(feature = "node")]
 pub(crate) async fn contact_eps(
-    _server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: EPSRequestBody,
 ) -> EPSResponseBody {
     let random_id = {
@@ -180,7 +203,7 @@ pub(crate) async fn contact_eps(
         loop {
             d = rand::random::<EPSCommunicationsID>();
             //     Verify that this number is not already in the vector of unreturned responses.
-            let mut server_context = _server_context_mutex.lock().await;
+            let mut server_context = server_context_mutex.lock().await;
             if !server_context
                 .external_plugin_server
                 .response_queue
@@ -201,7 +224,7 @@ pub(crate) async fn contact_eps(
     };
 
     let eps_r = {
-        let server_context = _server_context_mutex.lock().await;
+        let server_context = server_context_mutex.lock().await;
         server_context.external_plugin_server.sender.clone()
     };
     match eps_r
@@ -224,7 +247,7 @@ pub(crate) async fn contact_eps(
         wait.tick().await;
         {
             // Lock the server context mutex and check if the response is in the queue.
-            let mut server_context = _server_context_mutex.lock().await;
+            let mut server_context = server_context_mutex.lock().await;
             // Remove every none value from server_context.external_plugin_server.response_queue
             server_context
                 .external_plugin_server
@@ -246,7 +269,7 @@ pub(crate) async fn contact_eps(
                         let p = o.take().unwrap().body;
                         drop(server_context);
                         {
-                            let mut server_context = _server_context_mutex.lock().await;
+                            let mut server_context = server_context_mutex.lock().await;
                             server_context
                                 .external_plugin_server
                                 .unreturned_ids
@@ -268,4 +291,12 @@ pub(crate) async fn contact_eps(
             }
         }
     }
+}
+
+#[cfg(not(feature = "node"))]
+pub(crate) async fn contact_eps(
+    _: Data<Arc<Mutex<ServerContext>>>,
+    _: EPSRequestBody,
+) -> EPSResponseBody {
+    EPSResponseBody::Disabled
 }
