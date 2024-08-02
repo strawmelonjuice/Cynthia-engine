@@ -23,30 +23,31 @@ Each scene is defined as a table (`[[]]`) in the `scenes` array (`[[scenes]]`).
 Each scene has the following fields:
 
 - `name`: The name of the scene. This value must be unique.
+
 - `sitename`: The name of the site in this scene.
   This is optional, as setting a `<title>` in the template is also possible.
+
 - `stylefile`: The name of the site in this scene.
   This is optional, as setting a `<link>` in the template is also possible.
+
 - `templates`:
   A table that defines the templates to use for each type of publication.
-
+  
   > These templates are always placed in their respective `templates` directory,
   > this means that
-  >
+  > 
   > ```toml
   > post = "default"
   > ```
-  >
+  > 
   > refers to
-  >
+  > 
   > ```path
-  >
   > ./CynthiaFiles/templates/posts/default.handlebars
-  >
   > ```
-
+  
   The following keys are supported:
-
+  
   - `post`: The template to use for posts.
   - `page`: The template to use for pages.
   - `postlist`: The template to use for post lists.
