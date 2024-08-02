@@ -11,23 +11,23 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 #[derive(Debug)]
 pub(crate) struct EPSCommunicationData {
-    #[cfg(feature = "node")]
+    #[cfg(feature = "js_runtime")]
     /// The sender to the (NodeJS) external plugin server not to be used directly.
     sender: tokio::sync::mpsc::Sender<EPSRequest>,
     /// The responses from the external plugin servers
-    #[cfg(feature = "node")]
+    #[cfg(feature = "js_runtime")]
     response_queue: Vec<Option<EPSResponse>>,
     /// The IDs that have been sent to the external plugin servers but have not been returned yet.
-    #[cfg(feature = "node")]
+    #[cfg(feature = "js_runtime")]
     unreturned_ids: Vec<EPSCommunicationsID>,
 }
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 impl EPSCommunicationData {
-    #[cfg(feature = "node")]
+    #[cfg(feature = "js_runtime")]
     pub(crate) fn new(sender: tokio::sync::mpsc::Sender<EPSRequest>) -> Self {
         Self {
             sender,
@@ -36,28 +36,28 @@ impl EPSCommunicationData {
         }
     }
 }
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 use std::process::Command;
 use std::sync::Arc;
 
 use actix_web::web::Data;
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 use interactive_process::InteractiveProcess;
 
 use log::warn;
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 use serde_json::from_str;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::Mutex;
 
 use crate::EPSCommunicationsID;
 use crate::ServerContext;
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 use crate::{config::CynthiaConfig, files::tempfolder};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -93,12 +93,12 @@ pub(crate) enum EPSResponseBody {
     Disabled,
 }
 
-#[cfg(not(feature = "node"))]
+#[cfg(not(feature = "js_runtime"))]
 pub(crate) async fn main(_: Arc<Mutex<ServerContext>>, _: Receiver<EPSRequest>) {
     warn!("The NodeJS runtime is not enabled. The external node plugin servers will not work.");
 }
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 pub(crate) async fn main(
     server_context_mutex: Arc<Mutex<ServerContext>>,
     mut eps_r: Receiver<EPSRequest>,
@@ -179,7 +179,7 @@ pub(crate) async fn main(
     }
 }
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 async fn and_now(res: EPSResponse, _server_context_mutex: Arc<Mutex<ServerContext>>) {
     let mut server_context = _server_context_mutex.lock().await;
     server_context
@@ -193,7 +193,7 @@ async fn and_now(res: EPSResponse, _server_context_mutex: Arc<Mutex<ServerContex
 This function sends a request over mpsc to the externalpluginservers::main function, then periodically locks the server mutex and checks if a corresponding response (matched by `id`) is added, if not, it will try again.
 It is recommended to use this function instead of other methods of sending requests to the external plugin server.
 */
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 pub(crate) async fn contact_eps(
     server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: EPSRequestBody,
@@ -293,7 +293,7 @@ pub(crate) async fn contact_eps(
     }
 }
 
-#[cfg(not(feature = "node"))]
+#[cfg(not(feature = "js_runtime"))]
 pub(crate) async fn contact_eps(
     _: Data<Arc<Mutex<ServerContext>>>,
     _: EPSRequestBody,

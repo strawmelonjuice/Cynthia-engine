@@ -13,8 +13,8 @@ name = "cynthiaweb"
 path = "./source/Main/main.rs"
 
 [features]
-default = ["node"]
-node = []
+default = ["js_runtime"]
+js_runtime = []
 
 [dependencies]
 futures = "0.3.30"

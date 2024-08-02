@@ -49,7 +49,7 @@ struct ServerContext {
     request_count: u64,
     start_time: u128,
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "js_runtime")]
     external_plugin_server: EPSCommunicationData,
 }
 trait LockCallback {
@@ -87,7 +87,7 @@ impl LockCallback for Data<Arc<Mutex<ServerContext>>> {
 
 type EPSCommunicationsID = u32;
 
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 use crate::externalpluginservers::EPSCommunicationData;
 
 #[tokio::main]
@@ -428,7 +428,7 @@ async fn start() {
         request_count: 0,
         start_time: 0,
 
-        #[cfg(feature = "node")]
+        #[cfg(feature = "js_runtime")]
         external_plugin_server: EPSCommunicationData::new(_to_eps_s),
     };
     let _ = &server_context.tell(format!(

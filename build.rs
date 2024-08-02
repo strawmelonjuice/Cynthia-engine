@@ -7,10 +7,10 @@
 const FILES: [&str; 1] = [""];
 
 fn main() {
-    #[cfg(not(feature = "node"))]
+    #[cfg(not(feature = "js_runtime"))]
     println!("cargo:warning=Node features are disabled. This means you won't need a node runtime to build or run Cynthia. It also means that some features are disabled.");
 
-    #[cfg(feature = "node")]
+    #[cfg(feature = "js_runtime")]
     {
         exec_runx(
             &["-v"],
@@ -29,7 +29,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", file);
     }
 }
-#[cfg(feature = "node")]
+#[cfg(feature = "js_runtime")]
 fn exec_runx(args: &[&str], if_fails: &str) {
     match if cfg!(windows) {
         ["bunx.exe", "npx.cmd"]
