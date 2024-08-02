@@ -5,12 +5,19 @@
  */
 
 use boa_engine::{Context, JsResult, JsValue, Source};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct TestObject {
+    a: u8,
+    b: u8,
+    c: u8,
+}
 
 #[test]
 fn test() {
-    println!(
-        "{:#?}",
-        jsrun(
+    let test_object: TestObject = serde_json::from_str(
+        run_js(
             r#"
 let object = {
         a: 1,
@@ -23,11 +30,19 @@ let object = {
     return object
 
     "#,
-        )
-    );
+        ).unwrap().as_str()
+    ).unwrap();
+    let sowieso_correct = TestObject {
+        a: 1,
+        b: 2,
+        c: 3,
+    };
+    assert_eq!(test_object.a, sowieso_correct.a);
+    assert_eq!(test_object.b, sowieso_correct.b);
+    assert_eq!(test_object.c, sowieso_correct.c);
 }
 
-fn jsrun(js: &str) -> JsResult<JsonString> {
+pub(crate) fn run_js(js: &str) -> JsResult<JsonString> {
     let mut js_code_string = r#"
 let result =( () => {
 "#
@@ -58,4 +73,24 @@ JSON.stringify(result);
 
     Ok(resultjson.to_string())
 }
-type JsonString = String;
+pub(crate) type JsonString = String;
+pub(crate) enum RunJSAndDeserializeResult<T> {
+    Ok(T),
+    JsError(String),
+    SerdeError(serde_json::Error),
+}
+
+pub(crate) fn run_js_and_deserialize<T>(js: &str) -> RunJSAndDeserializeResult<T>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    match run_js(js) {
+        Ok(result) => match serde_json::from_str(result.as_str()) {
+            Ok(t) => RunJSAndDeserializeResult::Ok(t),
+            Err(e) => RunJSAndDeserializeResult::SerdeError(e),
+        },
+        Err(e) => {
+            return RunJSAndDeserializeResult::JsError(e.to_string())
+        }
+    }
+}
