@@ -2,7 +2,7 @@ use log::{error, warn};
 use serde::{Deserialize, Serialize};
 use serde_dhall::StaticType;
 
-#[derive(Default, Debug, PartialEq, Serialize, Deserialize, StaticType)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, StaticType)]
 // #[serde(rename_all = "camelCase")]
 pub(crate) struct CynthiaConf {
     #[serde(alias = "PORT")]
@@ -10,7 +10,7 @@ pub(crate) struct CynthiaConf {
     #[serde(default = "c_port")]
     pub(crate) port: u16,
     #[serde(alias = "Cache")]
-    #[serde(default)]
+    #[serde(default = "c_cache")]
     pub(crate) cache: Cache,
     #[serde(alias = "Pages")]
     #[serde(default)]
@@ -19,24 +19,52 @@ pub(crate) struct CynthiaConf {
     #[serde(default)]
     pub(crate) generator: Generator,
     #[serde(alias = "Logs")]
+    #[serde(default = "c_logs")]
     pub(crate) logs: Option<Logging>,
-    #[serde(alias = "Scenes")]
-    #[serde(default = "c_emptyscenelist")]
-    pub(crate) scenes: SceneCollection,
     #[serde(alias = "Runtimes")]
     #[serde(alias = "runners")]
     #[serde(default)]
     pub(crate) runtimes: Runtimes,
+    #[serde(alias = "Scenes")]
+    #[serde(default = "c_emptyscenelist")]
+    pub(crate) scenes: SceneCollection,
 }
+
+impl Default for CynthiaConf {
+    fn default() -> Self {
+        CynthiaConf {
+            port: c_port(),
+            cache: Cache::default(),
+            pages: Pages::default(),
+            generator: Generator::default(),
+            logs: c_logs(),
+            scenes: c_emptyscenelist(),
+            runtimes: Runtimes::default(),
+        }
+    }
+}
+
+fn c_logs() -> Option<Logging> {
+    Some(Logging {
+        file_loglevel: Some(3),
+        term_loglevel: Some(2),
+        logfile: Some(String::from("cynthia.log")),
+    })
+}
+
+#[cfg(feature = "js_runtime")]
 pub(crate) type NodeRuntime = String;
+#[cfg(feature = "js_runtime")]
 trait NodeRuntimeTrait {
     fn auto() -> NodeRuntime;
 }
 #[derive(Debug, PartialEq, Serialize, Deserialize, StaticType, Clone)]
 pub(crate) struct Runtimes {
+    #[cfg(feature = "js_runtime")]
+    #[serde(default = "NodeRuntime::auto")]
     pub(crate) node: NodeRuntime,
 }
-
+#[cfg(feature = "js_runtime")]
 impl NodeRuntimeTrait for NodeRuntime {
     fn auto() -> Self {
         let available_runtimes = (|| {
@@ -61,9 +89,11 @@ impl NodeRuntimeTrait for NodeRuntime {
         String::from(node)
     }
 }
+#[allow(clippy::derivable_impls)]
 impl Default for Runtimes {
     fn default() -> Self {
         Runtimes {
+            #[cfg(feature = "js_runtime")]
             node: NodeRuntime::auto(),
         }
     }
@@ -193,6 +223,11 @@ impl CynthiaConf {
 pub(crate) struct Cache {
     pub(crate) lifetimes: Lifetimes,
 }
+fn c_cache() -> Cache {
+    Cache {
+        lifetimes: Lifetimes::default(),
+    }
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
 // #[serde(rename_all = "camelCase")]
@@ -203,7 +238,7 @@ pub(crate) struct Pages {
     pub(crate) notfound_page: String,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
 // #[serde(rename_all = "camelCase")]
 pub(crate) struct Lifetimes {
     #[serde(default = "c_cache_lifetime_stylesheets")]
@@ -215,6 +250,16 @@ pub(crate) struct Lifetimes {
     pub(crate) forwarded: u64,
     #[serde(default = "c_cache_lifetime_served")]
     pub(crate) served: u64,
+}
+impl Default for Lifetimes {
+    fn default() -> Self {
+        Lifetimes {
+            stylesheets: c_cache_lifetime_stylesheets(),
+            javascript: c_cache_lifetime_js(),
+            forwarded: c_cache_lifetime_external(),
+            served: c_cache_lifetime_served(),
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
@@ -316,5 +361,15 @@ fn c_404() -> String {
     String::from("404")
 }
 fn c_emptyscenelist() -> Vec<Scene> {
-    Vec::new()
+    vec![Scene {
+        name: "default".to_string(),
+        sitename: Some("My Cynthia site!".to_string()),
+        stylefile: None,
+        script: None,
+        templates: Templates {
+            post: "../default".to_string(),
+            page: "../default".to_string(),
+            postlist: "default".to_string(),
+        },
+    }]
 }
