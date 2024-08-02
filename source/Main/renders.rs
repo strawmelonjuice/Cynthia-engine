@@ -65,7 +65,7 @@ pub(crate) fn check_pgid(
     } else {
         pgid
     };
-    let published = CynthiaPublicationList::new();
+    let published = CynthiaPublicationList::load();
 
     if !published.validate(server_context.config.clone()) {
         error!("Incorrect publications found in publications.jsonc.");
@@ -87,7 +87,7 @@ pub(crate) fn check_pgid(
     }
 }
 pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> RenderrerResponse {
-    let published = CynthiaPublicationList::new();
+    let published = CynthiaPublicationList::load();
     let publication = if pgid == *"" {
         published.get_root()
     } else {
