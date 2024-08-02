@@ -944,6 +944,7 @@ dependencies = [
  "normalize-path",
  "rand",
  "random-string",
+ "regex",
  "reqwest 0.12.5",
  "serde",
  "serde_dhall",

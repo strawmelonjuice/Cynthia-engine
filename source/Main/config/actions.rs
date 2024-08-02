@@ -4,7 +4,7 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use super::CynthiaConf;
+use super::{CynthiaConf, CynthiaConfig};
 use crate::jsrun;
 use crate::jsrun::RunJSAndDeserializeResult;
 use colored::Colorize;
@@ -43,11 +43,10 @@ impl ConfigLocations {
     }
 }
 
-pub(crate) fn load_config() -> CynthiaConf {
-    use jsonc_parser::parse_to_serde_value as preparse_jsonc;
+fn choose_config_location() -> ConfigLocations {
     let unfound = || {
         eprintln!("Could not find cynthia-configuration at `{}`! Have you initialised a Cynthia setup here? To do so, run `{}`.",
-                  std::env::current_dir().unwrap().join("Cynthia.toml").clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan(),
+                  std::env::current_dir().unwrap().clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan(),
                   "cynthiaweb init".bright_green());
         process::exit(1);
     };
@@ -78,9 +77,23 @@ pub(crate) fn load_config() -> CynthiaConf {
             }
         }
     };
+    chosen_config_location
+}
 
+pub(crate) fn load_config() -> CynthiaConf {
+    use jsonc_parser::parse_to_serde_value as preparse_jsonc;
+    let chosen_config_location = choose_config_location();
     return match chosen_config_location {
         ConfigLocations::JsonC(cynthiaconfpath) => {
+            println!(
+                "{} Loading: {}",
+                "[Config]".bright_green(),
+                cynthiaconfpath
+                    .clone()
+                    .to_string_lossy()
+                    .replace("\\\\?\\", "")
+                    .bright_cyan()
+            );
             let unparsed_json = match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(t) => t,
                 Err(e) => {
@@ -156,6 +169,15 @@ pub(crate) fn load_config() -> CynthiaConf {
             }
         }
         ConfigLocations::TOML(cynthiaconfpath) => {
+            println!(
+                "{} Loading: {}",
+                "[Config]".bright_green(),
+                cynthiaconfpath
+                    .clone()
+                    .to_string_lossy()
+                    .replace("\\\\?\\", "")
+                    .bright_cyan()
+            );
             match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(g) => match toml::from_str(&g) {
                     Ok(p) => p,
@@ -193,6 +215,15 @@ pub(crate) fn load_config() -> CynthiaConf {
             }
         }
         ConfigLocations::Dhall(cynthiaconfpath) => {
+            println!(
+                "{} Loading: {}",
+                "[Config]".bright_green(),
+                cynthiaconfpath
+                    .clone()
+                    .to_string_lossy()
+                    .replace("\\\\?\\", "")
+                    .bright_cyan()
+            );
             match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(g) => match serde_dhall::from_str(&g).parse() {
                     Ok(p) => p,
@@ -230,6 +261,15 @@ pub(crate) fn load_config() -> CynthiaConf {
             }
         }
         ConfigLocations::Js(cynthiaconfpath) => {
+            println!(
+                "{} Loading: {}",
+                "[Config]".bright_green(),
+                cynthiaconfpath
+                    .clone()
+                    .to_string_lossy()
+                    .replace("\\\\?\\", "")
+                    .bright_cyan()
+            );
             let unparsed_js = match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(t) => t,
                 Err(e) => {
@@ -285,7 +325,54 @@ pub(crate) fn load_config() -> CynthiaConf {
     };
 }
 
-pub(crate) fn save_config(to: &str, config: CynthiaConf) {
+pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
+    let to_ = if to_ex.to_lowercase().as_str() == "js" || to_ex.to_lowercase().as_str() == "javascript" {
+        String::from("js")
+    } else {
+        to_ex.to_lowercase()
+    };
+    let to = to_.as_str();
+    {
+        let chosen_config_location = choose_config_location();
+        match chosen_config_location {
+            ConfigLocations::Js(_) => {
+                if to == "js" {
+                    eprintln!(
+                        "{} You are trying to convert a JavaScript configuration to JavaScript. This is not possible.",
+                        "error:".red()
+                    );
+                    process::exit(1);
+                }
+            }
+            ConfigLocations::Dhall(_) => {
+                if to == "dhall" {
+                    eprintln!(
+                        "{} You are trying to convert a Dhall configuration to Dhall. This is not possible.",
+                        "error:".red()
+                    );
+                    process::exit(1);
+                }
+            }
+            ConfigLocations::TOML(_) => {
+                if to == "toml" {
+                    eprintln!(
+                        "{} You are trying to convert a TOML configuration to TOML. This is not possible.",
+                        "error:".red()
+                    );
+                    process::exit(1);
+                }
+            }
+            ConfigLocations::JsonC(_) => {
+                if to == "jsonc" {
+                    eprintln!(
+                        "{} You are trying to convert a JSONC configuration to JSONC. This is not possible.",
+                        "error:".red()
+                    );
+                    process::exit(1);
+                }
+            }
+        }
+    }
     let cynthiaconfdoclink = r#"https://strawmelonjuice.github.io/CynthiaWebsiteEngine/Admins/configuration/CynthiaConf.html"#;
     let args: Vec<String> = std::env::args().collect();
     let cd = std::env::current_dir().unwrap();
@@ -325,7 +412,91 @@ pub(crate) fn save_config(to: &str, config: CynthiaConf) {
                     ("post", "The handlebars template for serving posts using this sceme", "scenes.templates.post"),
                     ("postlist", "The handlebars template for serving postlist pages using this sceme", "scenes.templates.postlist"),
     ];
-    let config_serialised = match to.to_lowercase().as_str() {
+    // JSONC is generated multiple times, so we need to make a function for it.
+    // This function is used to generate JSONC, but with comments.
+    // It is also used to generate the base for the javascript version.
+    let anyways_this_is_jsonc = |config: CynthiaConf| -> String {
+        let comment_this = |item: &str| -> String {
+            let mut o = format!("// todo: Comment this:\n\"{}\":", item);
+            for (x, y, z) in comments.clone().iter() {
+                if z == &item {
+                    if y.contains("\n") {
+                        // If we have a multiline comment, we need to format it correctly.
+                        o = format!("/*\n{}\n*/\n\"{}\":", y, x)
+                    } else {
+                        // If we have a single-line comment, we need to format it as one.
+                        o = format!("// {}\n\"{}\":", y, x)
+                    }
+                } else {
+                    continue;
+                }
+            }
+            o.clone()
+        };
+        serde_json::to_string_pretty(&config)
+            .unwrap()
+            .replace("\"port\":", &comment_this("port"))
+            .replace("\"cache\":", &comment_this("cache"))
+            .replace("\"lifetimes\":", &comment_this("cache.lifetimes"))
+            .replace("\"forwarded\":", &comment_this("cache.lifetimes.forwarded"))
+            .replace(
+                "\"javascript\":",
+                &comment_this("cache.lifetimes.javascript"),
+            )
+            .replace("\"served\":", &comment_this("cache.lifetimes.served"))
+            .replace(
+                "\"stylesheets\":",
+                &comment_this("cache.lifetimes.stylesheets"),
+            )
+            .replace("\"runtimes\":", &comment_this("runtimes"))
+            .replace("\"node\":", &comment_this("runtimes.node"))
+            .replace("\"pages\":", &comment_this("pages"))
+            .replace("\"notfound_page\":", &comment_this("pages.notfound_page"))
+            .replace("\"generator\":", &comment_this("generator"))
+            .replace("\"meta\":", &comment_this("generator.meta"))
+            .replace(
+                "\"enable_tags\":",
+                &comment_this("generator.meta.enable_tags"),
+            )
+            .replace(
+                "\"enable_search\":",
+                &comment_this("generator.meta.enable_search"),
+            )
+            .replace(
+                "\"enable_sitemap\":",
+                &comment_this("generator.meta.enable_sitemap"),
+            )
+            .replace(
+                "\"enable_rss\":",
+                &comment_this("generator.meta.enable_rss"),
+            )
+            .replace(
+                "\"enable_atom\":",
+                &comment_this("generator.meta.enable_atom"),
+            )
+            .replace("\"site_baseurl\":", &comment_this("generator.site_baseurl"))
+            .replace("\"og_sitename\":", &comment_this("generator.og_sitename"))
+            .replace("\"logs\":", &comment_this("logs"))
+            .replace("\"term_loglevel\":", &comment_this("logs.term_loglevel"))
+            .replace("\"file_loglevel\":", &comment_this("logs.file_loglevel"))
+            .replace("\"log_file\":", &comment_this("logs.log_file"))
+            .replace("\"scenes\":", &comment_this("scenes"))
+            .replace("\"name\":", &comment_this("scenes.name"))
+            .replace("\"sitename\":", &comment_this("scenes.sitename"))
+            .replace("\"script\":", &comment_this("scenes.script"))
+            .replace("\"stylefile\":", &comment_this("scenes.stylefile"))
+            .replace("\"templates\":", &comment_this("scenes.templates"))
+            .replace("\"page\":", &comment_this("scenes.templates.page"))
+            .replace("\"post\":", &comment_this("scenes.templates.post"))
+            .replace("\"postlist\":", &comment_this("scenes.templates.postlist"))
+    };
+
+    let config_serialised: String = match to {
+        "javascript" | "js" => {
+            format!("/*\n\tCynthiaConfig.js\n\n\n\tThis is the configuration file for Cynthia. It is written in Javascript, a scripting language.\n\tThis kind of CynthiaConfig is the most powerful and flexible,\n\tbut also the most complex. It is recommended for advanced users\n\twho want to take full control of Cynthia's behavior.\n\n\n\tMore info about this config can be found on <{cynthiaconfdoclink}>\n\n\n\tTo convert it to another config language, use the `cynthiaweb convert` command.\n*/\nlet myCynthiaConfig = {};\n\n// We must return the configuration object at the end of the file.\nreturn myCynthiaConfig;\n", 
+                    regex::Regex::new(r#""([^"]*)":"#).unwrap().replace_all(&*anyways_this_is_jsonc(config.hard_clone()), "\t$1:")
+            )
+        }
         "dhall" => {
             /*
             Dhall is a bit more complex, so we need to do some extra work here.
@@ -490,59 +661,8 @@ pub(crate) fn save_config(to: &str, config: CynthiaConf) {
             )
         }
         "jsonc" => {
-            let comment_this = |item: &str| -> String {
-                let mut o = format!("// todo: Comment this:\n\"{}\":", item);
-                for (x, y, z) in comments.clone().iter() {
-                    if z == &item {
-                        if y.contains("\n") {
-                            // If we have a multiline comment, we need to format it correctly.
-                            o = format!("/*\n{}\n*/\n\"{}\":", y, x)
-                        } else {
-                            // If we have a single-line comment, we need to format it as one.
-                            o = format!("// {}\n\"{}\":", y, x)
-                        }
-                    } else {
-                        continue;
-                    }
-                }
-                o.clone()
-            };
             format!("/*\n\tCynthia.jsonc\n\n\tThis is the configuration file for Cynthia. It is written in JSONC, a JSON-like language that is focused on user readability.\n\tMore info about this config can be found on <{cynthiaconfdoclink}>\n\n\tTo convert it to another config language, use the `cynthiaweb convert` command.\n*/\n\n{}",
-            serde_json::to_string_pretty(&config)
-                .unwrap()
-                .replace("\"port\":", &comment_this("port"))
-                .replace("\"cache\":", &comment_this("cache"))
-                .replace("\"lifetimes\":", &comment_this("cache.lifetimes"))
-                .replace("\"forwarded\":", &comment_this("cache.lifetimes.forwarded"))
-                .replace("\"javascript\":", &comment_this("cache.lifetimes.javascript"))
-                .replace("\"served\":", &comment_this("cache.lifetimes.served"))
-                .replace("\"stylesheets\":", &comment_this("cache.lifetimes.stylesheets"))
-                .replace("\"runtimes\":", &comment_this("runtimes"))
-                .replace("\"node\":", &comment_this("runtimes.node"))
-                .replace("\"pages\":", &comment_this("pages"))
-                .replace("\"notfound_page\":", &comment_this("pages.notfound_page"))
-                .replace("\"generator\":", &comment_this("generator"))
-                .replace("\"meta\":", &comment_this("generator.meta"))
-                .replace("\"enable_tags\":", &comment_this("generator.meta.enable_tags"))
-                .replace("\"enable_search\":", &comment_this("generator.meta.enable_search"))
-                .replace("\"enable_sitemap\":", &comment_this("generator.meta.enable_sitemap"))
-                .replace("\"enable_rss\":", &comment_this("generator.meta.enable_rss"))
-                .replace("\"enable_atom\":", &comment_this("generator.meta.enable_atom"))
-                .replace("\"site_baseurl\":", &comment_this("generator.site_baseurl"))
-                .replace("\"og_sitename\":", &comment_this("generator.og_sitename"))
-                .replace("\"logs\":", &comment_this("logs"))
-                .replace("\"term_loglevel\":", &comment_this("logs.term_loglevel"))
-                .replace("\"file_loglevel\":", &comment_this("logs.file_loglevel"))
-                .replace("\"log_file\":", &comment_this("logs.log_file"))
-                .replace("\"scenes\":", &comment_this("scenes"))
-                .replace("\"name\":", &comment_this("scenes.name"))
-                .replace("\"sitename\":", &comment_this("scenes.sitename"))
-                .replace("\"script\":", &comment_this("scenes.script"))
-                .replace("\"stylefile\":", &comment_this("scenes.stylefile"))
-                .replace("\"templates\":", &comment_this("scenes.templates"))
-                .replace("\"page\":", &comment_this("scenes.templates.page"))
-                .replace("\"post\":", &comment_this("scenes.templates.post"))
-                .replace("\"postlist\":", &comment_this("scenes.templates.postlist")))
+                    anyways_this_is_jsonc(config.hard_clone()))
         }
         _ => {
             eprintln!(
@@ -553,13 +673,17 @@ pub(crate) fn save_config(to: &str, config: CynthiaConf) {
             process::exit(1);
         }
     };
-    let config_file = cd.join("Cynthia.".to_string() + to);
-    match fs::write(config_file, config_serialised) {
+    let to_file = if to == "js" {
+        cd.join("CynthiaConfig.js")
+    } else {
+        cd.join("Cynthia.".to_string() + to)
+    };
+    match fs::write(to_file.clone(), config_serialised) {
         Ok(_) => {
             println!(
                 "{} Successfully exported the configuration to {}!",
                 "Success:".green(),
-                to
+                to_file.clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan()
             );
             if args.get(3).unwrap_or(&String::from("")).as_str() == "-k" {
                 println!(
@@ -583,11 +707,10 @@ pub(crate) fn save_config(to: &str, config: CynthiaConf) {
         }
     };
     // Remove old format(s)
-    let config_file = cd.join("Cynthia.".to_string() + to);
 
     let mut config_locations: Vec<PathBuf> = CONFIG_LOCATIONS.iter().map(|p| cd.join(p)).collect();
     config_locations.retain(|p| p.exists());
-    config_locations.retain(|p| p != &config_file);
+    config_locations.retain(|p| p != &to_file);
     for p in config_locations {
         match fs::remove_file(p.clone()) {
             Ok(_) => {}
