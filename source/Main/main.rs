@@ -171,8 +171,8 @@ async fn main() {
                 );
                 process::exit(1);
             }
-            config::actions::save_config(args.get(2).unwrap_or(&String::from("")), CynthiaConf::default());
-            // config::actions::save_config(args.get(2).unwrap_or(&String::from("")), config::actions::load_config().hard_clone());
+            // config::actions::save_config(args.get(2).unwrap_or(&String::from("")), CynthiaConf::default());
+            config::actions::save_config(args.get(2).unwrap_or(&String::from("")), config::actions::load_config().hard_clone());
         }
         "" => {
             eprintln!(
