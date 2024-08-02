@@ -19,8 +19,42 @@ pub(crate) trait CynthiaPublicationListTrait {
     fn get_root(&self) -> Option<CynthiaPublication>;
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication>;
     fn validate(&self, config: CynthiaConfClone) -> bool;
+    fn new() -> CynthiaPublicationList;
 }
 impl CynthiaPublicationListTrait for CynthiaPublicationList {
+    fn new() -> CynthiaPublicationList {
+        if Path::new("./cynthiaFiles/published.yaml").exists() {
+            let file = "./cynthiaFiles/published.yaml".to_owned();
+            let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
+            serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
+                error!("Published.yaml contains invalid Cynthia-instructions.",);
+                Vec::new()
+            })
+        } else {
+            let file = "./cynthiaFiles/published.jsonc".to_owned();
+            let unparsed_json = match fs::read_to_string(file) {
+                Ok(t) => t,
+                Err(e) => {
+                    error!("Couldn't find or load published.jsonc.\n\n\t\t{e}");
+                    process::exit(1);
+                }
+            };
+            // println!("{}", unparsed_json);
+            let parsed_json: Option<serde_json::Value> =
+                match parse_to_serde_value(unparsed_json.as_str(), &Default::default()) {
+                    Ok(t) => t,
+                    Err(e) => {
+                        error!("Couldn't parse published.jsonc.\n\n\t\t{e}");
+                        process::exit(1);
+                    }
+                };
+            serde_json::from_value(parsed_json.into()).unwrap_or_else(|e| {
+                let k = e.line();
+                error!("Published.json contains invalid Cynthia-instructions.\n\n\t\t{e}, {k}",);
+                Vec::new()
+            })
+        }
+    }
     fn get_notfound(&self, config: CynthiaConfClone) -> Option<CynthiaPublication> {
         self.iter()
             .find(|x| {
@@ -230,36 +264,5 @@ pub(crate) struct Author {
     pub(crate) thumbnail: Option<String>,
     pub(crate) link: Option<String>,
 }
-pub(crate) fn read_published_jsonc() -> CynthiaPublicationList {
-    if Path::new("./cynthiaFiles/published.yaml").exists() {
-        let file = "./cynthiaFiles/published.yaml".to_owned();
-        let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
-        serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
-            error!("Published.yaml contains invalid Cynthia-instructions.",);
-            Vec::new()
-        })
-    } else {
-        let file = "./cynthiaFiles/published.jsonc".to_owned();
-        let unparsed_json = match fs::read_to_string(file) {
-            Ok(t) => t,
-            Err(e) => {
-                error!("Couldn't find or load published.jsonc.\n\n\t\t{e}");
-                process::exit(1);
-            }
-        };
-        // println!("{}", unparsed_json);
-        let parsed_json: Option<serde_json::Value> =
-            match parse_to_serde_value(unparsed_json.as_str(), &Default::default()) {
-                Ok(t) => t,
-                Err(e) => {
-                    error!("Couldn't parse published.jsonc.\n\n\t\t{e}");
-                    process::exit(1);
-                }
-            };
-        serde_json::from_value(parsed_json.into()).unwrap_or_else(|e| {
-            let k = e.line();
-            error!("Published.json contains invalid Cynthia-instructions.\n\n\t\t{e}, {k}",);
-            Vec::new()
-        })
-    }
-}
+
+

@@ -8,9 +8,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::MutexGuard;
 
 use crate::config::CynthiaConfClone;
-use crate::publications::{
-    read_published_jsonc, Author, CynthiaPublicationDates, CynthiaPublicationListTrait,
-};
+use crate::publications::{Author, CynthiaPublicationDates, CynthiaPublicationListTrait, CynthiaPublicationList};
 use crate::ServerContext;
 use colored::Colorize;
 
@@ -67,7 +65,7 @@ pub(crate) fn check_pgid(
     } else {
         pgid
     };
-    let published = read_published_jsonc();
+    let published = CynthiaPublicationList::new();
 
     if !published.validate(server_context.config.clone()) {
         error!("Incorrect publications found in publications.jsonc.");
@@ -89,7 +87,7 @@ pub(crate) fn check_pgid(
     }
 }
 pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> RenderrerResponse {
-    let published = read_published_jsonc();
+    let published = CynthiaPublicationList::new();
     let publication = if pgid == *"" {
         published.get_root()
     } else {
