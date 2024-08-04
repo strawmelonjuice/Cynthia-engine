@@ -75,7 +75,7 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
-                "{}\t{:>45.47}\t\t{}\t{}",
+                "{}\t{:>25.27}\t\t{}\t{}",
                 "Request/200".bright_green(),
                 req.path(),
                 ip,
@@ -96,7 +96,7 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info().clone();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             warn!(
-                "{}\t{:>45.47}\t\t{}",
+                "{}\t{:>25.27}\t\t{}",
                 "Request/404".bright_red(),
                 req.path(),
                 ip
