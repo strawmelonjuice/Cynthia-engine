@@ -93,7 +93,9 @@ pub(crate) async fn serve(
                     }
                 }
             ));
-            HttpResponse::Ok().body(page.0)
+            HttpResponse::Ok().append_header(
+                ("Content-Type", "text/html; charset=utf-8"),
+            ).body(page.0)
         }
         renders::PGIDCheckResponse::Error => {
             HttpResponse::InternalServerError().body("Internal server error.")
@@ -102,13 +104,16 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info().clone();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             warn!(
-                "{}\t{:>25.27}\t\t{}",
+                "{}\t{:>25.27}\t\t{}\t{}",
                 "Request/404".bright_red(),
                 req.path(),
-                ip
+                ip,
+                "not found".red()
             );
 
-            HttpResponse::NotFound().body(
+            HttpResponse::NotFound().append_header(
+                    ("Content-Type", "text/html; charset=utf-8"),
+            ).body(
                 render_from_pgid(
                     config_clone.pages.notfound_page.clone(),
                     server_context_mutex.clone(),
