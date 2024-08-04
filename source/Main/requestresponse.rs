@@ -8,7 +8,7 @@ use std::sync::Arc;
 use actix_web::web::Data;
 use actix_web::{get, HttpRequest, HttpResponse, Responder};
 use colored::Colorize;
-use log::warn;
+use log::{trace, warn};
 use tokio::sync::Mutex;
 
 use crate::externalpluginservers::{contact_eps, EPSRequestBody};
@@ -31,13 +31,19 @@ pub(crate) async fn serve(
         .await;
 
     let page_id = req.match_info().get("a").unwrap_or("root");
-    warn!("EPSRequest::WebRequest doesn't have headers implemented yet. Thread carefully.");
-
+    let headers =
+        {
+        // Transform it into makeshift JSON!
+        let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>()).replace("(\"", "[\"").replace("\")", "\"]");
+        // And then parse it back into an object.
+        serde_json::from_str(&json_kinda).unwrap_or_default()
+    };
+    trace!("{}", serde_json::to_string(&headers).unwrap());
     let pluginsresponse = contact_eps(
         server_context_mutex.clone(),
         EPSRequestBody::WebRequest {
             page_id: page_id.to_string(),
-            headers: vec![], // No clue how to get these tbh
+            headers, // No clue how to get these tbh
             method: "get".to_string(),
         },
     )
