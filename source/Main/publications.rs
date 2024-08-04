@@ -7,7 +7,7 @@
 use std::path::Path;
 use std::{fs, process};
 
-use jsonc_parser::{parse_to_serde_value as preparse_jsonc};
+use jsonc_parser::parse_to_serde_value as preparse_jsonc;
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
 
@@ -264,5 +264,3 @@ pub(crate) struct Author {
     pub(crate) thumbnail: Option<String>,
     pub(crate) link: Option<String>,
 }
-
-

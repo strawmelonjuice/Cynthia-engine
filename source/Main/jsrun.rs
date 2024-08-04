@@ -30,13 +30,12 @@ let object = {
     return object
 
     "#,
-        ).unwrap().as_str()
-    ).unwrap();
-    let sowieso_correct = TestObject {
-        a: 1,
-        b: 2,
-        c: 3,
-    };
+        )
+        .unwrap()
+        .as_str(),
+    )
+    .unwrap();
+    let sowieso_correct = TestObject { a: 1, b: 2, c: 3 };
     assert_eq!(test_object.a, sowieso_correct.a);
     assert_eq!(test_object.b, sowieso_correct.b);
     assert_eq!(test_object.c, sowieso_correct.c);
@@ -46,7 +45,7 @@ pub(crate) fn run_js(js: &str) -> JsResult<JsonString> {
     let mut js_code_string = r#"
 let result =( () => {
 "#
-        .to_string();
+    .to_string();
 
     js_code_string.push_str(js);
     js_code_string.push_str(
@@ -89,8 +88,6 @@ where
             Ok(t) => RunJSAndDeserializeResult::Ok(t),
             Err(e) => RunJSAndDeserializeResult::SerdeError(e),
         },
-        Err(e) => {
-            return RunJSAndDeserializeResult::JsError(e.to_string())
-        }
+        Err(e) => return RunJSAndDeserializeResult::JsError(e.to_string()),
     }
 }

@@ -326,11 +326,12 @@ pub(crate) fn load_config() -> CynthiaConf {
 }
 
 pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
-    let to_ = if to_ex.to_lowercase().as_str() == "js" || to_ex.to_lowercase().as_str() == "javascript" {
-        String::from("js")
-    } else {
-        to_ex.to_lowercase()
-    };
+    let to_ =
+        if to_ex.to_lowercase().as_str() == "js" || to_ex.to_lowercase().as_str() == "javascript" {
+            String::from("js")
+        } else {
+            to_ex.to_lowercase()
+        };
     let to = to_.as_str();
     {
         let chosen_config_location = choose_config_location();
@@ -683,7 +684,11 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
             println!(
                 "{} Successfully exported the configuration to {}!",
                 "Success:".green(),
-                to_file.clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan()
+                to_file
+                    .clone()
+                    .to_string_lossy()
+                    .replace("\\\\?\\", "")
+                    .bright_cyan()
             );
             if args.get(3).unwrap_or(&String::from("")).as_str() == "-k" {
                 println!(

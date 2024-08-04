@@ -74,7 +74,7 @@ pub(crate) enum EPSRequestBody {
     },
     ContentRenderRequest {
         template_path: String,
-        template_data: crate::renders::PageLikePublicationTemplateData
+        template_data: crate::renders::PageLikePublicationTemplateData,
     },
     WebRequest {
         page_id: String,
