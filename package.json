@@ -11,14 +11,16 @@
     "clean-css-cli": "4"
   },
   "dependencies": {
-    "cynthia-plugin-api": "file:source/Plugin-runners/node-plugin-api/"
+    "@types/bun": "^1.1.6",
+    "cynthia-plugin-api": "file:source/Plugin-runners/node-plugin-api/",
+    "handlebars": "^4.7.8"
   },
   "scripts": {
     "build": "npm run build:deps && npm run build:rs",
     "build:deps": "npm run build:css && npm run build:jsts && npm run minify",
     "build:css-disabled": "postcss -o ./target/generated/css/main.css src-frontend/styles/main.pcss",
     "build:css": "echo tailwind compilation is disabled.",
-    "build:jsts": "npx -y bun build './source/Plugin-runners/node-plugin-runner/src/main.ts' --minify --target=bun --outfile './target/generated/js/plugins-runtime.js'",
+    "build:jsts": "npx -y bun build './source/Plugin-runners/node-plugin-runner/src/main.ts' --minify --target=node --outfile './target/generated/js/plugins-runtime.js'",
     "build:rs": "cargo build",
     "format": "npm run format:rs && npm run format:ts && npm run minify:css",
     "format:rs": "cargo fmt",

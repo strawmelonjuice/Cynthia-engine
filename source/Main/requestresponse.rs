@@ -63,10 +63,10 @@ pub(crate) async fn serve(
                 None => {
                     from_cache = false;
                     // Now that we're past the EPS, we can lock the mutex for this scope.
-                    let mut server_context = server_context_mutex.lock().await;
                     let page =
-                        render_from_pgid(page_id.parse().unwrap(), server_context.config.clone())
+                        render_from_pgid(page_id.parse().unwrap(), server_context_mutex.clone())
                             .await;
+                    let mut server_context = server_context_mutex.lock().await;
                     server_context.store_cache(page_id, page.unwrap().as_bytes(), 15);
                     server_context.get_cache(page_id, 0).unwrap()
                 }
@@ -101,12 +101,11 @@ pub(crate) async fn serve(
                 req.path(),
                 ip
             );
-            let server_context = server_context_mutex.lock().await;
 
             HttpResponse::NotFound().body(
                 render_from_pgid(
-                    server_context.config.clone().pages.notfound_page.clone(),
-                    server_context.config.clone(),
+                    config_clone.pages.notfound_page.clone(),
+                    server_context_mutex.clone(),
                 )
                 .await
                 .unwrap(),

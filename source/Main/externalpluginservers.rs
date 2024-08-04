@@ -36,12 +36,12 @@ impl EPSCommunicationData {
         }
     }
 }
+
 #[cfg(feature = "js_runtime")]
 use std::process::Command;
 use std::sync::Arc;
 
 use actix_web::web::Data;
-
 #[cfg(feature = "js_runtime")]
 use interactive_process::InteractiveProcess;
 
@@ -71,6 +71,10 @@ pub(crate) enum EPSRequestBody {
     Close,
     Test {
         test: String,
+    },
+    ContentRenderRequest {
+        template_path: String,
+        template_data: crate::renders::PageLikePublicationTemplateData
     },
     WebRequest {
         page_id: String,
@@ -118,6 +122,10 @@ pub(crate) async fn main(
     // now we can run the javascript
     let node_runtime: &str = config_clone.runtimes.node.as_ref();
     let mut r = Command::new(node_runtime);
+    if node_runtime == "deno" {
+        r.arg("run");
+        r.arg("--allow-read");
+    }
     r.arg(jstempfolder.join("main.js"));
     let p = Arc::new(std::sync::Mutex::new(String::new()));
     let mut proc = InteractiveProcess::new(&mut r, move |line| {

@@ -24,6 +24,35 @@ export interface TestRequestBody {
     for: "Test";
     test: string;
 }
+export interface ContentRenderRequest {
+    id: number;
+    body: ContentRenderRequestBody;
+}
+
+export interface ContentRenderRequestBody {
+    for: "ContentRenderRequest";
+    template_path: string;
+    template_data: {
+        meta: {
+            id: string;
+            title: string;
+            desc?: string;
+            category?: string;
+            author?: {
+                name?: string;
+                link?: string;
+                thumbnail?: string;
+            }
+            dates: {
+                altered: number;
+                published: number;
+            }
+            thumbnail?: string;
+        }
+        content: string;
+    }
+}
+
 
 let test: Request = {
     id: 0,
@@ -38,6 +67,16 @@ export interface EmptyOKResponse {
     body: {
         as: "NoneOk";
     };
+}
+export class EmptyOKResponse implements EmptyOKResponse {
+    body: { as: "NoneOk" };
+    id: number;
+    constructor(id: number) {
+        this.id = id;
+        this.body = {
+            as: "NoneOk"
+        }
+    }
 }
 export interface OkStringResponseType {
     id: number;
@@ -69,24 +108,35 @@ export interface ErrorResponse {
     id: number;
     body: {
         as: "Error";
-        message?: string;
+        message?: string | any;
     };
 }
+export class ErrorResponse implements ErrorResponse {
+    id: number;
+    body: { as: "Error"; message?: string | any };
+    constructor(id: number, message?: string) {
+        this.id = id;
+        this.body = {
+            as: "Error",
+            message: (() =>{if (typeof message?.toString()) return message; else return "An error occurred."})()
+        }
+    }
+}
 export namespace terminalOut {
-    export function log(str: string) {
-        console.log(`log: ${str}`);
+    export function log(str: unknown) {
+        console.log(`log: ` + str);
     }
-    export function error(str: string) {
-        console.log(`error: ${str}`);
+    export function error(str: unknown) {
+        console.log(`error: ` + str);
     }
-    export function warn(str: string) {
-        console.log(`warn: ${str}`);
+    export function warn(str: unknown) {
+        console.log(`warn: ` + str);
     }
-    export function info(str: string) {
-        console.log(`info: ${str}`);
+    export function info(str: unknown) {
+        console.log(`info: ` + str);
     }
-    export function debug(str: string) {
-        console.log(`debug: ${str}`);
+    export function debug(str: unknown) {
+        console.log(`debug: ` + str);
     }
 }
 ;
@@ -104,4 +154,6 @@ export namespace Incoming {
         headers: Record<string, string>;
         body: string;
     }
+
 }
+

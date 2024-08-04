@@ -3,13 +3,17 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
+use std::sync::Arc;
+use actix_web::web::Data;
 use log::error;
 use serde::{Deserialize, Serialize};
-use tokio::sync::MutexGuard;
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::CynthiaConfClone;
-use crate::publications::{Author, CynthiaPublicationDates, CynthiaPublicationListTrait, CynthiaPublicationList};
-use crate::ServerContext;
+use crate::publications::{
+    Author, CynthiaPublicationDates, CynthiaPublicationList, CynthiaPublicationListTrait,
+};
+use crate::{LockCallback, ServerContext};
 use colored::Colorize;
 
 pub(crate) enum PGIDCheckResponse {
@@ -86,7 +90,8 @@ pub(crate) fn check_pgid(
         PGIDCheckResponse::Ok
     }
 }
-pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> RenderrerResponse {
+pub(crate) async fn render_from_pgid(pgid: String, server_context_mutex: Data<Arc<Mutex<ServerContext>>>) -> RenderrerResponse {
+    let config = server_context_mutex.lock_callback(|a| a.config.clone()).await;
     let published = CynthiaPublicationList::load();
     let publication = if pgid == *"" {
         published.get_root()
@@ -100,7 +105,7 @@ pub(crate) async fn render_from_pgid(pgid: String, config: CynthiaConfClone) -> 
             RenderrerResponse::NotFound
         }
     } else if let Some(pb) = publication {
-        in_renderer::render_controller(pb, config).await
+        in_renderer::render_controller(pb, server_context_mutex).await
     } else {
         RenderrerResponse::Error
     }
@@ -117,9 +122,10 @@ struct PublicationScene {
     // Not used yet. Will be used in the future when implementing custom scripts.
     #[allow(unused)]
     script: Option<String>,
+    kind: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct PageLikePublicationTemplateData {
+pub(crate) struct PageLikePublicationTemplateData {
     meta: PageLikePublicationTemplateDataMeta,
     content: String,
 }
@@ -133,22 +139,25 @@ struct PageLikePublicationTemplateDataMeta {
     dates: CynthiaPublicationDates,
     thumbnail: Option<String>,
 }
+
+
 mod in_renderer {
     use std::{fs, path::Path};
-
+    use std::path::PathBuf;
     use handlebars::{handlebars_helper, Handlebars};
 
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
     };
-
+    use crate::externalpluginservers::EPSRequestBody;
     use super::*;
 
     pub(super) async fn render_controller(
         publication: CynthiaPublication,
-        config: CynthiaConfClone,
+        server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     ) -> RenderrerResponse {
+        let config = server_context_mutex.lock_callback(|a| a.config.clone()).await;
         let scene = fetch_scene(publication.clone(), config.clone());
 
         if scene.is_none() {
@@ -161,41 +170,23 @@ mod in_renderer {
                 template: scene.templates.page.clone(),
                 stylesheet: scene.stylefile.clone(),
                 script: scene.script.clone(),
+                kind: "page".to_string(),
             },
             CynthiaPublication::Post { .. } => PublicationScene {
                 template: scene.templates.post.clone(),
                 stylesheet: scene.stylefile.clone(),
                 script: scene.script.clone(),
+                kind: "post".to_string(),
             },
             CynthiaPublication::PostList { .. } => PublicationScene {
                 template: scene.templates.postlist.clone(),
                 stylesheet: scene.stylefile.clone(),
                 script: scene.script.clone(),
+                kind: "postlist".to_string(),
             },
         };
-        let mut template = Handlebars::new();
-        // Num = equal helper
-        // This helper checks if two numbers are equal.
-        // Usage: {{#if (numequal posttype 2)}} ... {{/if}}
-        handlebars_helper!(num_is_equal: |x: usize, y: usize| x == y);
-        template.register_helper("numequal", Box::new(num_is_equal));
-        // Extract the content from the publication, for pagelists, this would be the list of posts.
-        //
 
-        // todo:
-        // Check this out later, see if it can be used.
-        // https://docs.rs/handlebars/latest/handlebars/#template-inheritance
-        match template.register_template_file("base", &scène.template) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(
-                    "Error reading template file:\n\n{}",
-                    format!("{}", e).bright_red()
-                );
-                return RenderrerResponse::Error;
-            }
-        };
-        let outerhtml: String = match publication {
+        let pageish_template_data: PageLikePublicationTemplateData = match publication {
             CynthiaPublication::Page {
                 pagecontent,
                 id,
@@ -204,39 +195,21 @@ mod in_renderer {
                 description,
                 dates,
                 ..
-            } => {
-                let htmlbody = match template.render(
-                    "base",
-                    &PageLikePublicationTemplateData {
-                        content: match fetch_page_ish_content(pagecontent).await.unwrap_html() {
-                            RenderrerResponse::Ok(s) => s,
-                            _ => return RenderrerResponse::Error,
-                        },
-                        meta: PageLikePublicationTemplateDataMeta {
-                            id: id.clone(),
-                            title: title.clone(),
-                            desc: description.clone(),
-                            category: None,
-                            author: None,
-                            dates: dates.clone(),
-                            thumbnail: thumbnail.clone(),
-                        },
-                    },
-                ) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        error!(
-                            "Error rendering template:\n\n{}",
-                            format!("{}", e).bright_red()
-                        );
-                        return RenderrerResponse::Error;
-                    }
-                };
-                format!(
-                    "<html><head><title>{title}</title></head><body>{}</body></html>",
-                    htmlbody
-                )
-            }
+            } => PageLikePublicationTemplateData {
+                meta: PageLikePublicationTemplateDataMeta {
+                    id: id.clone(),
+                    title: title.clone(),
+                    desc: description.clone(),
+                    category: None,
+                    author: None,
+                    dates: dates.clone(),
+                    thumbnail: thumbnail.clone(),
+                },
+                content: match fetch_page_ish_content(pagecontent).await.unwrap_html() {
+                    RenderrerResponse::Ok(s) => s,
+                    _ => return RenderrerResponse::Error,
+                },
+            },
             CynthiaPublication::Post {
                 id,
                 title,
@@ -247,40 +220,86 @@ mod in_renderer {
                 author,
                 postcontent,
                 ..
-            } => {
-                let htmlbody = match template.render(
-                    "base",
-                    &PageLikePublicationTemplateData {
-                        content: match fetch_page_ish_content(postcontent).await.unwrap_html() {
-                            RenderrerResponse::Ok(s) => s,
-                            _ => return RenderrerResponse::Error,
-                        },
-                        meta: PageLikePublicationTemplateDataMeta {
-                            id: id.clone(),
-                            title: title.clone(),
-                            desc: short.clone(),
-                            category: category.clone(),
-                            author: author.clone(),
-                            dates: dates.clone(),
-                            thumbnail: thumbnail.clone(),
-                        },
-                    },
-                ) {
-                    Ok(s) => s,
+            } => PageLikePublicationTemplateData {
+                meta: PageLikePublicationTemplateDataMeta {
+                    id: id.clone(),
+                    title: title.clone(),
+                    desc: short.clone(),
+                    category: category.clone(),
+                    author: author.clone(),
+                    dates: dates.clone(),
+                    thumbnail: thumbnail.clone(),
+                },
+                content: match fetch_page_ish_content(postcontent).await.unwrap_html() {
+                    RenderrerResponse::Ok(s) => s,
+                    _ => return RenderrerResponse::Error,
+                },
+            },
+            _ => todo!("Implement fetching content for postlists."),
+        };
+
+        let outerhtml: String = {
+            let cwd: PathBuf = std::env::current_dir().unwrap();
+            let template_path = cwd.join("cynthiaFiles/templates/".to_owned() + &*scène.kind.clone() +"/"+ &*scène.template.clone() + ".hbs");
+            if !template_path.exists() {
+                error!(
+                    "Template file '{}' not found.",
+                    template_path.display()
+                );
+                return RenderrerResponse::Error;
+            }
+            // A fallback function that uses the builtin handlebars renderer.
+            let builtin_handlebars = || {
+                let mut template = Handlebars::new();
+                // Num = equal helper
+                // This helper checks if two numbers are equal.
+                // Usage: {{#if (numequal posttype 2)}} ... {{/if}}
+                handlebars_helper!(num_is_equal: |x: usize, y: usize| x == y);
+                template.register_helper("numequal", Box::new(num_is_equal));
+                match template.register_template_file("base", template_path.clone()) {
+                    Ok(_) => {}
                     Err(e) => {
                         error!(
-                            "Error rendering template:\n\n{}",
+                            "Error reading template file '{}':\n\n{}",
+                            template_path.display(),
                             format!("{}", e).bright_red()
                         );
                         return RenderrerResponse::Error;
                     }
                 };
-                format!(
-                    "<html><head><title>{title}</title></head><body>{}</body></html>",
-                    htmlbody
-                )
-            }
-            _ => todo!("Implement fetching content for postlists."),
+                RenderrerResponse::Ok(template.render("base", &pageish_template_data.meta).unwrap())
+            };
+            let htmlbody: String = if !cfg!(feature = "js_runtime") {
+                // Fall back to builtin handlebars if the js_runtime feature is not enabled.
+                if let RenderrerResponse::Ok(a) = builtin_handlebars() {
+                    a
+                } else {
+                    return RenderrerResponse::Error;
+                }
+            } else {
+                if let crate::externalpluginservers::EPSResponseBody::OkString { value } =
+                crate::externalpluginservers::contact_eps(
+                    server_context_mutex,
+                    EPSRequestBody::ContentRenderRequest {
+                        template_path: template_path.to_string_lossy().parse().unwrap(),
+                        template_data: pageish_template_data.clone(),
+                    }
+                ).await {
+                    value
+                } else {
+                    // Fall back to builtin handlebars if the external plugin server fails.
+                    if let RenderrerResponse::Ok(a) = builtin_handlebars() {
+                        a
+                    } else {
+                        return RenderrerResponse::Error;
+                    }
+                }
+            };
+            format!(
+                "<html><head><title>{}</title></head><body>{}</body></html>",
+                pageish_template_data.meta.title,
+                htmlbody
+            )
         };
 
         // content.unwrap().unwrap_html();
@@ -330,7 +349,7 @@ mod in_renderer {
     }
     struct ContentSource {
         inner: String,
-        target_type: crate::publications::ContentType,
+        target_type: ContentType,
     }
     #[doc = "Fetches the content of a pageish (a post or a page) publication."]
     async fn fetch_page_ish_content(content: PublicationContent) -> FetchedContent {
