@@ -262,7 +262,7 @@ mod in_renderer {
                         error!(
                             "Error reading template file '{}':\n\n{}",
                             template_path.display(),
-                            format!("{}", e).bright_red()
+                            e.to_string().bright_red()
                         );
                         return RenderrerResponse::Error;
                     }
@@ -423,7 +423,7 @@ mod in_renderer {
                 ContentType::Html(html)
             }
             crate::publications::ContentType::PlainText(_) => {
-                ContentType::Html(format!("<pre>{}</pre>", content_output.inner))
+                ContentType::Html("<pre>".to_owned() + content_output.inner.as_str() + "</pre>")
             }
         };
 
