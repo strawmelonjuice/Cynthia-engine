@@ -316,12 +316,12 @@ impl Default for Scene {
         Scene {
             name: String::from("default"),
             sitename: Some(String::from("My Cynthia Site")),
-            stylefile: None,
-            script: None,
+            stylefile: Some(String::from("/styles/default.css")),
+            script: Some(String::from("/scripts/client.js")),
             templates: Templates {
-                post: String::from("post"),
-                page: String::from("page"),
-                postlist: String::from("postlist"),
+                post: String::from("../default"),
+                page: String::from("../default"),
+                postlist: String::from("default"),
             },
         }
     }
@@ -361,16 +361,6 @@ fn c_404() -> String {
     String::from("404")
 }
 fn c_emptyscenelist() -> Vec<Scene> {
-    vec![Scene {
-        name: "default".to_string(),
-        sitename: Some("My Cynthia site!".to_string()),
-        stylefile: None,
-        script: None,
-        templates: Templates {
-            post: "../default".to_string(),
-            page: "../default".to_string(),
-            postlist: "default".to_string(),
-        },
-    }]
+    vec![Scene::default()]
 }
 pub(crate) mod actions;
