@@ -3,10 +3,10 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-use std::sync::Arc;
 use actix_web::web::Data;
 use log::error;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::CynthiaConfClone;
@@ -90,8 +90,13 @@ pub(crate) fn check_pgid(
         PGIDCheckResponse::Ok
     }
 }
-pub(crate) async fn render_from_pgid(pgid: String, server_context_mutex: Data<Arc<Mutex<ServerContext>>>) -> RenderrerResponse {
-    let config = server_context_mutex.lock_callback(|a| a.config.clone()).await;
+pub(crate) async fn render_from_pgid(
+    pgid: String,
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+) -> RenderrerResponse {
+    let config = server_context_mutex
+        .lock_callback(|a| a.config.clone())
+        .await;
     let published = CynthiaPublicationList::load();
     let publication = if pgid == *"" {
         published.get_root()
@@ -105,7 +110,7 @@ pub(crate) async fn render_from_pgid(pgid: String, server_context_mutex: Data<Ar
             RenderrerResponse::NotFound
         }
     } else if let Some(pb) = publication {
-        in_renderer::render_controller(pb, server_context_mutex).await
+        in_renderer::render_controller(pb, server_context_mutex.clone()).await
     } else {
         RenderrerResponse::Error
     }
@@ -140,24 +145,25 @@ struct PageLikePublicationTemplateDataMeta {
     thumbnail: Option<String>,
 }
 
-
 mod in_renderer {
-    use std::{fs, path::Path};
-    use std::path::PathBuf;
-    use handlebars::{handlebars_helper, Handlebars};
-
+    use super::*;
+    use crate::externalpluginservers::EPSRequestBody;
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
     };
-    use crate::externalpluginservers::EPSRequestBody;
-    use super::*;
+    use handlebars::{handlebars_helper, Handlebars};
+    use std::path::PathBuf;
+    use std::{fs, path::Path};
+    use ContentType::Html;
 
     pub(super) async fn render_controller(
         publication: CynthiaPublication,
         server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     ) -> RenderrerResponse {
-        let config = server_context_mutex.lock_callback(|a| a.config.clone()).await;
+        let config = server_context_mutex
+            .lock_callback(|a| a.config.clone())
+            .await;
         let scene = fetch_scene(publication.clone(), config.clone());
 
         if scene.is_none() {
@@ -165,7 +171,7 @@ mod in_renderer {
             return RenderrerResponse::Error;
         };
         let scene = scene.unwrap();
-        let scène = match publication {
+        let localscene = match publication {
             CynthiaPublication::Page { .. } => PublicationScene {
                 template: scene.templates.page.clone(),
                 stylesheet: scene.stylefile.clone(),
@@ -240,22 +246,26 @@ mod in_renderer {
 
         let outerhtml: String = {
             let cwd: PathBuf = std::env::current_dir().unwrap();
-            let template_path = cwd.join("cynthiaFiles/templates/".to_owned() + &*scène.kind.clone() +"/"+ &*scène.template.clone() + ".hbs");
+            let template_path = cwd.join(
+                "cynthiaFiles/templates/".to_owned()
+                    + &*localscene.kind.clone()
+                    + "/"
+                    + &*localscene.template.clone()
+                    + ".hbs",
+            );
             if !template_path.exists() {
-                error!(
-                    "Template file '{}' not found.",
-                    template_path.display()
-                );
+                error!("Template file '{}' not found.", template_path.display());
                 return RenderrerResponse::Error;
             }
             // A fallback function that uses the builtin handlebars renderer.
             let builtin_handlebars = || {
                 let mut template = Handlebars::new();
-                // Num = equal helper
-                // This helper checks if two numbers are equal.
-                // Usage: {{#if (numequal posttype 2)}} ... {{/if}}
-                handlebars_helper!(num_is_equal: |x: usize, y: usize| x == y);
-                template.register_helper("numequal", Box::new(num_is_equal));
+                // streq helper
+                // This helper checks if two strings are equal.
+                // Usage: {{#if (streq postid "sasfs")}} ... {{/if}}
+                handlebars_helper!(str_is_equal: |x: String, y: String| x == y);
+                template.register_helper("streq", Box::new(str_is_equal));
+
                 match template.register_template_file("base", template_path.clone()) {
                     Ok(_) => {}
                     Err(e) => {
@@ -267,38 +277,108 @@ mod in_renderer {
                         return RenderrerResponse::Error;
                     }
                 };
-                RenderrerResponse::Ok(template.render("base", &pageish_template_data.meta).unwrap())
+                RenderrerResponse::Ok(
+                    template
+                        .render("base", &pageish_template_data.meta)
+                        .unwrap(),
+                )
             };
-            let htmlbody: String = if !cfg!(feature = "js_runtime") {
+            let mut htmlbody: String = if !cfg!(feature = "js_runtime") {
                 // Fall back to builtin handlebars if the js_runtime feature is not enabled.
                 if let RenderrerResponse::Ok(a) = builtin_handlebars() {
                     a
                 } else {
                     return RenderrerResponse::Error;
                 }
-            } else {
-                if let crate::externalpluginservers::EPSResponseBody::OkString { value } =
+            } else if let crate::externalpluginservers::EPSResponseBody::OkString { value } =
                 crate::externalpluginservers::contact_eps(
-                    server_context_mutex,
+                    server_context_mutex.clone(),
                     EPSRequestBody::ContentRenderRequest {
                         template_path: template_path.to_string_lossy().parse().unwrap(),
                         template_data: pageish_template_data.clone(),
-                    }
-                ).await {
-                    value
+                    },
+                )
+                .await
+            {
+                value
+            } else {
+                // Fall back to builtin handlebars if the external plugin server fails.
+                if let RenderrerResponse::Ok(a) = builtin_handlebars() {
+                    a
                 } else {
-                    // Fall back to builtin handlebars if the external plugin server fails.
-                    if let RenderrerResponse::Ok(a) = builtin_handlebars() {
-                        a
-                    } else {
-                        return RenderrerResponse::Error;
-                    }
+                    return RenderrerResponse::Error;
                 }
             };
+            let version = env!("CARGO_PKG_VERSION");
+            let mut head = String::new();
+            head.push_str("\n\t<head>");
+            head.push_str("\n\t\t<meta charset=\"utf-8\" />");
+            head.push_str(
+                &("\n\t\t<title>".to_owned() + &pageish_template_data.meta.title + "</title>"),
+            );
+            head.push_str("\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
+            head.push_str("\n\t\t<meta name=\"generator\" content=\"Cynthia\" />");
+            head.push_str("\n\t\t<meta name=\"robots\" content=\"index, follow\" />");
+            if let Some(stylefile) = localscene.stylesheet {
+                let path: PathBuf = std::env::current_dir()
+                    .unwrap()
+                    .canonicalize()
+                    .unwrap()
+                    .join("cynthiaFiles/assets/")
+                    .join(stylefile);
+                if path.exists() {
+                    let css = inlines::inline_css(path, server_context_mutex.clone()).await;
+                    head.push_str(&css);
+                } else {
+                    error!("Stylesheet file '{}' not found.", path.display());
+                    return RenderrerResponse::Error;
+                }
+            }
+            if let Some(script) = localscene.script {
+                let path: PathBuf = std::env::current_dir()
+                    .unwrap()
+                    .canonicalize()
+                    .unwrap()
+                    .join("cynthiaFiles/assets/")
+                    .join(script);
+                if path.exists() {
+                    let d = inlines::inline_js(path, server_context_mutex.clone()).await;
+                    htmlbody.push_str(&d);
+                } else {
+                    error!("Script file '{}' not found.", path.display());
+                    return RenderrerResponse::Error;
+                }
+            }
+            if let Some(author) = pageish_template_data.meta.author {
+                if let Some(author_name) = author.name {
+                    head.push_str(&format!(
+                        "\n\t\t<meta name=\"author\" content=\"{}\" />",
+                        author_name
+                    ));
+                }
+            }
+            if let Some(category) = pageish_template_data.meta.category {
+                head.push_str(&format!(
+                    "\n\t\t<meta name=\"category\" content=\"{}\" />",
+                    category
+                ));
+            }
+            if let Some(desc) = pageish_template_data.meta.desc {
+                head.push_str(&format!(
+                    "\n\t\t<meta name=\"description\" content=\"{}\" />",
+                    desc
+                ));
+            }
+            if let Some(thumbnail) = pageish_template_data.meta.thumbnail {
+                head.push_str(&format!(
+                    "\n\t\t<meta property=\"og:image\" content=\"{}\" />",
+                    thumbnail
+                ));
+            }
+            head.push_str("\n\t</head>");
+            let docurl = "https://github.com/strawmelonjuice/CynthiaWebsiteEngine";
             format!(
-                "<html><head><title>{}</title></head><body>{}</body></html>",
-                pageish_template_data.meta.title,
-                htmlbody
+                "<!DOCTYPE html>\n<html>\n<!--\n\nGenerated and hosted through Cynthia v{version}, by Strawmelonjuice.\nAlso see:	<{docurl}>\n-->\n{head}\n<body>{htmlbody}</body></html>",
             )
         };
 
@@ -334,7 +414,7 @@ mod in_renderer {
         fn unwrap_html(self) -> RenderrerResponse {
             match self {
                 FetchedContent::Ok(c) => match c {
-                    ContentType::Html(h) => RenderrerResponse::Ok(h),
+                    Html(h) => RenderrerResponse::Ok(h),
                     _ => {
                         error!("An error occurred while unwrapping the content.");
                         RenderrerResponse::Error
@@ -408,8 +488,8 @@ mod in_renderer {
             }
         };
         let contenttype = match content_output.target_type {
-            crate::publications::ContentType::Html(_) => ContentType::Html(content_output.inner),
-            crate::publications::ContentType::Markdown(_) => {
+            Html(_) => Html(content_output.inner),
+            ContentType::Markdown(_) => {
                 let html = match markdown::to_html_with_options(
                     content_output.inner.as_str(),
                     &markdown::Options::gfm(),
@@ -420,13 +500,189 @@ mod in_renderer {
                         return FetchedContent::Error;
                     }
                 };
-                ContentType::Html(html)
+                Html(html)
             }
-            crate::publications::ContentType::PlainText(_) => {
-                ContentType::Html("<pre>".to_owned() + content_output.inner.as_str() + "</pre>")
+            ContentType::PlainText(_) => {
+                Html("<pre>".to_owned() + content_output.inner.as_str() + "</pre>")
             }
         };
 
         FetchedContent::Ok(contenttype)
+    }
+}
+#[cfg(feature = "js_runtime")]
+mod inlines {
+    use crate::{LockCallback, ServerContext};
+    use actix_web::web::Data;
+    use colored::Colorize;
+    use log::{debug, error, warn};
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    pub(crate) async fn inline_js(
+        scriptfile: PathBuf,
+        server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    ) -> String {
+        let config_clone = server_context_mutex
+            .lock_callback(|a| {
+                a.request_count += 1;
+                a.config.clone()
+            })
+            .await;
+        let embed_id = scriptfile.clone().to_str().unwrap().to_string();
+        let jscachelifetime: u64 = config_clone.cache.lifetimes.javascript;
+        let cache_result = server_context_mutex
+            .lock_callback(|servercontext| servercontext.get_cache(&embed_id, jscachelifetime))
+            .await;
+        match cache_result {
+            Some(o) => {
+                let d = std::str::from_utf8(&o.0).unwrap().to_string();
+                return format!(
+                    "<script>\n\r// Minified internally by Cynthia using Terser\n\n{d}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r</script>");
+            }
+            None => {
+                match match config_clone.runtimes.node.as_str() {
+                    "bun" => {
+                        debug!("Running Terser in Bun");
+                        std::process::Command::new(config_clone.runtimes.node.as_str())
+                            .arg("terser")
+                            .arg(scriptfile.clone())
+                            .args(["--compress", "--keep-fnames", "--keep-classnames"])
+                            .output()
+                    }
+                    _ => {
+                        debug!("Running Terser in npx");
+                        std::process::Command::new("npx")
+                            .args(["--yes", "terser"])
+                            .arg(scriptfile.clone())
+                            .args(["--compress", "--keep-fnames", "--keep-classnames"])
+                            .output()
+                    }
+                } {
+                    Ok(output) => {
+                        if output.status.success() {
+                            let d = format!("{}", String::from_utf8_lossy(&output.stdout));
+                            debug!("Minified JS: {}", d);
+                            {
+                                let mut server_context = server_context_mutex.lock().await;
+                                server_context.store_cache_async(
+                                    &embed_id,
+                                    d.as_bytes(),
+                                    jscachelifetime,
+                                ).await.unwrap();
+                            };
+                            return format!(
+                                "<script>\n\r// Minified internally by Cynthia using Terser\n\n{d}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r</script>");
+                        } else {
+                            warn!(
+                                "Failed running Terser in {}, couldn't minify to embed JS.",
+                                config_clone.runtimes.node.as_str().purple()
+                            );
+                        }
+                    }
+                    Err(why) => {
+                        error!(
+                            "Failed running CleanCSS in {}, couldn't minify to embed JS: {}",
+                            config_clone.runtimes.node.as_str().purple(),
+                            why
+                        );
+                    }
+                }
+            }
+        };
+        warn!("Scriptfile could not be minified, so was instead inlined 1:1.");
+        //     If we got here, we couldn't minify the JS.
+        let file_content = fs::read_to_string(scriptfile).unwrap_or_default();
+        format!("<script>\n// Scriptfile could not be minified, so was instead inlined 1:1. \n\n{}</script>", file_content)
+    }
+
+    pub(crate) async fn inline_css(
+        stylefile: PathBuf,
+        server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    ) -> String {
+        let config_clone = server_context_mutex
+            .lock_callback(|a| {
+                a.request_count += 1;
+                a.config.clone()
+            })
+            .await;
+        let embed_id = stylefile.clone().to_str().unwrap().to_string();
+        let csscachelifetime: u64 = config_clone.cache.lifetimes.stylesheets;
+        let cache_result = server_context_mutex
+            .lock_callback(|servercontext| servercontext.get_cache(&embed_id, csscachelifetime))
+            .await;
+        match cache_result {
+            Some(o) => {
+                let d = std::str::from_utf8(&o.0).unwrap().to_string();
+                return format!(
+                    "\n\t\t<style>\n\n\t\t\t/* Minified internally by Cynthia using clean-css */\n\n\t\t\t{d}\n\n\t\t\t/* Cached after minifying, so might be somewhat behind. */\n\t\t</style>");
+            }
+            None => {
+                match match config_clone.runtimes.node.as_str() {
+                    "bun" => {
+                        debug!("Running CleanCSS in Bun",);
+                        std::process::Command::new(config_clone.runtimes.node.as_str())
+                            .args(["clean-css-cli@4", "-O2", "--inline", "none"])
+                            .arg(stylefile.clone())
+                            .output()
+                    }
+                    _ => {
+                        debug!("Running CleanCSS in npx");
+                        std::process::Command::new("npx")
+                            .args(["--yes", "clean-css-cli@4", "-O2", "--inline", "none"])
+                            .arg(stylefile.clone())
+                            .output()
+                    }
+                } {
+                    Ok(output) => {
+                        if output.status.success() {
+                            let d = format!("{}", String::from_utf8_lossy(&output.stdout));
+                            debug!("Minified JS: {}", d);
+                            {
+                                let mut server_context = server_context_mutex.lock().await;
+                                server_context.store_cache_async(
+                                    &embed_id,
+                                    d.as_bytes(),
+                                    csscachelifetime,
+                                ).await.unwrap();
+                            }
+                            return format!(
+                                    "\n\t\t<style>\n\n\t\t\t/* Minified internally by Cynthia using clean-css */\n\n\t\t\t{d}\n\n\t\t\t/* Cached after minifying, so might be somewhat behind. */\n\t\t</style>");
+                        }
+                    }
+                    Err(why) => {
+                        error!(
+                            "Failed running CleanCSS in {}, couldn't minify to embed CSS: {}",
+                            config_clone.runtimes.node.as_str().purple(),
+                            why
+                        );
+                    }
+                }
+            }
+        };
+        warn!("Stylefile could not be minified, so was instead inlined 1:1.");
+        //     If we got here, we couldn't minify the CSS.
+        let file_content = fs::read_to_string(stylefile).unwrap_or_default();
+        format!("<style>\n/* Stylefile could not be minified, so was instead inlined 1:1. */\n\n{}</style>", file_content)
+    }
+}
+
+#[cfg(not(feature = "js_runtime"))]
+mod inlines {
+    pub(crate) async fn inline_js(
+        scriptfile: PathBuf,
+        _server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    ) -> String {
+        let file_content = fs::read_to_string(scriptfile).unwrap_or(String::new());
+        format!("<script>{}</script>", file_content)
+    }
+    pub(crate) async fn inline_css(
+        stylefile: PathBuf,
+        _server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    ) -> String {
+        let file_content = fs::read_to_string(stylefile).unwrap_or(String::new());
+        format!("<style>{}</style>", file_content)
     }
 }

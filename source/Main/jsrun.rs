@@ -88,6 +88,6 @@ where
             Ok(t) => RunJSAndDeserializeResult::Ok(t),
             Err(e) => RunJSAndDeserializeResult::SerdeError(e),
         },
-        Err(e) => return RunJSAndDeserializeResult::JsError(e.to_string()),
+        Err(e) => RunJSAndDeserializeResult::JsError(e.to_string()),
     }
 }

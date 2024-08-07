@@ -20,7 +20,7 @@ const CONFIG_LOCATIONS: [&str; 4] = [
 enum ConfigLocations {
     Js(PathBuf),
     Dhall(PathBuf),
-    TOML(PathBuf),
+    Toml(PathBuf),
     JsonC(PathBuf),
 }
 
@@ -29,7 +29,7 @@ impl ConfigLocations {
         match self {
             ConfigLocations::Js(p) => ConfigLocations::Js(p.clone()),
             ConfigLocations::Dhall(p) => ConfigLocations::Dhall(p.clone()),
-            ConfigLocations::TOML(p) => ConfigLocations::TOML(p.clone()),
+            ConfigLocations::Toml(p) => ConfigLocations::Toml(p.clone()),
             ConfigLocations::JsonC(p) => ConfigLocations::JsonC(p.clone()),
         }
     }
@@ -37,7 +37,7 @@ impl ConfigLocations {
         match self {
             ConfigLocations::Js(p) => p.exists(),
             ConfigLocations::Dhall(p) => p.exists(),
-            ConfigLocations::TOML(p) => p.exists(),
+            ConfigLocations::Toml(p) => p.exists(),
             ConfigLocations::JsonC(p) => p.exists(),
         }
     }
@@ -56,7 +56,7 @@ fn choose_config_location() -> ConfigLocations {
     let config_locations: [ConfigLocations; 4] = [
         ConfigLocations::Js(cd.join("CynthiaConfig.js")),
         ConfigLocations::Dhall(cd.join("Cynthia.dhall")),
-        ConfigLocations::TOML(cd.join("Cynthia.toml")),
+        ConfigLocations::Toml(cd.join("Cynthia.toml")),
         ConfigLocations::JsonC(cd.join("Cynthia.jsonc")),
     ];
     // let chosen_config_location = _chonfig_locations.iter().position(|p| p.exists());
@@ -168,7 +168,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                 }
             }
         }
-        ConfigLocations::TOML(cynthiaconfpath) => {
+        ConfigLocations::Toml(cynthiaconfpath) => {
             println!(
                 "{} Loading: {}",
                 "[Config]".bright_green(),
@@ -354,7 +354,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                     process::exit(1);
                 }
             }
-            ConfigLocations::TOML(_) => {
+            ConfigLocations::Toml(_) => {
                 if to == "toml" {
                     eprintln!(
                         "{} You are trying to convert a TOML configuration to TOML. This is not possible.",
@@ -495,7 +495,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
     let config_serialised: String = match to {
         "javascript" | "js" => {
             format!("/*\n\tCynthiaConfig.js\n\n\n\tThis is the configuration file for Cynthia. It is written in Javascript, a scripting language.\n\tThis kind of CynthiaConfig is the most powerful and flexible,\n\tbut also the most complex. It is recommended for advanced users\n\twho want to take full control of Cynthia's behavior.\n\n\n\tMore info about this config can be found on <{cynthiaconfdoclink}>\n\n\n\tTo convert it to another config language, use the `cynthiaweb convert` command.\n*/\nlet myCynthiaConfig = {};\n\n// We must return the configuration object at the end of the file.\nreturn myCynthiaConfig;\n", 
-                    regex::Regex::new(r#""([^"]*)":"#).unwrap().replace_all(&*anyways_this_is_jsonc(config.hard_clone()), "\t$1:")
+                    regex::Regex::new(r#""([^"]*)":"#).unwrap().replace_all(&anyways_this_is_jsonc(config.hard_clone()), "\t$1:")
             )
         }
         "dhall" => {

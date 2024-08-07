@@ -1,23 +1,17 @@
 {
-	"compilerOptions": {
-        "module": "commonjs",
-      "target": "es2022",
-		"lib": [
-			"dom",
-			"ES2021",
-			"ES2023"
-		],
-		"declaration": true,
-		"outDir": "./target/generated/js/",
-		"sourceMap": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"skipLibCheck": true,
-		"strict": true,
-		"noImplicitAny": false
-	},
-	"exclude": [
-		"./target/generated/js/"
-	],
-	 "include": ["./source/Plugin-runners/node-plugin-runner/src/"]
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES5",
+    "lib": ["dom", "ES2021", "ES2023"],
+    "declaration": true,
+    "outDir": "./target/generated/js/",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": false
+  },
+  "exclude": ["./target/generated/js/"],
+  "include": ["./source/Plugin-runners/node-plugin-runner/src/"]
 }

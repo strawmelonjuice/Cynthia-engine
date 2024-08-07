@@ -22,24 +22,52 @@ pub(super) struct CynthiaCacheObject {
 #[derive(Debug, Clone)]
 pub(crate) struct CynthiaCacheExtraction(pub(crate) Vec<u8>, #[allow(dead_code)] pub(crate) u64);
 impl ServerContext {
-    pub(crate) fn store_cache(&mut self, id: &str, contents: &[u8], max_age: u64) {
+    pub(crate) fn store_cache(&mut self, id: &str, contents: &[u8], max_age: u64) -> Result<(), ()> {
         self.evaluate_cache();
+        let now = match SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+        { 
+            Ok(x) => x.as_secs(),
+            Err(_) => {
+                return Err(());
+            }
+        };
         let cache = CynthiaCacheObject {
             id: id.to_string(),
             content: Vec::from(contents),
             timestamp: (
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs()
-                    + max_age,
+                now,
+                now + max_age,
             ),
         };
         self.cache.push(cache);
+        Ok(())
+    }
+    pub(crate) async fn store_cache_async(
+        &mut self,
+        id: &str,
+        contents: &[u8],
+        max_age: u64,
+    ) -> Result<(), ()> {
+        self.evaluate_cache();
+        let now = match SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+        {
+            Ok(x) => x.as_secs(),
+            Err(_) => {
+                return Err(());
+            }
+        };
+        let cache = CynthiaCacheObject {
+            id: id.to_string(),
+            content: Vec::from(contents),
+            timestamp: (
+                now,
+                now + max_age,
+            ),
+        };
+        self.cache.push(cache);
+        Ok(())
     }
     pub(crate) fn get_cache(&mut self, id: &str, max_age: u64) -> Option<CynthiaCacheExtraction> {
         self.evaluate_cache();

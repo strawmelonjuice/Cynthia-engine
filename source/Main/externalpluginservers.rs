@@ -118,7 +118,7 @@ pub(crate) async fn main(
     let jstempfolder = tempfolder().join("js");
     std::fs::create_dir_all(&jstempfolder).unwrap();
     let jsfile = include_bytes!("../../target/generated/js/plugins-runtime.js");
-    std::fs::write(jstempfolder.join("main.js"), jsfile).unwrap();
+    std::fs::write(jstempfolder.join("main.mjs"), jsfile).unwrap();
     // now we can run the javascript
     let node_runtime: &str = config_clone.runtimes.node.as_ref();
     let mut r = Command::new(node_runtime);
@@ -126,7 +126,7 @@ pub(crate) async fn main(
         r.arg("run");
         r.arg("--allow-read");
     }
-    r.arg(jstempfolder.join("main.js"));
+    r.arg(jstempfolder.join("main.mjs"));
     let p = Arc::new(std::sync::Mutex::new(String::new()));
     let mut proc = InteractiveProcess::new(&mut r, move |line| {
         let y = p.clone();

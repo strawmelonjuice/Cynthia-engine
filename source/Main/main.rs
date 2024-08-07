@@ -12,7 +12,7 @@ use futures::join;
 use log::info;
 use log::LevelFilter;
 use log::{debug, error};
-use simplelog::{ColorChoice, CombinedLogger, TerminalMode, TermLogger, WriteLogger};
+use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -28,11 +28,11 @@ use crate::tell::horizline;
 mod config;
 mod externalpluginservers;
 mod files;
+mod jsrun;
 mod publications;
 mod renders;
 mod requestresponse;
 mod tell;
-mod jsrun;
 
 struct LogSets {
     pub file_loglevel: LevelFilter,
@@ -172,7 +172,10 @@ async fn main() {
                 process::exit(1);
             }
             // config::actions::save_config(args.get(2).unwrap_or(&String::from("")), CynthiaConf::default());
-            config::actions::save_config(args.get(2).unwrap_or(&String::from("")), config::actions::load_config().hard_clone());
+            config::actions::save_config(
+                args.get(2).unwrap_or(&String::from("")),
+                config::actions::load_config().hard_clone(),
+            );
         }
         "" => {
             eprintln!(
@@ -311,6 +314,10 @@ async fn start() {
     use requestresponse::serve;
     let main_server = match HttpServer::new(move || {
         App::new()
+            .route(
+                "/assets/{filename:.*}",
+                actix_web::web::get().to(requestresponse::assets),
+            )
             .service(serve)
             .app_data(server_context_data.clone())
     })
@@ -381,4 +388,3 @@ async fn close(server_context_mutex: Arc<Mutex<ServerContext>>) {
     println!("{}", horizline().bright_purple());
     process::exit(0);
 }
-

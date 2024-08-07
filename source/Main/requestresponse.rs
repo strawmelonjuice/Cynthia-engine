@@ -3,18 +3,22 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-use std::sync::Arc;
-
+use actix_files::NamedFile;
 use actix_web::web::Data;
 use actix_web::{get, HttpRequest, HttpResponse, Responder};
 use colored::Colorize;
-use log::{trace, warn};
+use log::{debug, trace, warn};
+use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::externalpluginservers::{contact_eps, EPSRequestBody};
 use crate::renders::render_from_pgid;
 use crate::LockCallback;
 use crate::{renders, ServerContext};
+use crate::config::CynthiaConfig;
+use crate::files::CynthiaCacheExtraction;
+
 #[get("/{a:.*}")]
 #[doc = r"Serves pages included in CynthiaConfig, or a default page if not found."]
 pub(crate) async fn serve(
@@ -31,10 +35,11 @@ pub(crate) async fn serve(
         .await;
 
     let page_id = req.match_info().get("a").unwrap_or("root");
-    let headers =
-        {
+    let headers = {
         // Transform it into makeshift JSON!
-        let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>()).replace("(\"", "[\"").replace("\")", "\"]");
+        let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>())
+            .replace("(\"", "[\"")
+            .replace("\")", "\"]");
         // And then parse it back into an object.
         serde_json::from_str(&json_kinda).unwrap_or_default()
     };
@@ -73,8 +78,10 @@ pub(crate) async fn serve(
                         render_from_pgid(page_id.parse().unwrap(), server_context_mutex.clone())
                             .await;
                     let mut server_context = server_context_mutex.lock().await;
-                    server_context.store_cache(page_id, page.unwrap().as_bytes(), 15);
-                    server_context.get_cache(page_id, 0).unwrap()
+                    server_context.store_cache(page_id, page.clone().unwrap().as_bytes(), config_clone.clone().cache.lifetimes.served).unwrap();
+                    server_context.get_cache(page_id, config_clone.clone().cache.lifetimes.served).unwrap_or(CynthiaCacheExtraction (page.unwrap().as_bytes().to_vec(),
+                        0,
+                    ))
                 }
             };
 
@@ -93,9 +100,9 @@ pub(crate) async fn serve(
                     }
                 }
             ));
-            HttpResponse::Ok().append_header(
-                ("Content-Type", "text/html; charset=utf-8"),
-            ).body(page.0)
+            HttpResponse::Ok()
+                .append_header(("Content-Type", "text/html; charset=utf-8"))
+                .body(page.0)
         }
         renders::PGIDCheckResponse::Error => {
             HttpResponse::InternalServerError().body("Internal server error.")
@@ -111,16 +118,54 @@ pub(crate) async fn serve(
                 "not found".red()
             );
 
-            HttpResponse::NotFound().append_header(
-                    ("Content-Type", "text/html; charset=utf-8"),
-            ).body(
-                render_from_pgid(
-                    config_clone.pages.notfound_page.clone(),
-                    server_context_mutex.clone(),
+            HttpResponse::NotFound()
+                .append_header(("Content-Type", "text/html; charset=utf-8"))
+                .body(
+                    render_from_pgid(
+                        config_clone.pages.notfound_page.clone(),
+                        server_context_mutex.clone(),
+                    )
+                    .await
+                    .unwrap(),
                 )
-                .await
-                .unwrap(),
-            )
         }
     }
 }
+
+pub(crate) async fn assets(server_context_mutex: Data<Arc<Mutex<ServerContext>>>, req: HttpRequest) -> actix_web::Result<NamedFile> {
+    let config_clone = server_context_mutex
+        .lock_callback(|a| {
+            a.request_count += 1;
+            a.config.clone()
+        })
+        .await;
+    let coninfo = req.connection_info();
+    let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+
+    let file = req.match_info().query("filename");
+    let path: PathBuf = std::env::current_dir()?.canonicalize()?
+        .join("cynthiaFiles/assets/")
+        .join(file);
+    debug!("Requested asset: {:?}", path);
+    if path.exists() {
+        config_clone.tell(format!(
+            "{}\t{:>25.27}\t\t{}\t{}",
+            "Request/200".bright_green(),
+            req.path().blue(),
+            ip,
+            "filesystem".blue()
+        ));
+    } else {
+        config_clone.tell(format!(
+            "{}\t{:>25.27}\t\t{}\t{}",
+            "Request/404".bright_red(),
+            req.path().blue(),
+            ip,
+            "not found".red()
+        ));
+        return Err(actix_web::error::ErrorNotFound("File not found"));
+    }
+    Ok(NamedFile::open(path)?)
+}
+
+
