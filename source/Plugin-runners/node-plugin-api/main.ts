@@ -188,7 +188,14 @@ export class CynthiaWebResponderApi {
   }
 }
 
-export const CynthiaPassed = {};
+export const CynthiaPassed = {
+  /*
+   * This is a simplefied version of the Cynthia and CynthiaWebResponderApi classes.
+   * It is used to pass the Cynthia object to the modifyOutputHTML and modifyBodyHTML
+   * (the string_passing_) functions.
+   * Currently, it's quite empty, but it will be expanded in the future.
+   */
+};
 
 export namespace Incoming {
   export interface WebRequest {

@@ -8,9 +8,13 @@ import * as CynthiaPluginAPI from "cynthia-plugin-api/main";
 import { Cynthia } from "cynthia-plugin-api/main";
 import * as process from "node:process";
 
-import { terminalOut as console } from "../../node-plugin-api/main";
+import {
+  terminalOut as console,
+  CynthiaPassed,
+} from "../../node-plugin-api/main";
 import * as handlebars from "handlebars";
 import * as fs from "node:fs";
+import path from "node:path";
 
 console.info("Node plugin server starting in " + process.argv0);
 const cynthiabase = {
@@ -22,8 +26,10 @@ const cynthiabase = {
   ],
   modifyBodyHTML: [
     (htmlin: string, Cynthia: typeof CynthiaPluginAPI.CynthiaPassed) => {
-      // Make no changes. Return unchanged.
-      return htmlin;
+      // Return with a little comment.
+      return (
+        htmlin + "\n<!-- test... Body modifier Node plugins enabled! -->\n"
+      );
     },
   ],
   requestOptions: [
@@ -36,6 +42,40 @@ const cynthiabase = {
     },
   ],
 };
+
+fs.readdirSync("./plugins", { withFileTypes: true })
+  .filter((dirent) => dirent.isDirectory())
+  .map((dirent) => dirent.name)
+  .forEach((pluginfolder: string) => {
+    if (pluginfolder.endsWith("-disabled")) return;
+    function linklog(displaylinked) {}
+    const plugin_package_json = require(
+      path.join(__dirname, "/../", "plugins/", pluginfolder, "/package.json"),
+    );
+
+    const plugin = require(
+      path.join(
+        __dirname,
+        "/../",
+        "plugins/",
+        pluginfolder,
+        plugin_package_json.main,
+      ),
+    );
+    // if (plugin.CyntiaPluginCompat !== CynthiaPluginLoaderVersion) {
+    //   return;
+    // }
+    if (typeof plugin.modifyOutputHTML === "function") {
+      cynthiabase.modifyOutputHTML.push(plugin.modifyOutputHTML);
+    }
+    if (typeof plugin.requestOptions === "function") {
+      cynthiabase.requestOptions.push(plugin.expressActions);
+    }
+    if (typeof plugin.modifyBodyHTML === "function") {
+      cynthiabase.modifyBodyHTML.push(plugin.modifyBodyHTML);
+    }
+  });
+
 process.stdin.resume();
 process.stdin.on("data", handle);
 
@@ -70,11 +110,11 @@ async function handle(buffer: Buffer) {
           const html = compiled(request.body.template_data);
           let page = html;
           cynthiabase.modifyBodyHTML.forEach((modifier) => {
-            page = modifier(page /*, Cynthia*/);
+            page = modifier(page, CynthiaPassed);
           });
           const response = new CynthiaPluginAPI.OkStringResponse(
             request.id,
-            html,
+            page,
           );
           return Cynthia.send(response);
         } catch (e) {
