@@ -387,7 +387,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 ("forwarded", "How long (in seconds) to cache an external output after having used it.", "cache.lifetimes.forwarded"),
                 ("served", "How long should a fully-ready-to-be-served page be cached?", "cache.lifetimes.served"),
         ("runtimes", "These are the runtimes that Cynthia uses to run its scripts.\nTo run Cynthia with selected runtimes, point them to the correct binaries.", "runtimes"),
-            ("node", "The path to the Node.js binary, used for running JavaScript scripts.", "runtimes.node"),
+            ("node", "The path to the Node.js binary, used for running JavaScript scripts. Recommended runtime to use is Bun. Also see <https://bun.sh/>.", "runtimes.node"),
         ("pages", "Special pages that are not part of the normal page list, but are still served by Cynthia.\nThis traditionally consists of the 404 page.", "pages"),
             ("notfound_page", "The id of a 404 page, which is then served when a page is not found.", "pages.notfound_page"),
         ("generator", "The generator configuration for Cynthia. This is used to generate the site itself. And set things like metatags, etc.", "generator"),

@@ -71,7 +71,7 @@ impl NodeRuntimeTrait for NodeRuntime {
             #[cfg(windows)]
             return ["bun.exe", "node.exe"];
             #[cfg(not(windows))]
-            return ["deno", "bun", "node"];
+            return ["bun", "deno", "node"];
         })();
         let node = match available_runtimes.iter().find(|&runtime| {
             std::process::Command::new(runtime)
