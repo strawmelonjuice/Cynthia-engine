@@ -543,35 +543,51 @@ mod inlines {
                     "<script>\n\r// Minified internally by Cynthia using Terser\n\n{d}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r</script>");
             }
             None => {
-                match match config_clone.runtimes.node.as_str() {
-                    "bun" => {
-                        debug!("Running Terser in Bun");
-                        std::process::Command::new(config_clone.runtimes.node.as_str())
-                            .arg("terser")
-                            .arg(scriptfile.clone())
-                            .args(["--compress", "--keep-fnames", "--keep-classnames"])
-                            .output()
+                let xargs: Vec<&str>;
+                let scri = scriptfile.clone();
+                let scr = scri.to_str().unwrap();
+                let runner = {
+                    if config_clone.runtimes.node.as_str().contains("bun") {
+                        xargs = [
+                            "terser",
+                            scr,
+                            "--compress",
+                            "--keep-fnames",
+                            "--keep-classnames",
+                        ]
+                        .to_vec();
+
+                        "bunx"
+                    } else {
+                        xargs = [
+                            "--yes",
+                            "terser",
+                            scr,
+                            "--compress",
+                            "--keep-fnames",
+                            "--keep-classnames",
+                        ]
+                        .to_vec();
+
+                        "npx"
                     }
-                    _ => {
-                        debug!("Running Terser in npx");
-                        std::process::Command::new("npx")
-                            .args(["--yes", "terser"])
-                            .arg(scriptfile.clone())
-                            .args(["--compress", "--keep-fnames", "--keep-classnames"])
-                            .output()
-                    }
-                } {
+                };
+
+                debug!("Running Terser in {}", runner.purple());
+                match std::process::Command::new(runner)
+                    .args(xargs.clone())
+                    .output()
+                {
                     Ok(output) => {
                         if output.status.success() {
                             let d = format!("{}", String::from_utf8_lossy(&output.stdout));
                             debug!("Minified JS: {}", d);
                             {
                                 let mut server_context = server_context_mutex.lock().await;
-                                server_context.store_cache_async(
-                                    &embed_id,
-                                    d.as_bytes(),
-                                    jscachelifetime,
-                                ).await.unwrap();
+                                server_context
+                                    .store_cache_async(&embed_id, d.as_bytes(), jscachelifetime)
+                                    .await
+                                    .unwrap();
                             };
                             return format!(
                                 "<script>\n\r// Minified internally by Cynthia using Terser\n\n{d}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r</script>");
@@ -580,6 +596,14 @@ mod inlines {
                                 "Failed running Terser in {}, couldn't minify to embed JS.",
                                 config_clone.runtimes.node.as_str().purple()
                             );
+                            println!("Ran command \"{} {}\"", runner.purple(), {
+                                let mut s = String::new();
+                                for a in &xargs {
+                                    s.push_str(a);
+                                    s.push(' ');
+                                }
+                                s
+                            })
                         }
                     }
                     Err(why) => {
@@ -620,33 +644,36 @@ mod inlines {
                     "\n\t\t<style>\n\n\t\t\t/* Minified internally by Cynthia using clean-css */\n\n\t\t\t{d}\n\n\t\t\t/* Cached after minifying, so might be somewhat behind. */\n\t\t</style>");
             }
             None => {
-                match match config_clone.runtimes.node.as_str() {
-                    "bun" => {
-                        debug!("Running CleanCSS in Bun",);
-                        std::process::Command::new(config_clone.runtimes.node.as_str())
-                            .args(["clean-css-cli@4", "-O2", "--inline", "none"])
-                            .arg(stylefile.clone())
-                            .output()
+                let xargs: Vec<&str>;
+                let styf = stylefile.clone();
+                let stf = styf.to_str().unwrap();
+                let runner = {
+                    if config_clone.runtimes.node.as_str().contains("bun") {
+                        xargs = ["clean-css-cli@4", "-O2", "--inline", "none", stf].to_vec();
+
+                        "bunx"
+                    } else {
+                        xargs =
+                            ["--yes", "clean-css-cli@4", "-O2", "--inline", "none", stf].to_vec();
+
+                        "npx"
                     }
-                    _ => {
-                        debug!("Running CleanCSS in npx");
-                        std::process::Command::new("npx")
-                            .args(["--yes", "clean-css-cli@4", "-O2", "--inline", "none"])
-                            .arg(stylefile.clone())
-                            .output()
-                    }
-                } {
+                };
+                debug!("Running CleanCSS in {}", runner.purple());
+                match std::process::Command::new(runner)
+                    .args(xargs.clone())
+                    .output()
+                {
                     Ok(output) => {
                         if output.status.success() {
                             let d = format!("{}", String::from_utf8_lossy(&output.stdout));
                             debug!("Minified JS: {}", d);
                             {
                                 let mut server_context = server_context_mutex.lock().await;
-                                server_context.store_cache_async(
-                                    &embed_id,
-                                    d.as_bytes(),
-                                    csscachelifetime,
-                                ).await.unwrap();
+                                server_context
+                                    .store_cache_async(&embed_id, d.as_bytes(), csscachelifetime)
+                                    .await
+                                    .unwrap();
                             }
                             return format!(
                                     "\n\t\t<style>\n\n\t\t\t/* Minified internally by Cynthia using clean-css */\n\n\t\t\t{d}\n\n\t\t\t/* Cached after minifying, so might be somewhat behind. */\n\t\t</style>");
@@ -658,6 +685,14 @@ mod inlines {
                             config_clone.runtimes.node.as_str().purple(),
                             why
                         );
+                        debug!("Ran command \"{} {}\"", runner.purple(), {
+                            let mut s = String::new();
+                            for a in &xargs {
+                                s.push_str(a);
+                                s.push(' ');
+                            }
+                            s
+                        });
                     }
                 }
             }
