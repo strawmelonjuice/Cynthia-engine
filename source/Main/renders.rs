@@ -143,6 +143,7 @@ struct PageLikePublicationTemplateDataMeta {
 mod in_renderer {
     use super::*;
     use crate::externalpluginservers::EPSRequestBody;
+    use crate::jsrun::JsonString;
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
@@ -259,9 +260,8 @@ mod in_renderer {
                 // streq helper
                 // This helper checks if two strings are equal.
                 // Usage: {{#if (streq postid "sasfs")}} ... {{/if}}
-                handlebars_helper!(str_is_equal: |x: String, y: String| x == y);
-                template.register_helper("streq", Box::new(str_is_equal));
-
+                handlebars_helper!(streq: |x: str, y: str| x == y);
+                template.register_helper("streq", Box::new(streq));
                 match template.register_template_file("base", template_path.clone()) {
                     Ok(g) => g,
                     Err(e) => {
@@ -273,11 +273,17 @@ mod in_renderer {
                         return RenderrerResponse::Error;
                     }
                 };
-                RenderrerResponse::Ok(
-                    template
-                        .render("base", &pageish_template_data.meta)
-                        .unwrap(),
-                )
+                match template.render("base", &pageish_template_data.meta) {
+                    Ok(a) => RenderrerResponse::Ok(a),
+                    Err(e) => {
+                        error!(
+                            "Error rendering template file '{}':\n\n{}",
+                            template_path.display(),
+                            e.to_string().bright_red()
+                        );
+                        RenderrerResponse::Error
+                    }
+                }
             };
             let mut htmlbody: String = if !cfg!(feature = "js_runtime") {
                 // Fall back to builtin handlebars if the js_runtime feature is not enabled.

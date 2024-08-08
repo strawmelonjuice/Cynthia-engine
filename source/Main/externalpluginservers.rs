@@ -134,6 +134,18 @@ pub(crate) async fn main(
             }
         }
     };
+    if config_clone.runtimes.ext_js_rt == "disabled" {
+        error!("External Node Runtime is set to disabled. Node plugins will not run.");
+        loop {
+            if let Some(o) = eps_r.recv().await {
+                let q = EPSResponse {
+                    id: o.id,
+                    body: EPSResponseBody::Disabled,
+                };
+                and_now(q, server_context_mutex.clone()).await
+            }
+        }
+    };
     let rt = tokio::runtime::Runtime::new().unwrap();
     if node_runtime.contains("deno") {
         r.arg("run");

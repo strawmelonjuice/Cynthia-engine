@@ -55,6 +55,7 @@ pub(crate) async fn serve(
     .await;
     match pluginsresponse {
         crate::externalpluginservers::EPSResponseBody::NoneOk => {}
+        crate::externalpluginservers::EPSResponseBody::Disabled => {}
         _ => return HttpResponse::InternalServerError().body("Internal server error."),
     }
     let s = server_context_mutex
