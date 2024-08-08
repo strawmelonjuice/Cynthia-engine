@@ -120,12 +120,7 @@ pub(crate) async fn render_from_pgid(
 /// It stores only the necessary data for rendering a single publication.
 struct PublicationScene {
     template: String,
-    // Not used yet. Will be used in the future when implementing stylesheets.
-    //  I know these lints are there so I won't forget, but I'm not forgetting.
-    #[allow(unused)]
     stylesheet: Option<String>,
-    // Not used yet. Will be used in the future when implementing custom scripts.
-    #[allow(unused)]
     script: Option<String>,
     kind: String,
 }
@@ -153,6 +148,7 @@ mod in_renderer {
         publications::{ContentType, CynthiaPublication, PublicationContent},
     };
     use handlebars::{handlebars_helper, Handlebars};
+    use log::warn;
     use std::path::PathBuf;
     use std::{fs, path::Path};
     use ContentType::Html;
@@ -267,7 +263,7 @@ mod in_renderer {
                 template.register_helper("streq", Box::new(str_is_equal));
 
                 match template.register_template_file("base", template_path.clone()) {
-                    Ok(_) => {}
+                    Ok(g) => g,
                     Err(e) => {
                         error!(
                             "Error reading template file '{}':\n\n{}",
@@ -302,6 +298,7 @@ mod in_renderer {
             {
                 value
             } else {
+                warn!("External Javascript Runtime failed to render the content. Retrying with basic builtin rendering.");
                 // Fall back to builtin handlebars if the external plugin server fails.
                 if let RenderrerResponse::Ok(a) = builtin_handlebars() {
                     a
@@ -314,10 +311,10 @@ mod in_renderer {
             head.push_str("\n\t<head>");
             head.push_str("\n\t\t<meta charset=\"utf-8\" />");
             head.push_str(
-                &("\n\t\t<title>".to_owned() + &pageish_template_data.meta.title + "</title>"),
+                format!("\n\t\t<title>{}</title>", pageish_template_data.meta.title).as_str(),
             );
             head.push_str("\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
-            head.push_str("\n\t\t<meta name=\"generator\" content=\"Cynthia\" />");
+            head.push_str("\n\t\t<meta name=\"generator\" content=\"strawmelonjuice-Cynthia\" />");
             head.push_str("\n\t\t<meta name=\"robots\" content=\"index, follow\" />");
             if let Some(stylefile) = localscene.stylesheet {
                 let path: PathBuf = std::env::current_dir()
