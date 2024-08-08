@@ -12,12 +12,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::config::CynthiaConfig;
 use crate::externalpluginservers::{contact_eps, EPSRequestBody};
+use crate::files::CynthiaCacheExtraction;
 use crate::renders::render_from_pgid;
 use crate::LockCallback;
 use crate::{renders, ServerContext};
-use crate::config::CynthiaConfig;
-use crate::files::CynthiaCacheExtraction;
 
 #[get("/{a:.*}")]
 #[doc = r"Serves pages included in CynthiaConfig, or a default page if not found."]
@@ -48,7 +48,7 @@ pub(crate) async fn serve(
         server_context_mutex.clone(),
         EPSRequestBody::WebRequest {
             page_id: page_id.to_string(),
-            headers, // No clue how to get these tbh
+            headers,
             method: "get".to_string(),
         },
     )
@@ -78,10 +78,16 @@ pub(crate) async fn serve(
                         render_from_pgid(page_id.parse().unwrap(), server_context_mutex.clone())
                             .await;
                     let mut server_context = server_context_mutex.lock().await;
-                    server_context.store_cache(page_id, page.clone().unwrap().as_bytes(), config_clone.clone().cache.lifetimes.served).unwrap();
-                    server_context.get_cache(page_id, config_clone.clone().cache.lifetimes.served).unwrap_or(CynthiaCacheExtraction (page.unwrap().as_bytes().to_vec(),
-                        0,
-                    ))
+                    server_context
+                        .store_cache(
+                            page_id,
+                            page.clone().unwrap().as_bytes(),
+                            config_clone.clone().cache.lifetimes.served,
+                        )
+                        .unwrap();
+                    server_context
+                        .get_cache(page_id, config_clone.clone().cache.lifetimes.served)
+                        .unwrap_or(CynthiaCacheExtraction(page.unwrap().as_bytes().to_vec(), 0))
                 }
             };
 
@@ -132,7 +138,10 @@ pub(crate) async fn serve(
     }
 }
 
-pub(crate) async fn assets(server_context_mutex: Data<Arc<Mutex<ServerContext>>>, req: HttpRequest) -> actix_web::Result<NamedFile> {
+pub(crate) async fn assets(
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    req: HttpRequest,
+) -> actix_web::Result<NamedFile> {
     let config_clone = server_context_mutex
         .lock_callback(|a| {
             a.request_count += 1;
@@ -143,7 +152,8 @@ pub(crate) async fn assets(server_context_mutex: Data<Arc<Mutex<ServerContext>>>
     let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
 
     let file = req.match_info().query("filename");
-    let path: PathBuf = std::env::current_dir()?.canonicalize()?
+    let path: PathBuf = std::env::current_dir()?
+        .canonicalize()?
         .join("cynthiaFiles/assets/")
         .join(file);
     debug!("Requested asset: {:?}", path);
@@ -167,5 +177,3 @@ pub(crate) async fn assets(server_context_mutex: Data<Arc<Mutex<ServerContext>>>
     }
     Ok(NamedFile::open(path)?)
 }
-
-

@@ -547,7 +547,7 @@ mod inlines {
                 let scri = scriptfile.clone();
                 let scr = scri.to_str().unwrap();
                 let runner = {
-                    if config_clone.runtimes.node.as_str().contains("bun") {
+                    if config_clone.runtimes.ext_js_rt.as_str().contains("bun") {
                         xargs = [
                             "terser",
                             scr,
@@ -594,7 +594,7 @@ mod inlines {
                         } else {
                             warn!(
                                 "Failed running Terser in {}, couldn't minify to embed JS.",
-                                config_clone.runtimes.node.as_str().purple()
+                                config_clone.runtimes.ext_js_rt.as_str().purple()
                             );
                             println!("Ran command \"{} {}\"", runner.purple(), {
                                 let mut s = String::new();
@@ -609,7 +609,7 @@ mod inlines {
                     Err(why) => {
                         error!(
                             "Failed running CleanCSS in {}, couldn't minify to embed JS: {}",
-                            config_clone.runtimes.node.as_str().purple(),
+                            config_clone.runtimes.ext_js_rt.as_str().purple(),
                             why
                         );
                     }
@@ -648,7 +648,7 @@ mod inlines {
                 let styf = stylefile.clone();
                 let stf = styf.to_str().unwrap();
                 let runner = {
-                    if config_clone.runtimes.node.as_str().contains("bun") {
+                    if config_clone.runtimes.ext_js_rt.as_str().contains("bun") {
                         xargs = ["clean-css-cli@4", "-O2", "--inline", "none", stf].to_vec();
 
                         "bunx"
@@ -682,7 +682,7 @@ mod inlines {
                     Err(why) => {
                         error!(
                             "Failed running CleanCSS in {}, couldn't minify to embed CSS: {}",
-                            config_clone.runtimes.node.as_str().purple(),
+                            config_clone.runtimes.ext_js_rt.as_str().purple(),
                             why
                         );
                         debug!("Ran command \"{} {}\"", runner.purple(), {

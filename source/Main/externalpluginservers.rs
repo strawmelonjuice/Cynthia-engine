@@ -11,7 +11,7 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 
-use crate::config::NodeRuntimeTrait;
+use crate::config::ConfigExternalJavascriptRuntime;
 
 #[cfg(feature = "js_runtime")]
 #[derive(Debug)]
@@ -120,9 +120,9 @@ pub(crate) async fn main(
     let jsfile = include_bytes!("../../target/generated/js/plugins-runtime.js");
     std::fs::write(jstempfolder.join("main.mjs"), jsfile).unwrap();
     // now we can run the javascript
-    let node_runtime: &str = config_clone.runtimes.node.as_ref();
+    let node_runtime: &str = config_clone.runtimes.ext_js_rt.as_ref();
     let mut r = Command::new(node_runtime);
-    if config_clone.runtimes.node.validate().is_err() {
+    if config_clone.runtimes.ext_js_rt.validate().is_err() {
         error!("Invalid node runtime path. Plugins will not run.");
         loop {
             if let Some(o) = eps_r.recv().await {
@@ -222,8 +222,8 @@ pub(crate) async fn contact_eps(
     use crate::LockCallback;
     if server_context_mutex
         .lock_callback(|server_context| -> Option<EPSResponseBody> {
-            if server_context.config.runtimes.node.validate().is_err()
-                || server_context.config.runtimes.node == "disabled"
+            if server_context.config.runtimes.ext_js_rt.validate().is_err()
+                || server_context.config.runtimes.ext_js_rt == "disabled"
             {
                 Some(EPSResponseBody::Disabled)
             } else {

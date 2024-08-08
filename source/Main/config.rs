@@ -53,23 +53,25 @@ fn c_logs() -> Option<Logging> {
 }
 
 #[cfg(feature = "js_runtime")]
-pub(crate) type NodeRuntime = String;
+pub(crate) type ExternalJavascriptRuntime = String;
 #[cfg(feature = "js_runtime")]
-pub(crate) trait NodeRuntimeTrait {
-    fn auto() -> NodeRuntime;
+pub(crate) trait ConfigExternalJavascriptRuntime {
+    fn auto() -> ExternalJavascriptRuntime;
     fn validate(&self) -> Result<(), ()>;
 }
 #[derive(Debug, PartialEq, Serialize, Deserialize, StaticType, Clone)]
 pub(crate) struct Runtimes {
     #[cfg(feature = "js_runtime")]
-    #[serde(default = "NodeRuntime::auto")]
-    pub(crate) node: NodeRuntime,
+    #[serde(default = "ExternalJavascriptRuntime::auto")]
+    #[serde(alias = "node")]
+    pub(crate) ext_js_rt: ExternalJavascriptRuntime,
 }
 #[cfg(feature = "js_runtime")]
-impl NodeRuntimeTrait for NodeRuntime {
+impl ConfigExternalJavascriptRuntime for ExternalJavascriptRuntime {
     fn auto() -> Self {
         let available_runtimes = (|| {
             #[cfg(windows)]
+            // Deno is untested on Windows, so is not yet scanned for.
             return ["bun.exe", "node.exe"];
             #[cfg(not(windows))]
             return ["bun", "deno", "node"];
@@ -84,7 +86,7 @@ impl NodeRuntimeTrait for NodeRuntime {
             Some(a) => *a,
             None => {
                 error!("Failed to find a node runtime to use and none set. Please set a valid `node` path under `[runtimes]` in the configuration.");
-                std::process::exit(1);
+                "disabled"
             }
         };
         node.to_string()
@@ -112,7 +114,7 @@ impl Default for Runtimes {
     fn default() -> Self {
         Runtimes {
             #[cfg(feature = "js_runtime")]
-            node: NodeRuntime::auto(),
+            ext_js_rt: ExternalJavascriptRuntime::auto(),
         }
     }
 }
