@@ -135,6 +135,7 @@ struct PageLikePublicationTemplateDataMeta {
     title: String,
     desc: Option<String>,
     category: Option<String>,
+    tags: Vec<String>,
     author: Option<Author>,
     dates: CynthiaPublicationDates,
     thumbnail: Option<String>,
@@ -143,7 +144,6 @@ struct PageLikePublicationTemplateDataMeta {
 mod in_renderer {
     use super::*;
     use crate::externalpluginservers::EPSRequestBody;
-    use crate::jsrun::JsonString;
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
@@ -205,6 +205,7 @@ mod in_renderer {
                     desc: description.clone(),
                     category: None,
                     author: None,
+                    tags: vec![],
                     dates: dates.clone(),
                     thumbnail: thumbnail.clone(),
                 },
@@ -222,6 +223,7 @@ mod in_renderer {
                 category,
                 author,
                 postcontent,
+                tags,
                 ..
             } => PageLikePublicationTemplateData {
                 meta: PageLikePublicationTemplateDataMeta {
@@ -232,6 +234,7 @@ mod in_renderer {
                     author: author.clone(),
                     dates: dates.clone(),
                     thumbnail: thumbnail.clone(),
+                    tags: tags.clone(),
                 },
                 content: match fetch_page_ish_content(postcontent).await.unwrap_html() {
                     RenderrerResponse::Ok(s) => s,
@@ -337,6 +340,14 @@ mod in_renderer {
                     return RenderrerResponse::Error;
                 }
             }
+            head.push_str(
+&format!("<script>const cynthia = {{version: '{}', publicationdata: JSON.parse(`{}`), kind: '{}'}};</script>",
+                version,
+    serde_json::to_string(&pageish_template_data.meta.clone()).unwrap(),
+                localscene.kind)
+
+
+            );
             if let Some(script) = localscene.script {
                 let path: PathBuf = std::env::current_dir()
                     .unwrap()

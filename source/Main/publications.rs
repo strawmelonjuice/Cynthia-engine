@@ -169,6 +169,7 @@ pub(crate) enum CynthiaPublication {
         dates: CynthiaPublicationDates,
         thumbnail: Option<String>,
         category: Option<String>,
+        tags: Vec<String>,
         author: Option<Author>,
         #[serde(alias = "content")]
         postcontent: PublicationContent,
