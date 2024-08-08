@@ -11,6 +11,8 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 
+use crate::config::NodeRuntimeTrait;
+
 #[cfg(feature = "js_runtime")]
 #[derive(Debug)]
 pub(crate) struct EPSCommunicationData {
@@ -107,8 +109,6 @@ pub(crate) async fn main(
     server_context_mutex: Arc<Mutex<ServerContext>>,
     mut eps_r: Receiver<EPSRequest>,
 ) {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-
     let config_clone = {
         // We need to clone the config because we can't hold the lock while we're in the tokio runtime.
         let server_context = server_context_mutex.lock().await;
@@ -122,7 +122,20 @@ pub(crate) async fn main(
     // now we can run the javascript
     let node_runtime: &str = config_clone.runtimes.node.as_ref();
     let mut r = Command::new(node_runtime);
-    if node_runtime == "deno" {
+    if config_clone.runtimes.node.validate().is_err() {
+        error!("Invalid node runtime path. Plugins will not run.");
+        loop {
+            if let Some(o) = eps_r.recv().await {
+                let q = EPSResponse {
+                    id: o.id,
+                    body: EPSResponseBody::Disabled,
+                };
+                and_now(q, server_context_mutex.clone()).await
+            }
+        }
+    };
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    if node_runtime.contains("deno") {
         r.arg("run");
         r.arg("--allow-read");
     }
@@ -206,6 +219,22 @@ pub(crate) async fn contact_eps(
     server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: EPSRequestBody,
 ) -> EPSResponseBody {
+    use crate::LockCallback;
+    if server_context_mutex
+        .lock_callback(|server_context| -> Option<EPSResponseBody> {
+            if server_context.config.runtimes.node.validate().is_err()
+                || server_context.config.runtimes.node == "disabled"
+            {
+                Some(EPSResponseBody::Disabled)
+            } else {
+                None
+            }
+        })
+        .await
+        .is_some()
+    {
+        return EPSResponseBody::Disabled;
+    };
     let random_id = {
         let mut d: EPSCommunicationsID;
         loop {

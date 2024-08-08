@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_dhall::StaticType;
 
@@ -55,8 +55,9 @@ fn c_logs() -> Option<Logging> {
 #[cfg(feature = "js_runtime")]
 pub(crate) type NodeRuntime = String;
 #[cfg(feature = "js_runtime")]
-trait NodeRuntimeTrait {
+pub(crate) trait NodeRuntimeTrait {
     fn auto() -> NodeRuntime;
+    fn validate(&self) -> Result<(), ()>;
 }
 #[derive(Debug, PartialEq, Serialize, Deserialize, StaticType, Clone)]
 pub(crate) struct Runtimes {
@@ -86,7 +87,24 @@ impl NodeRuntimeTrait for NodeRuntime {
                 std::process::exit(1);
             }
         };
-        String::from(node)
+        node.to_string()
+    }
+    fn validate(&self) -> Result<(), ()> {
+        if self == "disabled" {
+            info!("Node runtime is disabled. This may cause some features to not work.");
+            return Ok(());
+        }
+        std::process::Command::new(self)
+            .arg("-v")
+            .output()
+            .map(|output| {
+                if output.status.success() {
+                    Ok(())
+                } else {
+                    Err(())
+                }
+            })
+            .unwrap_or(Err(()))
     }
 }
 #[allow(clippy::derivable_impls)]
