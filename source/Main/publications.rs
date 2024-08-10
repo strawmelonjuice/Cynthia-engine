@@ -243,6 +243,7 @@ pub(crate) enum ContentType {
     #[serde(alias = "html")]
     Html(String),
     #[serde(alias = "markdown")]
+    #[serde(alias = "MarkDown")]
     #[serde(alias = "md")]
     #[serde(alias = "MD")]
     Markdown(String),
