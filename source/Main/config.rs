@@ -12,12 +12,13 @@ pub(crate) struct CynthiaConf {
     #[serde(alias = "Cache")]
     #[serde(default = "c_cache")]
     pub(crate) cache: Cache,
+    #[serde(alias = "Generator")]
+    #[serde(alias = "generator")]
+    #[serde(alias = "Site")]
+    #[serde(alias = "pages")]
     #[serde(alias = "Pages")]
     #[serde(default)]
-    pub(crate) pages: Pages,
-    #[serde(alias = "Generator")]
-    #[serde(default)]
-    pub(crate) generator: Generator,
+    pub(crate) site: Site,
     #[serde(alias = "Logs")]
     #[serde(default = "c_logs")]
     pub(crate) logs: Option<Logging>,
@@ -35,8 +36,7 @@ impl Default for CynthiaConf {
         CynthiaConf {
             port: c_port(),
             cache: Cache::default(),
-            pages: Pages::default(),
-            generator: Generator::default(),
+            site: Site::default(),
             logs: c_logs(),
             scenes: c_emptyscenelist(),
             runtimes: Runtimes::default(),
@@ -164,8 +164,7 @@ impl SceneCollectionTrait for SceneCollection {
 pub(crate) struct CynthiaConfClone {
     pub(crate) port: u16,
     pub(crate) cache: Cache,
-    pub(crate) pages: Pages,
-    pub(crate) generator: Generator,
+    pub(crate) site: Site,
     pub(crate) logs: Option<Logging>,
     pub(crate) scenes: SceneCollection,
     pub(crate) runtimes: Runtimes,
@@ -176,8 +175,7 @@ impl CynthiaConfig for CynthiaConfClone {
         CynthiaConf {
             port: self.port,
             cache: self.cache.clone(),
-            pages: self.pages.clone(),
-            generator: self.generator.clone(),
+            site: self.site.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
@@ -187,8 +185,7 @@ impl CynthiaConfig for CynthiaConfClone {
         CynthiaConfClone {
             port: self.port,
             cache: self.cache.clone(),
-            pages: self.pages.clone(),
-            generator: self.generator.clone(),
+            site: self.site.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
@@ -200,8 +197,7 @@ impl CynthiaConfig for CynthiaConf {
         CynthiaConf {
             port: self.port,
             cache: self.cache.clone(),
-            pages: self.pages.clone(),
-            generator: self.generator.clone(),
+            site: self.site.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
@@ -211,8 +207,7 @@ impl CynthiaConfig for CynthiaConf {
         CynthiaConfClone {
             port: self.port,
             cache: self.cache.clone(),
-            pages: self.pages.clone(),
-            generator: self.generator.clone(),
+            site: self.site.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
@@ -229,8 +224,7 @@ impl CynthiaConf {
         CynthiaConfClone {
             port: self.port,
             cache: self.cache.clone(),
-            pages: self.pages.clone(),
-            generator: self.generator.clone(),
+            site: self.site.clone(),
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
@@ -247,15 +241,6 @@ fn c_cache() -> Cache {
     Cache {
         lifetimes: Lifetimes::default(),
     }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
-// #[serde(rename_all = "camelCase")]
-pub(crate) struct Pages {
-    #[serde(alias = "404-page")]
-    #[serde(alias = "notfound-page")]
-    #[serde(default = "c_404")]
-    pub(crate) notfound_page: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
@@ -284,7 +269,12 @@ impl Default for Lifetimes {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
 // #[serde(rename_all = "camelCase")]
-pub(crate) struct Generator {
+pub(crate) struct Site {
+    #[serde(alias = "404-page")]
+    #[serde(alias = "notfound-page")]
+    #[serde(default = "c_404")]
+    pub(crate) notfound_page: String,
+
     #[serde(alias = "site-baseurl")]
     #[serde(default = "c_emptystring")]
     pub(crate) site_baseurl: String,

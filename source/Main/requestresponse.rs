@@ -129,7 +129,7 @@ pub(crate) async fn serve(
                 .append_header(("Content-Type", "text/html; charset=utf-8"))
                 .body(
                     render_from_pgid(
-                        config_clone.pages.notfound_page.clone(),
+                        config_clone.site.notfound_page.clone(),
                         server_context_mutex.clone(),
                     )
                     .await

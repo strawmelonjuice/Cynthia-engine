@@ -378,7 +378,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
     let args: Vec<String> = std::env::args().collect();
     let cd = std::env::current_dir().unwrap();
     // as a tuple, the first element is the key, the second is the comment, the third is the key in the config.
-    let comments: [(&str, &str, &str); 33] = [
+    let comments: [(&str, &str, &str); 32] = [
         ("port", "The port on which Cynthia hosts, since Cynthia was designed to be reverse-proxied, this port is usually higher than 1000.", "port"),
         ("cache", "The cache configuration for Cynthia.", "cache"),
             ("lifetimes", "These rules are set for a reason: The higher they are set, the less requests we have to do to Node, external servers, etc.\nHigher caching might consume a lot of memory or storage and crash the system.\nCaching can speed up Cynthia a whole lot, so think wisely before you change any of these numbers!", "cache.lifetimes"),
@@ -387,18 +387,17 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 ("forwarded", "How long (in seconds) to cache an external output after having used it.", "cache.lifetimes.forwarded"),
                 ("served", "How long should a fully-ready-to-be-served page be cached?", "cache.lifetimes.served"),
         ("runtimes", "These are the runtimes that Cynthia uses to run its scripts.\nTo run Cynthia with selected runtimes, point them to the correct binaries.", "runtimes"),
-            ("node", "The path to the Node.js binary, used for running JavaScript scripts. Recommended runtime to use is Bun. Also see <https://bun.sh/>.", "runtimes.node"),
-        ("pages", "Special pages that are not part of the normal page list, but are still served by Cynthia.\nThis traditionally consists of the 404 page.", "pages"),
-            ("notfound_page", "The id of a 404 page, which is then served when a page is not found.", "pages.notfound_page"),
-        ("generator", "The generator configuration for Cynthia. This is used to generate the site itself. And set things like metatags, etc.", "generator"),
-            ("meta", "Meta settings for generation, not setting 'how', but 'what' to generate.", "generator.meta"),
-                ("enable_tags", "Enables or disables pagetags in HTML metatags,\nthese are officially supposed to be good for\nfinding a website, but have been known to\nget nerfed by Google, considering them spam.", "generator.meta.enable_tags"),
-                ("enable_search", "Whether to enable search or not. If enabled, search will be used to generate pages.", "generator.meta.enable_search"),
-                ("enable_sitemap", "Whether to enable sitemap or not. If enabled, sitemap will be used to generate pages.", "generator.meta.enable_sitemap"),
-                ("enable_rss", "Whether to enable RSS or not. If enabled, RSS will be used to generate pages.", "generator.meta.enable_rss"),
-                ("enable_atom", "Whether to enable Atom or not. If enabled, Atom will be used to generate pages.", "generator.meta.enable_atom"),
-            ("site_baseurl", "The base URL of the site, used for generating links.", "generator.site_baseurl"),
-            ("og_sitename", "Site name for the site, this is different than the site name set in scenes, as it is mostly used for embeds, and so get's cached on url.", "generator.og_sitename"),
+            ("ext_js_rt", "The path to the external JS runtime binary, used for running JavaScript code. Recommended runtime to use is Bun. Also see <https://bun.sh/>.", "runtimes.ext_js_rt"),
+        ("site", "The site configuration for Cynthia. This is used to generate the site itself. And set things like metatags, etc.", "site"),
+            ("notfound_page", "The id of a 404 page, which is then served when a page is not found.", "site.notfound_page"),
+            ("meta", "Meta settings for generation, not setting 'how', but 'what' to generate.", "site.meta"),
+                ("enable_tags", "Enables or disables pagetags in HTML metatags,\nthese are officially supposed to be good for\nfinding a website, but have been known to\nget nerfed by Google, considering them spam.", "site.meta.enable_tags"),
+                ("enable_search", "Whether to enable search or not. If enabled, search will be used to generate pages.", "site.meta.enable_search"),
+                ("enable_sitemap", "Whether to enable sitemap or not. If enabled, sitemap will be used to generate pages.", "site.meta.enable_sitemap"),
+                ("enable_rss", "Whether to enable RSS or not. If enabled, RSS will be used to generate pages.", "site.meta.enable_rss"),
+                ("enable_atom", "Whether to enable Atom or not. If enabled, Atom will be used to generate pages.", "site.meta.enable_atom"),
+            ("site_baseurl", "The base URL of the site, used for generating links.", "site.site_baseurl"),
+            ("og_sitename", "Site name for the site, this is different than the site name set in scenes, as it is mostly used for embeds, and so get's cached on url.", "site.og_sitename"),
         ("logs", "The log configuration for Cynthia.", "logs"),
             ("term_loglevel", "The minimum level of importance (1-5) before Cynthia logs to the terminal.", "logs.term_loglevel"),
             ("file_loglevel", "The minimum level of importance (1-5) before Cynthia logs to a file.", "logs.file_loglevel"),
@@ -450,33 +449,24 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 &comment_this("cache.lifetimes.stylesheets"),
             )
             .replace("\"runtimes\":", &comment_this("runtimes"))
-            .replace("\"node\":", &comment_this("runtimes.node"))
+            .replace("\"ext_js_rt\":", &comment_this("runtimes.ext_js_rt"))
             .replace("\"pages\":", &comment_this("pages"))
-            .replace("\"notfound_page\":", &comment_this("pages.notfound_page"))
-            .replace("\"generator\":", &comment_this("generator"))
-            .replace("\"meta\":", &comment_this("generator.meta"))
-            .replace(
-                "\"enable_tags\":",
-                &comment_this("generator.meta.enable_tags"),
-            )
+            .replace("\"notfound_page\":", &comment_this("site.notfound_page"))
+            .replace("\"site\":", &comment_this("site"))
+            .replace("\"meta\":", &comment_this("site.meta"))
+            .replace("\"enable_tags\":", &comment_this("site.meta.enable_tags"))
             .replace(
                 "\"enable_search\":",
-                &comment_this("generator.meta.enable_search"),
+                &comment_this("site.meta.enable_search"),
             )
             .replace(
                 "\"enable_sitemap\":",
-                &comment_this("generator.meta.enable_sitemap"),
+                &comment_this("site.meta.enable_sitemap"),
             )
-            .replace(
-                "\"enable_rss\":",
-                &comment_this("generator.meta.enable_rss"),
-            )
-            .replace(
-                "\"enable_atom\":",
-                &comment_this("generator.meta.enable_atom"),
-            )
-            .replace("\"site_baseurl\":", &comment_this("generator.site_baseurl"))
-            .replace("\"og_sitename\":", &comment_this("generator.og_sitename"))
+            .replace("\"enable_rss\":", &comment_this("site.meta.enable_rss"))
+            .replace("\"enable_atom\":", &comment_this("site.meta.enable_atom"))
+            .replace("\"site_baseurl\":", &comment_this("site.site_baseurl"))
+            .replace("\"og_sitename\":", &comment_this("site.og_sitename"))
             .replace("\"logs\":", &comment_this("logs"))
             .replace("\"term_loglevel\":", &comment_this("logs.term_loglevel"))
             .replace("\"file_loglevel\":", &comment_this("logs.file_loglevel"))
@@ -544,18 +534,18 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                         .replace(" served =", &comment_this("cache.lifetimes.served"))
                         .replace(" stylesheets =", &comment_this("cache.lifetimes.stylesheets"))
                     .replace(" runtimes =", &comment_this("runtimes"))
-                        .replace(" node =", &comment_this("runtimes.node"))
+                        .replace(" node =", &comment_this("runtimes.ext_js_rt"))
                     .replace(" pages =", &comment_this("pages"))
-                        .replace(" notfound_page =", &comment_this("pages.notfound_page"))
-                    .replace(" generator =", &comment_this("generator"))
-                        .replace(" meta =", &comment_this("generator.meta"))
-                            .replace(" enable_tags =", &comment_this("generator.meta.enable_tags"))
-                            .replace(" enable_search =", &comment_this("generator.meta.enable_search"))
-                            .replace(" enable_sitemap =", &comment_this("generator.meta.enable_sitemap"))
-                            .replace(" enable_rss =", &comment_this("generator.meta.enable_rss"))
-                            .replace(" enable_atom =", &comment_this("generator.meta.enable_atom"))
-                        .replace(" site_baseurl =", &comment_this("generator.site_baseurl"))
-                        .replace(" og_sitename =", &comment_this("generator.og_sitename"))
+                        .replace(" notfound_page =", &comment_this("site.notfound_page"))
+                    .replace(" site =", &comment_this("site"))
+                        .replace(" meta =", &comment_this("site.meta"))
+                            .replace(" enable_tags =", &comment_this("site.meta.enable_tags"))
+                            .replace(" enable_search =", &comment_this("site.meta.enable_search"))
+                            .replace(" enable_sitemap =", &comment_this("site.meta.enable_sitemap"))
+                            .replace(" enable_rss =", &comment_this("site.meta.enable_rss"))
+                            .replace(" enable_atom =", &comment_this("site.meta.enable_atom"))
+                        .replace(" site_baseurl =", &comment_this("site.site_baseurl"))
+                        .replace(" og_sitename =", &comment_this("site.og_sitename"))
                     .replace(" logs =", &comment_this("logs"))
                         .replace(" term_loglevel =", &comment_this("logs.term_loglevel"))
                         .replace(" file_loglevel =", &comment_this("logs.file_loglevel"))
@@ -609,33 +599,33 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                         .replace("runtimes = ", "[runtimes]")
                         .as_str(),
                 )
-                .replace(" node = ", &comment_this("runtimes.node"))
+                .replace(" node = ", &comment_this("runtimes.ext_js_rt"))
                 .replace(
                     " [pages]",
                     comment_this("pages")
                         .replace("pages = ", "[pages]")
                         .as_str(),
                 )
-                .replace(" notfound_page = ", &comment_this("pages.notfound_page"))
+                .replace(" notfound_page = ", &comment_this("site.notfound_page"))
                 .replace(
-                    " [generator]",
-                    comment_this("generator")
-                        .replace("generator = ", "[generator]")
+                    " [site]",
+                    comment_this("site")
+                        .replace("site = ", "[site]")
                         .as_str(),
                 )
                 .replace(
-                    " [generator.meta]",
-                    comment_this("generator.meta")
-                        .replace("meta = ", "[generator.meta]")
+                    " [site.meta]",
+                    comment_this("site.meta")
+                        .replace("meta = ", "[site.meta]")
                         .as_str(),
                 )
-                .replace(" enable_tags = ", &comment_this("generator.meta.enable_tags"))
-                .replace(" enable_search = ", &comment_this("generator.meta.enable_search"))
-                .replace(" enable_sitemap = ", &comment_this("generator.meta.enable_sitemap"))
-                .replace(" enable_rss = ", &comment_this("generator.meta.enable_rss"))
-                .replace(" enable_atom = ", &comment_this("generator.meta.enable_atom"))
-                .replace(" site_baseurl = ", &comment_this("generator.site_baseurl"))
-                .replace(" og_sitename = ", &comment_this("generator.og_sitename"))
+                .replace(" enable_tags = ", &comment_this("site.meta.enable_tags"))
+                .replace(" enable_search = ", &comment_this("site.meta.enable_search"))
+                .replace(" enable_sitemap = ", &comment_this("site.meta.enable_sitemap"))
+                .replace(" enable_rss = ", &comment_this("site.meta.enable_rss"))
+                .replace(" enable_atom = ", &comment_this("site.meta.enable_atom"))
+                .replace(" site_baseurl = ", &comment_this("site.site_baseurl"))
+                .replace(" og_sitename = ", &comment_this("site.og_sitename"))
                 .replace(
                     " [logs]",
                     comment_this("logs")

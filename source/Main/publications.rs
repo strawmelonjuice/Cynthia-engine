@@ -25,7 +25,7 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
     fn get_notfound(&self, config: CynthiaConfClone) -> Option<CynthiaPublication> {
         self.iter()
             .find(|x| {
-                let notfound = config.clone().pages.notfound_page;
+                let notfound = config.clone().site.notfound_page;
                 if x.get_id() == notfound {
                     match x {
                         CynthiaPublication::Page { .. } => true,

@@ -77,7 +77,7 @@ pub(crate) fn check_pgid(
     }
     let publication = published.get_by_id(page_id);
     if publication.is_none() {
-        let publication = published.get_by_id(server_context.config.pages.notfound_page.clone());
+        let publication = published.get_by_id(server_context.config.site.notfound_page.clone());
         if publication.is_none() {
             error!(
                 "No 404 page found in publications.jsonc, or incorrectly defined in CynthiaConfig."
