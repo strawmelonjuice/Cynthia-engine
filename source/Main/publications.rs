@@ -165,6 +165,7 @@ pub(crate) enum CynthiaPublication {
     Post {
         id: String,
         title: String,
+        #[serde(alias = "description")]
         short: Option<String>,
         dates: CynthiaPublicationDates,
         thumbnail: Option<String>,
@@ -183,6 +184,7 @@ pub(crate) enum CynthiaPublication {
     PostList {
         id: String,
         title: String,
+        #[serde(alias = "description")]
         short: Option<String>,
         filter: PostListFilter,
         #[serde(alias = "scene")]
