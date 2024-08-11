@@ -253,6 +253,8 @@ pub(crate) struct Lifetimes {
     #[serde(default = "c_cache_lifetime_external")]
     #[serde(alias = "external")]
     pub(crate) forwarded: u64,
+    #[serde(default = "c_cache_lifetime_external")]
+    pub(crate) assets: u64,
     #[serde(default = "c_cache_lifetime_served")]
     pub(crate) served: u64,
 }
@@ -263,6 +265,7 @@ impl Default for Lifetimes {
             javascript: c_cache_lifetime_js(),
             forwarded: c_cache_lifetime_external(),
             served: c_cache_lifetime_served(),
+            assets: c_cache_lifetime_external(),
         }
     }
 }

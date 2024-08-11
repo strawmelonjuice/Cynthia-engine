@@ -8,6 +8,7 @@ use actix_web::web::Data;
 use actix_web::{get, HttpRequest, HttpResponse, Responder};
 use colored::Colorize;
 use log::{debug, trace, warn};
+use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -139,42 +140,80 @@ pub(crate) async fn serve(
     }
 }
 
-pub(crate) async fn assets(
+#[get("/assets/{reqfile:.*}")]
+pub(crate) async fn assets_with_cache(
     server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: HttpRequest,
-) -> actix_web::Result<NamedFile> {
-    let config_clone = server_context_mutex
-        .lock_callback(|a| {
-            a.request_count += 1;
-            a.config.clone()
-        })
+) -> impl Responder {
+    let path = req.match_info().get("reqfile").unwrap();
+    let cacheresulr = server_context_mutex
+        .lock_callback(|servercontext| servercontext.get_cache(path, 0))
         .await;
-    let coninfo = req.connection_info();
-    let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
-
-    let file = req.match_info().query("filename");
-    let path: PathBuf = std::env::current_dir()?
-        .canonicalize()?
-        .join("cynthiaFiles/assets/")
-        .join(file);
-    debug!("Requested asset: {:?}", path);
-    if path.exists() {
-        config_clone.tell(format!(
-            "{}\t{:>25.27}\t\t{}\t{}",
-            "Request/200".bright_green(),
-            req.path().blue(),
-            ip,
-            "filesystem".blue()
-        ));
-    } else {
-        config_clone.tell(format!(
-            "{}\t{:>25.27}\t\t{}\t{}",
-            "Request/404".bright_red(),
-            req.path().blue(),
-            ip,
-            "not found".red()
-        ));
-        return Err(actix_web::error::ErrorNotFound("File not found"));
+    match cacheresulr {
+        None => {
+            let config_clone = server_context_mutex
+                .lock_callback(|a| {
+                    a.request_count += 1;
+                    a.config.clone()
+                })
+                .await;
+            let filepath: PathBuf = std::env::current_dir()
+                .unwrap()
+                .canonicalize()
+                .unwrap()
+                .join("cynthiaFiles/assets/")
+                .join(path);
+            debug!("Requested asset: {:?}", filepath);
+            if filepath.exists() {
+                let contents: Vec<u8> = std::fs::read(filepath).unwrap();
+                let mut server_context = server_context_mutex.lock().await;
+                server_context
+                    .store_cache(path, &contents, config_clone.cache.lifetimes.assets)
+                    .unwrap();
+                let coninfo = req.connection_info();
+                let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+                server_context.tell(format!(
+                    "{}\t{:>25.27}\t\t{}\t{}",
+                    "Request/200".bright_green(),
+                    req.path().blue(),
+                    ip,
+                    "filesystem".blue()
+                ));
+                HttpResponse::Ok()
+                    .append_header(("Content-Type", "text/html; charset=utf-8"))
+                    .body(contents)
+            } else {
+                let coninfo = req.connection_info();
+                let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+                config_clone.tell(format!(
+                    "{}\t{:>25.27}\t\t{}\t{}",
+                    "Request/404".bright_red(),
+                    req.path().blue(),
+                    ip,
+                    "not found".red()
+                ));
+                HttpResponse::NotFound().body("404 Not Found")
+            }
+        }
+        Some(c) => {
+            let config_clone = server_context_mutex
+                .lock_callback(|a| {
+                    a.request_count += 1;
+                    a.config.clone()
+                })
+                .await;
+            let coninfo = req.connection_info();
+            let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+            config_clone.tell(format!(
+                "{}\t{:>25.27}\t\t{}\t{}",
+                "Request/200".bright_green(),
+                req.path().blue(),
+                ip,
+                "from cache".green()
+            ));
+            HttpResponse::Ok()
+                .append_header(("Content-Type", "text/html; charset=utf-8"))
+                .body(c.0)
+        }
     }
-    Ok(NamedFile::open(path)?)
 }

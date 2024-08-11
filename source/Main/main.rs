@@ -12,6 +12,7 @@ use futures::join;
 use log::info;
 use log::LevelFilter;
 use log::{debug, error};
+use requestresponse::assets_with_cache;
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
 use std::path::PathBuf;
@@ -314,10 +315,7 @@ async fn start() {
     use requestresponse::serve;
     let main_server = match HttpServer::new(move || {
         App::new()
-            .route(
-                "/assets/{filename:.*}",
-                actix_web::web::get().to(requestresponse::assets),
-            )
+            .service(assets_with_cache)
             .service(serve)
             .app_data(server_context_data.clone())
     })
