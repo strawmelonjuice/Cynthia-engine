@@ -3,12 +3,10 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
-use actix_files::NamedFile;
 use actix_web::web::Data;
 use actix_web::{get, HttpRequest, HttpResponse, Responder};
 use colored::Colorize;
 use log::{debug, trace, warn};
-use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
