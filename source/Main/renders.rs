@@ -10,9 +10,7 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::config::CynthiaConfClone;
-use crate::publications::{
-    Author, CynthiaPublicationDates, CynthiaPublicationList, CynthiaPublicationListTrait,
-};
+use crate::publications::{CynthiaPostList, CynthiaPublicationList, CynthiaPublicationListTrait};
 use crate::{LockCallback, ServerContext};
 use colored::Colorize;
 
@@ -130,20 +128,26 @@ pub(crate) struct PageLikePublicationTemplateData {
     content: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct PostListPublicationTemplateData {
+    meta: PageLikePublicationTemplateDataMeta,
+    posts: CynthiaPostList,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct PageLikePublicationTemplateDataMeta {
     id: String,
     title: String,
     desc: Option<String>,
     category: Option<String>,
     tags: Vec<String>,
-    author: Option<Author>,
-    dates: CynthiaPublicationDates,
+    author: Option<crate::publications::Author>,
+    dates: crate::publications::CynthiaPublicationDates,
     thumbnail: Option<String>,
 }
 
 mod in_renderer {
     use super::*;
     use crate::externalpluginservers::EPSRequestBody;
+    use crate::publications::{CynthiaPostList, CynthiaPublicationListTrait, PostLists};
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
@@ -189,7 +193,11 @@ mod in_renderer {
             },
         };
 
-        let pageish_template_data: PageLikePublicationTemplateData = match publication {
+        let mut pageish_template_data: PageLikePublicationTemplateData =
+            PageLikePublicationTemplateData::default();
+        let mut postlist_template_data: PostListPublicationTemplateData =
+            PostListPublicationTemplateData::default();
+        match publication {
             CynthiaPublication::Page {
                 pagecontent,
                 id,
@@ -198,22 +206,24 @@ mod in_renderer {
                 description,
                 dates,
                 ..
-            } => PageLikePublicationTemplateData {
-                meta: PageLikePublicationTemplateDataMeta {
-                    id: id.clone(),
-                    title: title.clone(),
-                    desc: description.clone(),
-                    category: None,
-                    author: None,
-                    tags: vec![],
-                    dates: dates.clone(),
-                    thumbnail: thumbnail.clone(),
-                },
-                content: match fetch_page_ish_content(pagecontent).await.unwrap_html() {
-                    RenderrerResponse::Ok(s) => s,
-                    _ => return RenderrerResponse::Error,
-                },
-            },
+            } => {
+                pageish_template_data = PageLikePublicationTemplateData {
+                    meta: PageLikePublicationTemplateDataMeta {
+                        id: id.clone(),
+                        title: title.clone(),
+                        desc: description.clone(),
+                        category: None,
+                        author: None,
+                        tags: vec![],
+                        dates: dates.clone(),
+                        thumbnail: thumbnail.clone(),
+                    },
+                    content: match fetch_page_ish_content(pagecontent).await.unwrap_html() {
+                        RenderrerResponse::Ok(s) => s,
+                        _ => return RenderrerResponse::Error,
+                    },
+                }
+            }
             CynthiaPublication::Post {
                 id,
                 title,
@@ -225,23 +235,52 @@ mod in_renderer {
                 postcontent,
                 tags,
                 ..
-            } => PageLikePublicationTemplateData {
-                meta: PageLikePublicationTemplateDataMeta {
-                    id: id.clone(),
-                    title: title.clone(),
-                    desc: short.clone(),
-                    category: category.clone(),
-                    author: author.clone(),
-                    dates: dates.clone(),
-                    thumbnail: thumbnail.clone(),
-                    tags: tags.clone(),
-                },
-                content: match fetch_page_ish_content(postcontent).await.unwrap_html() {
-                    RenderrerResponse::Ok(s) => s,
-                    _ => return RenderrerResponse::Error,
-                },
-            },
-            _ => todo!("Implement fetching content for postlists."),
+            } => {
+                pageish_template_data = PageLikePublicationTemplateData {
+                    meta: PageLikePublicationTemplateDataMeta {
+                        id: id.clone(),
+                        title: title.clone(),
+                        desc: short.clone(),
+                        category: category.clone(),
+                        author: author.clone(),
+                        dates: dates.clone(),
+                        thumbnail: thumbnail.clone(),
+                        tags: tags.clone(),
+                    },
+                    content: match fetch_page_ish_content(postcontent).await.unwrap_html() {
+                        RenderrerResponse::Ok(s) => s,
+                        _ => return RenderrerResponse::Error,
+                    },
+                }
+            }
+            CynthiaPublication::PostList {
+                id,
+                title,
+                short,
+                filter,
+                ..
+            } => {
+                let publicationlist: CynthiaPublicationList = CynthiaPublicationList::load();
+                let postlist: CynthiaPostList = publicationlist.only_posts();
+                let filtered_postlist = postlist.filter(filter);
+                postlist_template_data = PostListPublicationTemplateData {
+                    meta: PageLikePublicationTemplateDataMeta {
+                        id: id.clone(),
+                        title: title.clone(),
+                        desc: short.clone(),
+                        category: None,
+                        tags: vec![],
+                        author: None,
+                        dates: crate::publications::CynthiaPublicationDates {
+                            altered: 0,
+                            published: 0,
+                        },
+                        thumbnail: None,
+                    },
+                    posts: filtered_postlist,
+                };
+                // println!("{}", serde_json::to_string(&postlist_template_data).unwrap());
+            }
         };
 
         let outerhtml: String = {
@@ -257,8 +296,9 @@ mod in_renderer {
                 error!("Template file '{}' not found.", template_path.display());
                 return RenderrerResponse::Error;
             }
+
             // A fallback function that uses the builtin handlebars renderer.
-            let builtin_handlebars = || {
+            let builtin_handlebars = |data| {
                 let mut template = Handlebars::new();
                 // streq helper
                 // This helper checks if two strings are equal.
@@ -276,7 +316,7 @@ mod in_renderer {
                         return RenderrerResponse::Error;
                     }
                 };
-                match template.render("base", &pageish_template_data.meta) {
+                match template.render("base", &data) {
                     Ok(a) => RenderrerResponse::Ok(a),
                     Err(e) => {
                         error!(
@@ -290,26 +330,39 @@ mod in_renderer {
             };
             let mut htmlbody: String = if !cfg!(feature = "js_runtime") {
                 // Fall back to builtin handlebars if the js_runtime feature is not enabled.
-                if let RenderrerResponse::Ok(a) = builtin_handlebars() {
+                if let RenderrerResponse::Ok(a) = builtin_handlebars(pageish_template_data.clone())
+                {
                     a
                 } else {
                     return RenderrerResponse::Error;
                 }
-            } else if let crate::externalpluginservers::EPSResponseBody::OkString { value } =
-                crate::externalpluginservers::contact_eps(
-                    server_context_mutex.clone(),
-                    EPSRequestBody::ContentRenderRequest {
-                        template_path: template_path.to_string_lossy().parse().unwrap(),
-                        template_data: pageish_template_data.clone(),
-                    },
-                )
-                .await
-            {
+            } else if let crate::externalpluginservers::EPSResponseBody::OkString { value } = {
+                if localscene.kind != *"postlist" {
+                    crate::externalpluginservers::contact_eps(
+                        server_context_mutex.clone(),
+                        EPSRequestBody::ContentRenderRequest {
+                            template_path: template_path.to_string_lossy().parse().unwrap(),
+                            template_data: pageish_template_data.clone(),
+                        },
+                    )
+                    .await
+                } else {
+                    crate::externalpluginservers::contact_eps(
+                        server_context_mutex.clone(),
+                        EPSRequestBody::PostlistRenderRequest {
+                            template_path: template_path.to_string_lossy().parse().unwrap(),
+                            template_data: postlist_template_data.clone(),
+                        },
+                    )
+                    .await
+                }
+            } {
                 value
             } else {
                 warn!("External Javascript Runtime failed to render the content. Retrying with basic builtin rendering.");
                 // Fall back to builtin handlebars if the external plugin server fails.
-                if let RenderrerResponse::Ok(a) = builtin_handlebars() {
+                if let RenderrerResponse::Ok(a) = builtin_handlebars(pageish_template_data.clone())
+                {
                     a
                 } else {
                     return RenderrerResponse::Error;

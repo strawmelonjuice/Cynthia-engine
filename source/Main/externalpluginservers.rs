@@ -78,6 +78,10 @@ pub(crate) enum EPSRequestBody {
         template_path: String,
         template_data: crate::renders::PageLikePublicationTemplateData,
     },
+    PostlistRenderRequest {
+        template_path: String,
+        template_data: crate::renders::PostListPublicationTemplateData,
+    },
     WebRequest {
         page_id: String,
         headers: Vec<(String, String)>, // Name, Value

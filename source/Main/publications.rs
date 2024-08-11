@@ -14,7 +14,78 @@ use serde::{Deserialize, Serialize};
 use crate::config::{CynthiaConfClone, CynthiaConfig};
 
 pub(crate) type CynthiaPublicationList = Vec<CynthiaPublication>;
+pub(crate) trait PostLists {
+    fn filter(&self, filter: PostListFilter) -> Vec<PostPublication>;
+    #[allow(dead_code)]
+    fn get_by_id(&self, id: String) -> Option<CynthiaPublication>;
+}
+impl PostLists for CynthiaPostList {
+    fn filter(&self, filter: PostListFilter) -> Vec<PostPublication> {
+        match filter {
+            PostListFilter::Latest => {
+                let mut p = self.clone();
+                p.sort_by(|a, b| b.dates.published.cmp(&a.dates.published));
+                p
+            }
+            PostListFilter::Oldest => {
+                let mut p = self.clone();
+                p.sort_by(|a, b| a.dates.published.cmp(&b.dates.published));
+                p
+            }
+            PostListFilter::Tag(tag) => self
+                .iter()
+                .filter(|x| x.tags.contains(&tag))
+                .cloned()
+                .collect(),
+            PostListFilter::Category(category) => self
+                .iter()
+                .filter(|x| x.category == Some(category.clone()))
+                .cloned()
+                .collect(),
+            PostListFilter::Author(author) => self
+                .iter()
+                .filter(|x| {
+                    x.author
+                        .as_ref()
+                        .map_or(false, |a| a.name == Some(author.clone()))
+                })
+                .cloned()
+                .collect(),
+            PostListFilter::Search(search) => self
+                .iter()
+                .filter(|x| {
+                    x.title.contains(&search)
+                        || x.short.as_ref().map_or(false, |s| s.contains(&search))
+                    // || x.postcontent.get_inner().contains(&search)
+                })
+                .cloned()
+                .collect(),
+        }
+    }
+    fn get_by_id(&self, id: String) -> Option<CynthiaPublication> {
+        let mut a: Option<CynthiaPublication> = None;
+        for i in self {
+            if i.id == id {
+                a = Some(CynthiaPublication::Post {
+                    id: i.id.to_string(),
+                    title: i.title.to_string(),
+                    short: i.short.clone(),
+                    dates: i.dates.clone(),
+                    thumbnail: i.thumbnail.clone(),
+                    category: i.category.clone(),
+                    tags: i.tags.clone(),
+                    author: i.author.clone(),
+                    postcontent: i.postcontent.clone(),
+                    scene_override: i.scene_override.clone(),
+                })
+            }
+        }
+        a
+    }
+}
+pub(crate) type CynthiaPostList = Vec<PostPublication>;
 pub(crate) trait CynthiaPublicationListTrait {
+    fn only_posts(&self) -> CynthiaPostList;
     fn get_notfound(&self, config: CynthiaConfClone) -> Option<CynthiaPublication>;
     fn get_root(&self) -> Option<CynthiaPublication>;
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication>;
@@ -22,6 +93,37 @@ pub(crate) trait CynthiaPublicationListTrait {
     fn load() -> CynthiaPublicationList;
 }
 impl CynthiaPublicationListTrait for CynthiaPublicationList {
+    fn only_posts(&self) -> CynthiaPostList {
+        let mut p = Vec::new();
+        for i in self {
+            if let CynthiaPublication::Post {
+                    id,
+                    title,
+                    short,
+                    dates,
+                    thumbnail,
+                    category,
+                    tags,
+                    author,
+                    postcontent,
+                    scene_override,
+                } = i {
+                p.push(PostPublication {
+                    id: id.to_string(),
+                    title: title.to_string(),
+                    short: short.clone(),
+                    dates: dates.clone(),
+                    thumbnail: thumbnail.clone(),
+                    category: category.clone(),
+                    tags: tags.clone(),
+                    author: author.clone(),
+                    postcontent: postcontent.clone(),
+                    scene_override: scene_override.clone(),
+                });
+            }
+        }
+        p
+    }
     fn get_notfound(&self, config: CynthiaConfClone) -> Option<CynthiaPublication> {
         self.iter()
             .find(|x| {
@@ -109,7 +211,7 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
         valid.push(itemsin);
 
         // Return true if all checks passed
-        return valid.iter().all(|x| *x);
+        valid.iter().all(|x| *x)
     }
     fn load() -> CynthiaPublicationList {
         if Path::new("./cynthiaFiles/published.yaml").exists() {
@@ -144,6 +246,19 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
             })
         }
     }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct PostPublication {
+    id: String,
+    title: String,
+    short: Option<String>,
+    dates: CynthiaPublicationDates,
+    thumbnail: Option<String>,
+    category: Option<String>,
+    tags: Vec<String>,
+    author: Option<Author>,
+    postcontent: PublicationContent,
+    scene_override: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
