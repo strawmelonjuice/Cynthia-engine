@@ -279,6 +279,7 @@ mod in_renderer {
                     },
                     posts: filtered_postlist,
                 };
+                pageish_template_data.meta = postlist_template_data.meta.clone();
                 // println!("{}", serde_json::to_string(&postlist_template_data).unwrap());
             }
         };
@@ -347,14 +348,13 @@ mod in_renderer {
                     )
                     .await
                 } else {
-                    crate::externalpluginservers::contact_eps(
-                        server_context_mutex.clone(),
-                        EPSRequestBody::PostlistRenderRequest {
-                            template_path: template_path.to_string_lossy().parse().unwrap(),
-                            template_data: postlist_template_data.clone(),
-                        },
-                    )
-                    .await
+                    let req = EPSRequestBody::PostlistRenderRequest {
+                        template_path: template_path.to_string_lossy().parse().unwrap(),
+                        template_data: postlist_template_data.clone(),
+                    };
+                    // println!("{}", serde_json::to_string(&req).unwrap());
+                    crate::externalpluginservers::contact_eps(server_context_mutex.clone(), req)
+                        .await
                 }
             } {
                 value
@@ -373,7 +373,11 @@ mod in_renderer {
             head.push_str("\n\t<head>");
             head.push_str("\n\t\t<meta charset=\"utf-8\" />");
             head.push_str(
-                format!("\n\t\t<title>{}</title>", pageish_template_data.meta.title).as_str(),
+                format!(
+                    "\n\t\t<title>{}</title>",
+                    pageish_template_data.meta.title.clone()
+                )
+                .as_str(),
             );
             head.push_str("\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
             head.push_str("\n\t\t<meta name=\"generator\" content=\"strawmelonjuice-Cynthia\" />");

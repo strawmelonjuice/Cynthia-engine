@@ -36,6 +36,7 @@ export interface ContentRenderRequestBody {
       id: string;
       title: string;
       desc?: string;
+      tags: Array<string>
       category?: string;
       author?: {
         name?: string;
@@ -51,6 +52,58 @@ export interface ContentRenderRequestBody {
     content: string;
   };
 }
+
+export interface PostlistRenderRequest {
+  id: number;
+  body: PostlistRenderRequestBody;
+}
+
+export interface PostlistRenderRequestBody {
+  for: "PostlistRenderRequest";
+  template_path: string;
+  template_data: {
+    meta: {
+      id: string;
+      title: string;
+      desc?: string;
+      category?: string;
+      tags: Array<string>
+      author: null
+      dates: {
+        altered: number
+        published: number
+      }
+      thumbnail?: string;
+    }
+    posts: Array<{
+      id: string
+      title: string
+      short: string
+      dates: {
+        altered: number
+        published: number
+      }
+      thumbnail?: string;
+      category: string;
+      tags: Array<string>;
+      author?: {
+        name?: string;
+        link?: string;
+        thumbnail?: string;
+      }
+      postcontent: {
+        Local: {
+          source: {
+            as: string
+            value: string
+          }
+        }
+      }
+      scene_override: string
+    }>
+  }
+}
+
 
 let test: Request = {
   id: 0,

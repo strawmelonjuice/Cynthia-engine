@@ -95,6 +95,34 @@ async function handle(buffer: Buffer) {
         let response = new CynthiaPluginAPI.EmptyOKResponse(request.id);
         return Cynthia.send(response);
       }
+      case "PostlistRenderRequest": {
+        try {
+          // streq helper
+          // This helper checks if two strings are equal.
+          // Usage: {{#if (streq postid "sasfs")}} ... {{/if}}
+          handlebars.registerHelper("streq", function (a: string, b: string) {
+            return a === b;
+          });
+
+          let request: CynthiaPluginAPI.PostlistRenderRequest = JSON.parse(str);
+          const template = fs.readFileSync(request.body.template_path, "utf8");
+          const compiled = handlebars.compile(template);
+          const html = compiled(request.body.template_data);
+          let page = html;
+          cynthiabase.modifyBodyHTML.forEach((modifier) => {
+            page = modifier(page, CynthiaPassed);
+          });
+          const response = new CynthiaPluginAPI.OkStringResponse(
+              request.id,
+              page,
+          );
+          return Cynthia.send(response);
+        } catch (e) {
+          console.error(e);
+          const response = new CynthiaPluginAPI.ErrorResponse(request.id, "");
+          return Cynthia.send(response);
+        }
+      }
       case "ContentRenderRequest": {
         try {
           // streq helper
