@@ -29,6 +29,8 @@ pub(crate) struct CynthiaConf {
     #[serde(alias = "Scenes")]
     #[serde(default = "c_emptyscenelist")]
     pub(crate) scenes: SceneCollection,
+    #[serde(default = "c_plugins")]
+    pub(crate) plugins: Vec<Plugin>,
 }
 
 impl Default for CynthiaConf {
@@ -40,6 +42,7 @@ impl Default for CynthiaConf {
             logs: c_logs(),
             scenes: c_emptyscenelist(),
             runtimes: Runtimes::default(),
+            plugins: c_plugins(),
         }
     }
 }
@@ -159,6 +162,23 @@ impl SceneCollectionTrait for SceneCollection {
         true
     }
 }
+#[derive(Debug, PartialEq, Serialize, Deserialize, StaticType, Clone)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "plugin_runtime")]
+pub(crate) enum Plugin {
+    #[serde(rename = "javascript")]
+    JsPlugin {
+        plugin_name: String,
+        plugin_enabled: bool,
+    },
+}
+
+fn c_plugins() -> Vec<Plugin> {
+    vec![Plugin::JsPlugin {
+        plugin_name: "test".to_string(),
+        plugin_enabled: false,
+    }]
+}
 
 /// A clone of the CynthiaConf struct
 pub(crate) struct CynthiaConfClone {
@@ -168,6 +188,7 @@ pub(crate) struct CynthiaConfClone {
     pub(crate) logs: Option<Logging>,
     pub(crate) scenes: SceneCollection,
     pub(crate) runtimes: Runtimes,
+    pub(crate) plugins: Vec<Plugin>,
 }
 
 impl CynthiaConfig for CynthiaConfClone {
@@ -179,6 +200,7 @@ impl CynthiaConfig for CynthiaConfClone {
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
+            plugins: self.plugins.clone(),
         }
     }
     fn clone(&self) -> CynthiaConfClone {
@@ -189,6 +211,7 @@ impl CynthiaConfig for CynthiaConfClone {
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
+            plugins: self.plugins.clone(),
         }
     }
 }
@@ -201,6 +224,7 @@ impl CynthiaConfig for CynthiaConf {
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
+            plugins: self.plugins.clone(),
         }
     }
     fn clone(&self) -> CynthiaConfClone {
@@ -211,6 +235,7 @@ impl CynthiaConfig for CynthiaConf {
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
+            plugins: self.plugins.clone(),
         }
     }
 }
@@ -228,6 +253,7 @@ impl CynthiaConf {
             logs: self.logs.clone(),
             scenes: self.scenes.clone(),
             runtimes: self.runtimes.clone(),
+            plugins: self.plugins.clone(),
         }
     }
 }
@@ -236,11 +262,21 @@ impl CynthiaConf {
 // #[serde(rename_all = "camelCase")]
 pub(crate) struct Cache {
     pub(crate) lifetimes: Lifetimes,
+
+    /// Maximum cache size in bytes
+    /// Default: 536870912 (512MB)
+    #[serde(alias = "max-cache-size")]
+    #[serde(default = "c_max_cache_size")]
+    pub(crate) max_cache_size: usize,
 }
 fn c_cache() -> Cache {
     Cache {
+        max_cache_size: c_max_cache_size(),
         lifetimes: Lifetimes::default(),
     }
+}
+fn c_max_cache_size() -> usize {
+    536870912
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]

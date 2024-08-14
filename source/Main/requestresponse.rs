@@ -18,12 +18,34 @@ use crate::renders::render_from_pgid;
 use crate::LockCallback;
 use crate::{renders, ServerContext};
 
+fn urlspace() -> (usize, usize) {
+    let fullwidth = termsize::get().unwrap().cols as usize;
+
+    let w_a = if fullwidth < 200 {
+        fullwidth
+            .checked_div(10)
+            .unwrap_or(10)
+            .checked_mul(4)
+            .unwrap_or(40)
+    } else {
+        160
+    };
+
+    let w_s = w_a.checked_sub(2).unwrap_or(w_a);
+    // let w_s = 0;
+
+    debug!("Full widht is {fullwidth} cols. Any request urls will be printed in a space of {} characters, with the actual url being {} characters long.", w_a, w_s);
+    (w_s, w_a)
+    // (53, 55)
+}
+
 #[get("/{a:.*}")]
 #[doc = r"Serves pages included in CynthiaConfig, or a default page if not found."]
 pub(crate) async fn serve(
     server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: HttpRequest,
 ) -> impl Responder {
+    let (w_s, w_a) = urlspace();
     // We can't lock the mutex here because it wouldn't be usable by EPS, so we need to use a callback.
     // let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
     let config_clone = server_context_mutex
@@ -33,7 +55,12 @@ pub(crate) async fn serve(
         })
         .await;
 
-    let page_id = req.match_info().get("a").unwrap_or("root");
+    let page_uri = if req.uri() == "" {
+        "root".to_string()
+    } else {
+        req.uri().to_string()
+    };
+    let page_id = page_uri.trim_start_matches('/');
     let headers = {
         // Transform it into makeshift JSON!
         let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>())
@@ -46,7 +73,7 @@ pub(crate) async fn serve(
     let pluginsresponse = contact_eps(
         server_context_mutex.clone(),
         EPSRequestBody::WebRequest {
-            page_id: page_id.to_string(),
+            uri: page_uri.clone(),
             headers,
             method: "get".to_string(),
         },
@@ -94,13 +121,20 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
-                "{}\t{:>25.27}\t\t{}\t{}",
+                "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
                 "Request/200".bright_green(),
-                req.path(),
+                {
+                    if req.uri().to_string() == "".to_string() {
+                        "/".to_string()
+                    } else {
+                        req.uri().to_string()
+                    }
+                }
+                .blue(),
                 ip,
                 {
                     if from_cache {
-                        "from cache".green()
+                        "cache".green()
                     } else {
                         "generated".yellow()
                     }
@@ -117,9 +151,16 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info().clone();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             warn!(
-                "{}\t{:>25.27}\t\t{}\t{}",
+                "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
                 "Request/404".bright_red(),
-                req.path(),
+                {
+                    if req.uri().to_string() == "".to_string() {
+                        "/".to_string()
+                    } else {
+                        req.uri().to_string()
+                    }
+                }
+                .blue(),
                 ip,
                 "not found".red()
             );
@@ -143,6 +184,7 @@ pub(crate) async fn assets_with_cache(
     server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
     req: HttpRequest,
 ) -> impl Responder {
+    let (w_s, w_a) = urlspace();
     let path = req.match_info().get("reqfile").unwrap();
     let cacheresulr = server_context_mutex
         .lock_callback(|servercontext| servercontext.get_cache(path, 0))
@@ -171,9 +213,16 @@ pub(crate) async fn assets_with_cache(
                 let coninfo = req.connection_info();
                 let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
                 server_context.tell(format!(
-                    "{}\t{:>25.27}\t\t{}\t{}",
+                    "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
                     "Request/200".bright_green(),
-                    req.path().blue(),
+                    {
+                        if req.uri().to_string() == "".to_string() {
+                            "/".to_string()
+                        } else {
+                            req.uri().to_string()
+                        }
+                    }
+                    .blue(),
                     ip,
                     "filesystem".blue()
                 ));
@@ -184,9 +233,16 @@ pub(crate) async fn assets_with_cache(
                 let coninfo = req.connection_info();
                 let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
                 config_clone.tell(format!(
-                    "{}\t{:>25.27}\t\t{}\t{}",
+                    "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
                     "Request/404".bright_red(),
-                    req.path().blue(),
+                    {
+                        if req.uri().to_string() == *"" {
+                            "/".to_string()
+                        } else {
+                            req.uri().to_string()
+                        }
+                    }
+                    .blue(),
                     ip,
                     "not found".red()
                 ));
@@ -203,11 +259,18 @@ pub(crate) async fn assets_with_cache(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
-                "{}\t{:>25.27}\t\t{}\t{}",
+                "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
                 "Request/200".bright_green(),
-                req.path().blue(),
+                {
+                    if req.uri().to_string() == *"" {
+                        "/".to_string()
+                    } else {
+                        req.uri().to_string()
+                    }
+                }
+                .blue(),
                 ip,
-                "from cache".green()
+                "cache".green()
             ));
             HttpResponse::Ok()
                 .append_header(("Content-Type", "text/html; charset=utf-8"))

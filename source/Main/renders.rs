@@ -586,7 +586,7 @@ mod inlines {
     use crate::{LockCallback, ServerContext};
     use actix_web::web::Data;
     use colored::Colorize;
-    use log::{debug, error, warn};
+    use log::{debug, error, info, warn};
     use std::fs;
     use std::path::PathBuf;
     use std::sync::Arc;
@@ -602,7 +602,14 @@ mod inlines {
                 a.config.clone()
             })
             .await;
-        let embed_id = scriptfile.clone().to_str().unwrap().to_string();
+        let embed_id = format!(
+            "script:{}",
+            scriptfile
+                .clone()
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+        );
         let jscachelifetime: u64 = config_clone.cache.lifetimes.javascript;
         let cache_result = server_context_mutex
             .lock_callback(|servercontext| servercontext.get_cache(&embed_id, jscachelifetime))
@@ -614,6 +621,7 @@ mod inlines {
                     "<script>\n\r// Minified internally by Cynthia using Terser\n\n{d}\n\n\r// Cached after minifying, so might be somewhat behind.\n\r</script>");
             }
             None => {
+                info!("Minifying JS file '{}'...", scriptfile.display());
                 let xargs: Vec<&str>;
                 let scri = scriptfile.clone();
                 let scr = scri.to_str().unwrap();
@@ -703,7 +711,15 @@ mod inlines {
                 a.config.clone()
             })
             .await;
-        let embed_id = stylefile.clone().to_str().unwrap().to_string();
+        let embed_id = format!(
+            "css:{}",
+            stylefile
+                .clone()
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+        );
+
         let csscachelifetime: u64 = config_clone.cache.lifetimes.stylesheets;
         let cache_result = server_context_mutex
             .lock_callback(|servercontext| servercontext.get_cache(&embed_id, csscachelifetime))
@@ -715,6 +731,7 @@ mod inlines {
                     "\n\t\t<style>\n\n\t\t\t/* Minified internally by Cynthia using clean-css */\n\n\t\t\t{d}\n\n\t\t\t/* Cached after minifying, so might be somewhat behind. */\n\t\t</style>");
             }
             None => {
+                info!("Minifying CSS file '{}'...", stylefile.display());
                 let xargs: Vec<&str>;
                 let styf = stylefile.clone();
                 let stf = styf.to_str().unwrap();

@@ -83,7 +83,7 @@ pub(crate) enum EPSRequestBody {
         template_data: crate::renders::PostListPublicationTemplateData,
     },
     WebRequest {
-        page_id: String,
+        uri: String,
         headers: Vec<(String, String)>, // Name, Value
         method: String,
     },
@@ -156,6 +156,12 @@ pub(crate) async fn main(
         r.arg("--allow-read");
     }
     r.arg(jstempfolder.join("main.mjs"));
+    r.args([
+        "--config",
+        serde_json::to_string(&config_clone.hard_clone())
+            .unwrap()
+            .as_str(),
+    ]);
     let p = Arc::new(std::sync::Mutex::new(String::new()));
     let mut proc = InteractiveProcess::new(&mut r, move |line| {
         let y = p.clone();

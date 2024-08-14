@@ -8,11 +8,10 @@ use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use colored::Colorize;
 use futures::join;
-#[allow(unused_imports)]
 use log::info;
-use log::LevelFilter;
 use log::{debug, error};
-use requestresponse::assets_with_cache;
+use log::{trace, LevelFilter};
+use requestresponse::{assets_with_cache, serve};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
 use std::path::PathBuf;
@@ -20,6 +19,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, process};
 use tokio::sync::{Mutex, MutexGuard};
+use tokio::{spawn, task};
 
 use crate::config::{CynthiaConf, CynthiaConfig, SceneCollectionTrait};
 use crate::externalpluginservers::EPSRequest;
@@ -312,7 +312,6 @@ async fn start() {
     let server_context_arc_mutex: Arc<Mutex<ServerContext>> = Arc::new(Mutex::new(server_context));
     let server_context_data: Data<Arc<Mutex<ServerContext>>> =
         Data::new(server_context_arc_mutex.clone());
-    use requestresponse::serve;
     let main_server = match HttpServer::new(move || {
         App::new()
             .service(assets_with_cache)
@@ -337,6 +336,7 @@ async fn start() {
     let _ = join!(
         main_server,
         close(server_context_arc_mutex.clone()),
+        cache_manager(server_context_arc_mutex.clone()),
         start_timer(server_context_arc_mutex.clone()),
         externalpluginservers::main(server_context_arc_mutex.clone(), to_eps_r)
     );
@@ -385,4 +385,32 @@ async fn close(server_context_mutex: Arc<Mutex<ServerContext>>) {
     ));
     println!("{}", horizline().bright_purple());
     process::exit(0);
+}
+use std::time::Duration;
+use tokio::time;
+async fn cache_manager(server_context_mutex: Arc<Mutex<ServerContext>>) {
+    let server_context_mutex_clone = server_context_mutex.clone();
+    let forever = task::spawn(async move {
+        let mut interval = time::interval(Duration::from_secs(2));
+        loop {
+            debug!("Cache manager tick");
+            interval.tick().await;
+            {
+                let mut server_context: MutexGuard<ServerContext> =
+                    server_context_mutex_clone.lock().await;
+                // trace!("Cache: {:?}", server_context.cache);
+                if server_context.estimate_cache_size() > server_context.config.cache.max_cache_size
+                {
+                    info!(
+                        "Maximum cache size of {} exceeded, clearing cache now.",
+                        server_context.config.cache.max_cache_size
+                    );
+                    server_context.clear_cache();
+                } else {
+                    server_context.evaluate_cache();
+                }
+            }
+        }
+    });
+    spawn(forever);
 }

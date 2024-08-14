@@ -413,7 +413,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                     ("postlist", "The handlebars template for serving postlist pages using this sceme", "scenes.templates.postlist"),
     ];
     // JSONC is generated multiple times, so we need to make a function for it.
-    // This function is used to generate JSONC, but with comments.
+    // This function is used to generate JSONC.
     // It is also used to generate the base for the javascript version.
     let anyways_this_is_jsonc = |config: CynthiaConf| -> String {
         let comment_this = |item: &str| -> String {
