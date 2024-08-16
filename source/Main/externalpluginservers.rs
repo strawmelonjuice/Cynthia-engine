@@ -10,7 +10,6 @@
 // This module will be a testing ground. V2 was unreliable and had a lot of issues, especially because it didn't keep the servers attached. It just let them run.
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
-
 use crate::config::ConfigExternalJavascriptRuntime;
 
 #[cfg(feature = "js_runtime")]
@@ -47,8 +46,8 @@ use actix_web::web::Data;
 #[cfg(feature = "js_runtime")]
 use interactive_process::InteractiveProcess;
 
-use log::warn;
 #[cfg(feature = "js_runtime")]
+use log::warn;
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
@@ -113,6 +112,8 @@ pub(crate) async fn main(
     server_context_mutex: Arc<Mutex<ServerContext>>,
     mut eps_r: Receiver<EPSRequest>,
 ) {
+    use crate::tell::CynthiaColors;
+
     let config_clone = {
         // We need to clone the config because we can't hold the lock while we're in the tokio runtime.
         let server_context = server_context_mutex.lock().await;
@@ -124,8 +125,8 @@ pub(crate) async fn main(
     let jsfile = include_bytes!("../../target/generated/js/plugins-runtime.js");
     std::fs::write(jstempfolder.join("main.mjs"), jsfile).unwrap();
     // now we can run the javascript
-    let node_runtime: &str = config_clone.runtimes.ext_js_rt.as_ref();
-    let mut r = Command::new(node_runtime);
+    let external_js_runtime_binary: &str = config_clone.runtimes.ext_js_rt.as_ref();
+    let mut r = Command::new(external_js_runtime_binary);
     if config_clone.runtimes.ext_js_rt.validate().is_err() {
         error!("Invalid node runtime path. Plugins will not run.");
         loop {
@@ -151,9 +152,14 @@ pub(crate) async fn main(
         }
     };
     let rt = tokio::runtime::Runtime::new().unwrap();
-    if node_runtime.contains("deno") {
+    if external_js_runtime_binary.contains("deno") {
         r.arg("run");
         r.arg("--allow-read");
+    }
+    if external_js_runtime_binary.contains("node") {
+        r.arg("--expose-gc");
+    } else if external_js_runtime_binary.contains("deno") {
+        r.arg("--v8-flags=--predictable-gc-schedule");
     }
     r.arg(jstempfolder.join("main.mjs"));
     r.args([
@@ -200,7 +206,7 @@ pub(crate) async fn main(
                 } else if o.starts_with("warn: ") {
                     warn!(
                         "[JsPluginRuntime]: {}",
-                        o.split("warn: ").collect::<Vec<&str>>()[1]
+                        format!("{}", o.split("warn: ").collect::<Vec<&str>>()[1]).orange()
                     );
                 } else if o.starts_with("log: ") {
                     config_clone.clone().tell(format!(

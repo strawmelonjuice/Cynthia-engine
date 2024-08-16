@@ -3,9 +3,9 @@
  *
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
+use crate::tell::CynthiaColors;
 use actix_web::web::Data;
 use actix_web::{get, HttpRequest, HttpResponse, Responder};
-use colored::Colorize;
 use log::{debug, trace, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -21,17 +21,18 @@ use crate::{renders, ServerContext};
 fn urlspace() -> (usize, usize) {
     let fullwidth = termsize::get().unwrap().cols as usize;
 
-    let w_a = if fullwidth < 200 {
-        fullwidth
-            .checked_div(10)
-            .unwrap_or(10)
-            .checked_mul(4)
-            .unwrap_or(40)
-    } else {
-        140
-    };
+    // let w_a = if fullwidth < 210 {
+    //     fullwidth
+    //         .checked_div(10)
+    //         .unwrap_or(10)
+    //         .checked_mul(4)
+    //         .unwrap_or(30)
+    // } else {
+    //     140
+    // };
 
-    let w_s = w_a.checked_sub(2).unwrap_or(w_a);
+    let w_a: usize = 30;
+    let w_s = w_a.checked_sub(3).unwrap_or(27);
     // let w_s = 0;
 
     debug!("Full widht is {fullwidth} cols. Any request urls will be printed in a space of {} characters, with the actual url being {} characters long.", w_a, w_s);
@@ -121,17 +122,16 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
-                "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
-                "Request/200".bright_green(),
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "Request:200".color_ok_green(),
                 {
                     if req.uri().to_string() == "".to_string() {
                         "/".to_string()
                     } else {
                         req.uri().to_string()
                     }
-                }
-                .blue(),
-                ip,
+                },
+                ip.lightblue(),
                 {
                     if from_cache {
                         "cache".green()
@@ -151,17 +151,16 @@ pub(crate) async fn serve(
             let coninfo = req.connection_info().clone();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             warn!(
-                "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
-                "Request/404".bright_red(),
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "Request:404".color_error_red(),
                 {
                     if req.uri().to_string() == "".to_string() {
                         "/".to_string()
                     } else {
                         req.uri().to_string()
                     }
-                }
-                .blue(),
-                ip,
+                },
+                ip.lightblue(),
                 "not found".red()
             );
 
@@ -213,18 +212,17 @@ pub(crate) async fn assets_with_cache(
                 let coninfo = req.connection_info();
                 let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
                 server_context.tell(format!(
-                    "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
-                    "Request/200".bright_green(),
+                    "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                    "Request:200".color_ok_green(),
                     {
                         if req.uri().to_string() == "".to_string() {
                             "/".to_string()
                         } else {
                             req.uri().to_string()
                         }
-                    }
-                    .blue(),
-                    ip,
-                    "filesystem".blue()
+                    },
+                    ip.lightblue(),
+                    "filesystem".lilac()
                 ));
                 HttpResponse::Ok()
                     .append_header(("Content-Type", "text/html; charset=utf-8"))
@@ -233,17 +231,16 @@ pub(crate) async fn assets_with_cache(
                 let coninfo = req.connection_info();
                 let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
                 config_clone.tell(format!(
-                    "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
-                    "Request/404".bright_red(),
+                    "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                    "Request:404".color_error_red(),
                     {
                         if req.uri().to_string() == *"" {
                             "/".to_string()
                         } else {
                             req.uri().to_string()
                         }
-                    }
-                    .blue(),
-                    ip,
+                    },
+                    ip.lightblue(),
                     "not found".red()
                 ));
                 HttpResponse::NotFound().body("404 Not Found")
@@ -259,17 +256,16 @@ pub(crate) async fn assets_with_cache(
             let coninfo = req.connection_info();
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
-                "{}\t{:<w_s$.w_a$}\t\t{}\t{}",
-                "Request/200".bright_green(),
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "Request:200".color_ok_green(),
                 {
                     if req.uri().to_string() == *"" {
                         "/".to_string()
                     } else {
                         req.uri().to_string()
                     }
-                }
-                .blue(),
-                ip,
+                },
+                ip.lightblue(),
                 "cache".green()
             ));
             HttpResponse::Ok()

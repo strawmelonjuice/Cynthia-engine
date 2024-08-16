@@ -16,13 +16,30 @@ path = "./source/Main/main.rs"
 default = ["js_runtime"]
 js_runtime = []
 
+
+[profile.dev]
+opt-level = 3
+debug = true
+strip = "none"
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+
+[profile.release]
+opt-level = 3
+lto = true
+panic = 'abort'
+
 [dependencies]
 futures = "0.3.30"
 actix-web = "4"
 actix-files = "0.6"
 serde = { version = "1.0.104", features = ["derive"] }
 serde_yaml = "0.9.29"
-colored = "2.0.4"
+# colored = "2.0.4" // No longer needed, Cynthia uses its own color module
 chrono = "0.4.38"
 simplelog = "0.12.2"
 indicatif = "0.17.8"

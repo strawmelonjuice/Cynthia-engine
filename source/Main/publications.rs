@@ -97,17 +97,18 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
         let mut p = Vec::new();
         for i in self {
             if let CynthiaPublication::Post {
-                    id,
-                    title,
-                    short,
-                    dates,
-                    thumbnail,
-                    category,
-                    tags,
-                    author,
-                    postcontent,
-                    scene_override,
-                } = i {
+                id,
+                title,
+                short,
+                dates,
+                thumbnail,
+                category,
+                tags,
+                author,
+                postcontent,
+                scene_override,
+            } = i
+            {
                 p.push(PostPublication {
                     id: id.to_string(),
                     title: title.to_string(),

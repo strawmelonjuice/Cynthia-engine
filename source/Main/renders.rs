@@ -12,7 +12,6 @@ use tokio::sync::{Mutex, MutexGuard};
 use crate::config::CynthiaConfClone;
 use crate::publications::{CynthiaPostList, CynthiaPublicationList, CynthiaPublicationListTrait};
 use crate::{LockCallback, ServerContext};
-use colored::Colorize;
 
 pub(crate) enum PGIDCheckResponse {
     Ok,
@@ -148,6 +147,7 @@ mod in_renderer {
     use super::*;
     use crate::externalpluginservers::EPSRequestBody;
     use crate::publications::{CynthiaPostList, CynthiaPublicationListTrait, PostLists};
+    use crate::tell::CynthiaColors;
     use crate::{
         config::{CynthiaConfig, Scene, SceneCollectionTrait},
         publications::{ContentType, CynthiaPublication, PublicationContent},
@@ -583,9 +583,9 @@ mod in_renderer {
 }
 #[cfg(feature = "js_runtime")]
 mod inlines {
+    use crate::tell::CynthiaColors;
     use crate::{LockCallback, ServerContext};
     use actix_web::web::Data;
-    use colored::Colorize;
     use log::{debug, error, info, warn};
     use std::fs;
     use std::path::PathBuf;

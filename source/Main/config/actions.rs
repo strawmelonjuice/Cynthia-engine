@@ -7,7 +7,7 @@
 use super::{CynthiaConf, CynthiaConfig};
 use crate::jsrun;
 use crate::jsrun::RunJSAndDeserializeResult;
-use colored::Colorize;
+use crate::tell::CynthiaColors;
 use std::path::PathBuf;
 use std::{fs, process};
 
@@ -161,7 +161,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .on_red(),
+                        .color_error_red(),
                         "ERROR: ".bright_red()
                     );
                     process::exit(1);
@@ -208,7 +208,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .replace("\\\\?\\", "")
                         )
                         .bright_red(),
-                        format!("{}", e).on_red()
+                        format!("{}", e).color_error_red()
                     );
                     process::exit(1);
                 }
@@ -254,7 +254,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .replace("\\\\?\\", "")
                         )
                         .bright_red(),
-                        format!("{}", e).on_red()
+                        format!("{}", e).color_error_red()
                     );
                     process::exit(1);
                 }
@@ -484,7 +484,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
 
     let config_serialised: String = match to {
         "javascript" | "js" => {
-            format!("/*\n\tCynthiaConfig.js\n\n\n\tThis is the configuration file for Cynthia. It is written in Javascript, a scripting language.\n\tThis kind of CynthiaConfig is the most powerful and flexible,\n\tbut also the most complex. It is recommended for advanced users\n\twho want to take full control of Cynthia's behavior.\n\n\n\tMore info about this config can be found on <{cynthiaconfdoclink}>\n\n\n\tTo convert it to another config language, use the `cynthiaweb convert` command.\n*/\nlet myCynthiaConfig = {};\n\n// We must return the configuration object at the end of the file.\nreturn myCynthiaConfig;\n", 
+            format!("/*\n\tCynthiaConfig.js\n\n\n\tThis is the configuration file for Cynthia. It is written in Javascript, a scripting language.\n\tThis kind of CynthiaConfig is the most powerful and flexible,\n\tbut also the most complex. It is recommended for advanced users\n\twho want to take full control of Cynthia's behavior.\n\n\n\tMore info about this config can be found on <{cynthiaconfdoclink}>\n\n\n\tTo convert it to another config language, use the `cynthiaweb convert` command.\n*/\nlet myCynthiaConfig = {};\n\n// We must return the configuration object at the end of the file.\nreturn myCynthiaConfig;\n",
                     regex::Regex::new(r#""([^"]*)":"#).unwrap().replace_all(&anyways_this_is_jsonc(config.hard_clone()), "\t$1:")
             )
         }
