@@ -4,14 +4,15 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-interface Plugin {
-  CyntiaPluginCompat: 3.2;
-  modifyOutputHTML: (htmlin: string, Cynthia: typeof CynthiaPassed) => string;
-  modifyBodyHTML: (htmlin: string, Cynthia: typeof CynthiaPassed) => string;
-  requestOptions: (
+export interface CynthiaPlugin {
+  modifyResponseHTML: (htmlin: string, Cynthia: typeof CynthiaPassed) => string;
+  modifyResponseHTMLBodyFragment: (htmlin: string, Cynthia: typeof CynthiaPassed) => string;
+  modifyRequest: (
     WebRequest: IncomingWebRequest,
     Cynthia: typeof CynthiaWebResponderApi,
   ) => void;
+    onLoad: () => void;
+  onClearInterval: () => void;
 }
 
 export interface Request {

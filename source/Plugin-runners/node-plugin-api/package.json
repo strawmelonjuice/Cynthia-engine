@@ -13,5 +13,5 @@
     "build": "tsc"
   },
   "type": "module",
-  "version": "0.0.1-alpha"
+  "version": "3.2.0-dev"
 }
