@@ -96,9 +96,19 @@ struct EPSResponse {
 #[serde(tag = "as")]
 pub(crate) enum EPSResponseBody {
     NoneOk,
-    OkString { value: String },
-    Json { value: String },
-    Error { message: Option<String> },
+    WebResponse {
+        append_headers: Vec<(String, String)>,
+        response_body: String,
+    },
+    OkString {
+        value: String,
+    },
+    Json {
+        value: String,
+    },
+    Error {
+        message: Option<String>,
+    },
     Disabled,
 }
 

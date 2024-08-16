@@ -81,6 +81,16 @@ pub(crate) async fn serve(
     )
     .await;
     match pluginsresponse {
+        crate::externalpluginservers::EPSResponseBody::WebResponse {
+            append_headers,
+            response_body,
+        } => {
+            let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
+            for (k, v) in append_headers {
+                response.append_header((k, v));
+            }
+            return response.body(response_body);
+        }
         crate::externalpluginservers::EPSResponseBody::NoneOk => {}
         crate::externalpluginservers::EPSResponseBody::Disabled => {}
         _ => return HttpResponse::InternalServerError().body("Internal server error."),

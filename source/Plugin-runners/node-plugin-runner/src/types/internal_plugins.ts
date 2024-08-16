@@ -45,9 +45,8 @@ export const newPluginBase: PluginBase = {
     },
     (req: WebRequest, Cynthia: typeof CynthiaPassed) => {
       req.get("/pltest*", () => {
-        Cynthia.console.info("Request for /pltest received!");
         const a: ResponderResponse = {
-          headers: {},
+          headers: [],
           body: "This is a test response.",
         };
         return a;

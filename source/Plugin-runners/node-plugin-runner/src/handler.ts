@@ -45,9 +45,7 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
           modifier(req, CynthiaPassed);
         }
 
-        // Until this is implemented, we will just return EmptyOk.
-        const response = new EmptyOKResponse(request.id);
-        return Cynthia.send(response);
+        return req.escalate();
       }
       case "PostlistRenderRequest": {
         try {

@@ -161,7 +161,7 @@ export interface WebResponse {
   id: number;
   body: {
     as: "WebResponse";
-    append_headers: Record<string, string>;
+    append_headers: Array<[string, string]>;
     response_body: string;
   };
 }
@@ -222,7 +222,7 @@ export const Cynthia = {
   console: terminalOut,
 };
 export interface ResponderResponse {
-  headers: Record<string, string>;
+  headers: Array<[string, string]>;
   body: string;
 }
 export type Responder = () => ResponderResponse;
@@ -249,18 +249,18 @@ export interface IncomingWebRequest {
     for: "WebRequest";
     method: string;
     uri: string;
-    headers: Record<string, string>;
+    headers: Array<[string, string]>;
   };
 }
 export class WebRequest {
   private id: number;
   private method: string;
   uri: string;
-  headers: Record<string, string>;
+  headers: Array<[string, string]>;
   private respondand: boolean;
   constructor(
     id: number,
-    a: { method: string; uri: string; headers: Record<string, string> },
+    a: { method: string; uri: string; headers: Array<[string, string]> },
   ) {
     this.id = id;
     this.method = a.method;
@@ -284,7 +284,6 @@ export class WebRequest {
     Cynthia.send(response);
   }
   private matchUris(str: string, rule: string) {
-    Cynthia.console.info(`matchUris: '${str}'; '${rule}'`);
     if (str === rule) return true;
 
     // biome-ignore lint/style/noVar: This is a regex, not a variable
@@ -315,5 +314,13 @@ export class WebRequest {
       this.respondand = true;
       this.respond(responder);
     }
+  }
+  escalate() {
+    if (this.stillResponding()) {
+      this.respondand = true;
+      const response = new EmptyOKResponse(this.id);
+      return Cynthia.send(response);
+    }
+    return;
   }
 }
