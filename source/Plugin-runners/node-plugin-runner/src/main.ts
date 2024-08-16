@@ -8,7 +8,7 @@ import * as process from "node:process";
 
 import {
   Cynthia,
-  type CynthiaPassed,
+  CynthiaPassed,
   type CynthiaPlugin,
   type CynthiaWebResponderApi,
   type IncomingWebRequest,

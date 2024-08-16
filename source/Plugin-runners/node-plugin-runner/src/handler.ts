@@ -13,6 +13,8 @@ import {
   EmptyOKResponse,
   ErrorResponse,
   type GenericRequest,
+  WebRequest,
+  type IncomingWebRequest,
   OkStringResponse,
   type PostlistRenderRequest,
   type TestRequest,
@@ -33,8 +35,16 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
         return process.exit(0);
       }
       case "WebRequest": {
-        console.debug("Got a WebRequest.");
-        console.debug(`Request: ${requestAsString}`);
+        const request: IncomingWebRequest = JSON.parse(requestAsString);
+        const req = new WebRequest(request.id, {
+          method: request.body.method,
+          uri: request.body.uri,
+          headers: request.body.headers,
+        });
+        for (const modifier of cynthiabase.modifyRequest) {
+          modifier(req, CynthiaPassed);
+        }
+
         // Until this is implemented, we will just return EmptyOk.
         const response = new EmptyOKResponse(request.id);
         return Cynthia.send(response);

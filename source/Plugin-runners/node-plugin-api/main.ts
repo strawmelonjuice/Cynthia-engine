@@ -5,14 +5,20 @@
  */
 
 export interface CynthiaPlugin {
-  modifyResponseHTML: (htmlin: string, Cynthia: typeof CynthiaPassed) => string;
-  modifyResponseHTMLBodyFragment: (htmlin: string, Cynthia: typeof CynthiaPassed) => string;
-  modifyRequest: (
-    WebRequest: IncomingWebRequest,
+  modifyResponseHTML?: (
+    htmlin: string,
+    Cynthia: typeof CynthiaPassed,
+  ) => string;
+  modifyResponseHTMLBodyFragment?: (
+    htmlin: string,
+    Cynthia: typeof CynthiaPassed,
+  ) => string;
+  modifyRequest?: (
+    req: WebRequest,
     Cynthia: typeof CynthiaWebResponderApi,
   ) => void;
-    onLoad: () => void;
-  onClearInterval: () => void;
+  onLoad?: () => void;
+  onClearInterval?: () => void;
 }
 
 export interface Request {
@@ -115,21 +121,13 @@ export interface PostlistRenderRequestBody {
   };
 }
 
-let test: Request = {
-  id: 0,
-  body: {
-    for: "Tests",
-    test: "Test",
-  },
-};
-
-export interface EmptyOKResponse {
+export interface EmptyOKResponseType {
   id: number;
   body: {
     as: "NoneOk";
   };
 }
-export class EmptyOKResponse implements EmptyOKResponse {
+export class EmptyOKResponse implements EmptyOKResponseType {
   body: { as: "NoneOk" };
   id: number;
   constructor(id: number) {
@@ -213,7 +211,7 @@ export namespace terminalOut {
 export const Cynthia = {
   send: (
     res:
-      | EmptyOKResponse
+      | EmptyOKResponseType
       | OkStringResponseType
       | OkJSONResponse
       | ErrorResponse
@@ -234,14 +232,49 @@ export class CynthiaWebResponderApi {
   constructor(id: number) {
     this.cynthia_req_queue_id = id;
   }
-  skip(to_request: IncomingWebRequest) {
-    to_request.respondand = false;
-    return to_request;
+}
+
+export const CynthiaPassed = {
+  /*
+   * This is a simplefied version of the Cynthia and CynthiaWebResponderApi classes.
+   * It is used to pass the Cynthia object to the plugins, so they can use it to e.g. log messages to the console.
+   * Currently, it's quite empty, but it will be expanded in the future.
+   */
+  console: terminalOut,
+};
+
+export interface IncomingWebRequest {
+  id: number;
+  body: {
+    for: "WebRequest";
+    method: string;
+    uri: string;
+    headers: Record<string, string>;
+  };
+}
+export class WebRequest {
+  private id: number;
+  private method: string;
+  uri: string;
+  headers: Record<string, string>;
+  private respondand: boolean;
+  constructor(
+    id: number,
+    a: { method: string; uri: string; headers: Record<string, string> },
+  ) {
+    this.id = id;
+    this.method = a.method;
+    this.uri = a.uri;
+    this.headers = a.headers;
+    this.respondand = false;
   }
-  answer(to_request: IncomingWebRequest, answerrer: Responder) {
-    const responder_answ = answerrer();
+  private stillResponding() {
+    return !this.respondand;
+  }
+  private respond(responder: Responder) {
+    const responder_answ = responder();
     const response: WebResponse = {
-      id: this.cynthia_req_queue_id,
+      id: this.id,
       body: {
         as: "WebResponse",
         append_headers: responder_answ.headers,
@@ -249,23 +282,38 @@ export class CynthiaWebResponderApi {
       },
     };
     Cynthia.send(response);
-    to_request.respondand = true;
-    return to_request;
   }
-}
+  private matchUris(str: string, rule: string) {
+    Cynthia.console.info(`matchUris: '${str}'; '${rule}'`);
+    if (str === rule) return true;
 
-export const CynthiaPassed = {
-  /*
-   * This is a simplefied version of the Cynthia and CynthiaWebResponderApi classes.
-   * It is used to pass the Cynthia object to the modifyOutputHTML and modifyBodyHTML
-   * (the string_passing_) functions.
-   * Currently, it's quite empty, but it will be expanded in the future.
-   */
-};
+    // biome-ignore lint/style/noVar: This is a regex, not a variable
+    var escapeRegex = (str: string) =>
+      str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+    return new RegExp(
+      // biome-ignore lint/style/useTemplate: This is a regex, not a template
+      "^" + rule.split("*").map(escapeRegex).join(".*") + "$",
+    ).test(str);
+  }
 
-export interface IncomingWebRequest {
-  method: string;
-  uri: string;
-  headers: Record<string, string>;
-  respondand: boolean;
+  get(adress: string, responder: Responder) {
+    if (
+      this.matchUris(this.uri, adress) &&
+      this.method.toUpperCase() === "GET" &&
+      this.stillResponding()
+    ) {
+      this.respondand = true;
+      this.respond(responder);
+    }
+  }
+  post(adress: string, responder: Responder) {
+    if (
+      this.matchUris(this.uri, adress) &&
+      this.method.toUpperCase() === "POST" &&
+      this.stillResponding()
+    ) {
+      this.respondand = true;
+      this.respond(responder);
+    }
+  }
 }

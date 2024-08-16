@@ -4,27 +4,26 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-import type {
-  CynthiaPassed,
+import {
+  type CynthiaPassed,
   CynthiaWebResponderApi,
+  type WebRequest,
   IncomingWebRequest,
+  type ResponderResponse,
 } from "cynthia-plugin-api/main";
 export const Plugincompat = 3.2;
 export interface PluginBase {
-  modifyResponseHTML: [
-    (htmlin: string, Cynthia: typeof CynthiaPassed) => string,
-  ];
-  modifyResponseHTMLBodyFragment: [
-    (htmlin: string, Cynthia: typeof CynthiaPassed) => string,
-  ];
-  modifyRequest: [
-    (
-      WebRequest: IncomingWebRequest,
-      Cynthia: typeof CynthiaWebResponderApi,
-    ) => void,
-  ];
-  onLoad: [() => void];
-  onClearInterval: [() => void];
+  modifyResponseHTML: Array<
+    (htmlin: string, Cynthia: typeof CynthiaPassed) => string
+  >;
+  modifyResponseHTMLBodyFragment: Array<
+    (htmlin: string, Cynthia: typeof CynthiaPassed) => string
+  >;
+  modifyRequest: Array<
+    (req: WebRequest, Cynthia: typeof CynthiaPassed) => void
+  >;
+  onLoad: Array<(Cynthia: typeof CynthiaPassed) => void>;
+  onClearInterval: Array<(Cynthia: typeof CynthiaPassed) => void>;
 }
 export const newPluginBase: PluginBase = {
   modifyResponseHTML: [
@@ -40,21 +39,28 @@ export const newPluginBase: PluginBase = {
     },
   ],
   modifyRequest: [
-    (
-      WebRequest: IncomingWebRequest,
-      Cynthia: typeof CynthiaWebResponderApi,
-    ) => {
+    (req: WebRequest, Cynthia: typeof CynthiaPassed) => {
       // Make no changes. Return unchanged.
       // This function doesn't actually return. It just sends out `Cynthia.answer(() => { return response });` if capturing.
     },
+    (req: WebRequest, Cynthia: typeof CynthiaPassed) => {
+      req.get("/pltest*", () => {
+        Cynthia.console.info("Request for /pltest received!");
+        const a: ResponderResponse = {
+          headers: {},
+          body: "This is a test response.",
+        };
+        return a;
+      });
+    },
   ],
   onLoad: [
-    () => {
+    (Cynthia: typeof CynthiaPassed) => {
       // Do nothing.
     },
   ],
   onClearInterval: [
-    () => {
+    (Cynthia: typeof CynthiaPassed) => {
       // Do nothing.
     },
   ],
