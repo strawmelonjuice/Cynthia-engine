@@ -28,7 +28,7 @@ fn urlspace() -> (usize, usize) {
             .checked_mul(4)
             .unwrap_or(40)
     } else {
-        160
+        140
     };
 
     let w_s = w_a.checked_sub(2).unwrap_or(w_a);
