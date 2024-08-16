@@ -4,13 +4,8 @@
   "definitions": {
     "person": {
       "description": "A person who has been involved in creating or maintaining this package.",
-      "type": [
-        "object",
-        "string"
-      ],
-      "required": [
-        "name"
-      ],
+      "type": ["object", "string"],
+      "required": ["name"],
       "properties": {
         "name": {
           "type": "string"
@@ -106,10 +101,7 @@
       "x-intellij-language-injection": "Shell Script"
     },
     "packageExportsEntryPath": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "description": "The module path that is resolved when this specifier is imported. Set to `null` to disallow importing this module.",
       "pattern": "^\\./"
     },
@@ -191,9 +183,7 @@
         }
       },
       "additionalProperties": false,
-      "required": [
-        "url"
-      ]
+      "required": ["url"]
     }
   },
   "type": "object",
@@ -232,10 +222,7 @@
     },
     "bugs": {
       "description": "The url to your project's issue tracker and / or the email address to which issues should be reported. These are helpful for people who encounter issues with your package.",
-      "type": [
-        "object",
-        "string"
-      ],
+      "type": ["object", "string"],
       "properties": {
         "url": {
           "type": "string",
@@ -327,10 +314,7 @@
       ]
     },
     "bin": {
-      "type": [
-        "string",
-        "object"
-      ],
+      "type": ["string", "object"],
       "additionalProperties": {
         "type": "string"
       }
@@ -338,10 +322,7 @@
     "type": {
       "description": "When set to \"module\", the type field allows a package to specify all .js files within are ES modules. If the \"type\" field is omitted or set to \"commonjs\", all .js files are treated as CommonJS.",
       "type": "string",
-      "enum": [
-        "commonjs",
-        "module"
-      ],
+      "enum": ["commonjs", "module"],
       "default": "commonjs"
     },
     "types": {
@@ -389,10 +370,7 @@
       }
     },
     "man": {
-      "type": [
-        "array",
-        "string"
-      ],
+      "type": ["array", "string"],
       "description": "Specify either a single file or an array of filenames to put in place for the man program to find.",
       "items": {
         "type": "string"
@@ -428,10 +406,7 @@
     },
     "repository": {
       "description": "Specify the place where your code lives. This is helpful for people who want to contribute.",
-      "type": [
-        "object",
-        "string"
-      ],
+      "type": ["object", "string"],
       "properties": {
         "type": {
           "type": "string"
@@ -527,272 +502,256 @@
           "type": "string",
           "description": "Run AFTER bump the package version."
         },
-      "additionalProperties": {
-        "type": "string",
-        "tsType": "string | undefined",
-        "x-intellij-language-injection": "Shell Script"
-      }
-    },
-    "config": {
-      "description": "A 'config' hash can be used to set configuration parameters used in package scripts that persist across upgrades.",
-      "type": "object",
-      "additionalProperties": true
-    },
-    "dependencies": {
-      "$ref": "#/definitions/dependency"
-    },
-    "devDependencies": {
-      "$ref": "#/definitions/dependency"
-    },
-    "optionalDependencies": {
-      "$ref": "#/definitions/dependency"
-    },
-    "peerDependencies": {
-      "$ref": "#/definitions/dependency"
-    },
-    "peerDependenciesMeta": {
-      "description": "When a user installs your package, warnings are emitted if packages specified in \"peerDependencies\" are not already installed. The \"peerDependenciesMeta\" field serves to provide more information on how your peer dependencies are utilized. Most commonly, it allows peer dependencies to be marked as optional. Metadata for this field is specified with a simple hash of the package name to a metadata object.",
-      "type": "object",
-      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string",
+          "tsType": "string | undefined",
+          "x-intellij-language-injection": "Shell Script"
+        }
+      },
+      "config": {
+        "description": "A 'config' hash can be used to set configuration parameters used in package scripts that persist across upgrades.",
         "type": "object",
-        "additionalProperties": true,
-        "properties": {
-          "optional": {
-            "description": "Specifies that this peer dependency is optional and should not be installed automatically.",
-            "type": "boolean"
-          }
-        }
-      }
-    },
-    "bundleDependencies": {
-      "description": "Array of package names that will be bundled when publishing the package.",
-      "oneOf": [
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "bundledDependencies": {
-      "description": "DEPRECATED: This field is honored, but \"bundleDependencies\" is the correct field name.",
-      "oneOf": [
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        {
-          "type": "boolean"
-        }
-      ]
-    },
-    "resolutions": {
-      "description": "Resolutions is used to support selective version resolutions using yarn, which lets you define custom package versions or ranges inside your dependencies. For npm, use overrides instead. See: https://classic.yarnpkg.com/en/docs/selective-version-resolutions",
-      "type": "object"
-    },
-    "overrides": {
-      "description": "Overrides is used to support selective version overrides using npm, which lets you define custom package versions or ranges inside your dependencies. For yarn, use resolutions instead. See: https://docs.npmjs.com/cli/v9/configuring-npm/package-json#overrides",
-      "type": "object"
-    },
-    "packageManager": {
-      "description": "Defines which package manager is expected to be used when working on the current project. This field is currently experimental and needs to be opted-in; see https://nodejs.org/api/corepack.html",
-      "type": "string",
-      "pattern": "(npm|pnpm|yarn|bun)@\\d+\\.\\d+\\.\\d+(-.+)?"
-    },
-    "engines": {
-      "type": "object",
-      "properties": {
-        "node": {
-          "type": "string"
-        }
+        "additionalProperties": true
       },
-      "additionalProperties": {
-        "type": "string"
-      }
-    },
-    "volta": {
-      "description": "Defines which tools and versions are expected to be used when Volta is installed.",
-      "type": "object",
-      "properties": {
-        "extends": {
-          "description": "The value of that entry should be a path to another JSON file which also has a \"volta\" section",
-          "type": "string"
-        }
+      "dependencies": {
+        "$ref": "#/definitions/dependency"
       },
-      "patternProperties": {
-        "(node|npm|pnpm|yarn)": {
-          "type": "string"
-        }
-      }
-    },
-    "engineStrict": {
-      "type": "boolean"
-    },
-    "os": {
-      "description": "Specify which operating systems your module will run on.",
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "cpu": {
-      "description": "Specify that your code only runs on certain cpu architectures.",
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "preferGlobal": {
-      "type": "boolean",
-      "description": "DEPRECATED: This option used to trigger an npm warning, but it will no longer warn. It is purely there for informational purposes. It is now recommended that you install any binaries as local devDependencies wherever possible."
-    },
-    "private": {
-      "description": "If set to true, then npm will refuse to publish it.",
-      "oneOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "enum": [
-            "false",
-            "true"
-          ]
-        }
-      ]
-    },
-    "publishConfig": {
-      "type": "object",
-      "properties": {
-        "access": {
-          "type": "string",
-          "enum": [
-            "public",
-            "restricted"
-          ]
-        },
-        "tag": {
-          "type": "string"
-        },
-        "registry": {
-          "type": "string",
-          "format": "uri"
-        }
+      "devDependencies": {
+        "$ref": "#/definitions/dependency"
       },
-      "additionalProperties": true
-    },
-    "dist": {
-      "type": "object",
-      "properties": {
-        "shasum": {
-          "type": "string"
-        },
-        "tarball": {
-          "type": "string"
-        }
-      }
-    },
-    "readme": {
-      "type": "string"
-    },
-    "cynthia-plugin": {
-      "description": "The entry point to your plugin, should export an object module containing the \nplugin functions as default.\n\nSupported functions:\n- `onLoad`: Runs once when the plugin is loaded.\n- `onClearInterval`: Called every ~5 minutes.\n- `modifyRequest`: Allows to intercept and answer http responses.\n- `modifyResponseHTML`: Allows to modify the complete HTML response.\n- `modifyResponseHTMLBodyFragment`: Allows to modify the HTML body fragment.",
-      "type": "string"
-    },
-    "cynthia-plugin-compat": {
-      "description": "The version of the CynthiaWeb plugin API that this plugin is compatible with. E.g '3.2'.",
-        "type": "number"
-    },
-    "workspaces": {
-      "description": "Allows packages within a directory to depend on one another using direct linking of local files. Additionally, dependencies within a workspace are hoisted to the workspace root when possible to reduce duplication. Note: It's also a good idea to set \"private\" to true when using this feature.",
-      "anyOf": [
-        {
-          "type": "array",
-          "description": "Workspace package paths. Glob patterns are supported.",
-          "items": {
-            "type": "string"
-          }
-        },
-        {
+      "optionalDependencies": {
+        "$ref": "#/definitions/dependency"
+      },
+      "peerDependencies": {
+        "$ref": "#/definitions/dependency"
+      },
+      "peerDependenciesMeta": {
+        "description": "When a user installs your package, warnings are emitted if packages specified in \"peerDependencies\" are not already installed. The \"peerDependenciesMeta\" field serves to provide more information on how your peer dependencies are utilized. Most commonly, it allows peer dependencies to be marked as optional. Metadata for this field is specified with a simple hash of the package name to a metadata object.",
+        "type": "object",
+        "additionalProperties": {
           "type": "object",
+          "additionalProperties": true,
           "properties": {
-            "packages": {
-              "type": "array",
-              "description": "Workspace package paths. Glob patterns are supported.",
-              "items": {
-                "type": "string"
-              }
-            },
-            "nohoist": {
-              "type": "array",
-              "description": "Packages to block from hoisting to the workspace root. Currently only supported in Yarn only.",
-              "items": {
-                "type": "string"
-              }
+            "optional": {
+              "description": "Specifies that this peer dependency is optional and should not be installed automatically.",
+              "type": "boolean"
             }
           }
         }
-      ]
-    },
-    "jspm": {
-      "$ref": "#"
-    },
-    "eslintConfig": {
-      "$ref": "https://json.schemastore.org/eslintrc.json"
-    },
-    "prettier": {
-      "$ref": "https://json.schemastore.org/prettierrc.json"
-    },
-    "stylelint": {
-      "$ref": "https://json.schemastore.org/stylelintrc.json"
-    },
-    "ava": {
-      "$ref": "https://json.schemastore.org/ava.json"
-    },
-    "release": {
-      "$ref": "https://json.schemastore.org/semantic-release.json"
-    },
-    "jscpd": {
-      "$ref": "https://json.schemastore.org/jscpd.json"
+      },
+      "bundleDependencies": {
+        "description": "Array of package names that will be bundled when publishing the package.",
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "bundledDependencies": {
+        "description": "DEPRECATED: This field is honored, but \"bundleDependencies\" is the correct field name.",
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "resolutions": {
+        "description": "Resolutions is used to support selective version resolutions using yarn, which lets you define custom package versions or ranges inside your dependencies. For npm, use overrides instead. See: https://classic.yarnpkg.com/en/docs/selective-version-resolutions",
+        "type": "object"
+      },
+      "overrides": {
+        "description": "Overrides is used to support selective version overrides using npm, which lets you define custom package versions or ranges inside your dependencies. For yarn, use resolutions instead. See: https://docs.npmjs.com/cli/v9/configuring-npm/package-json#overrides",
+        "type": "object"
+      },
+      "packageManager": {
+        "description": "Defines which package manager is expected to be used when working on the current project. This field is currently experimental and needs to be opted-in; see https://nodejs.org/api/corepack.html",
+        "type": "string",
+        "pattern": "(npm|pnpm|yarn|bun)@\\d+\\.\\d+\\.\\d+(-.+)?"
+      },
+      "engines": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "volta": {
+        "description": "Defines which tools and versions are expected to be used when Volta is installed.",
+        "type": "object",
+        "properties": {
+          "extends": {
+            "description": "The value of that entry should be a path to another JSON file which also has a \"volta\" section",
+            "type": "string"
+          }
+        },
+        "patternProperties": {
+          "(node|npm|pnpm|yarn)": {
+            "type": "string"
+          }
+        }
+      },
+      "engineStrict": {
+        "type": "boolean"
+      },
+      "os": {
+        "description": "Specify which operating systems your module will run on.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "cpu": {
+        "description": "Specify that your code only runs on certain cpu architectures.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "preferGlobal": {
+        "type": "boolean",
+        "description": "DEPRECATED: This option used to trigger an npm warning, but it will no longer warn. It is purely there for informational purposes. It is now recommended that you install any binaries as local devDependencies wherever possible."
+      },
+      "private": {
+        "description": "If set to true, then npm will refuse to publish it.",
+        "oneOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "enum": ["false", "true"]
+          }
+        ]
+      },
+      "publishConfig": {
+        "type": "object",
+        "properties": {
+          "access": {
+            "type": "string",
+            "enum": ["public", "restricted"]
+          },
+          "tag": {
+            "type": "string"
+          },
+          "registry": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "additionalProperties": true
+      },
+      "dist": {
+        "type": "object",
+        "properties": {
+          "shasum": {
+            "type": "string"
+          },
+          "tarball": {
+            "type": "string"
+          }
+        }
+      },
+      "readme": {
+        "type": "string"
+      },
+      "cynthia-plugin": {
+        "description": "The entry point to your plugin, should export an object module containing the \nplugin functions as default.\n\nSupported functions:\n- `onLoad`: Runs once when the plugin is loaded.\n- `onClearInterval`: Called every ~5 minutes.\n- `modifyRequest`: Allows to intercept and answer http responses.\n- `modifyResponseHTML`: Allows to modify the complete HTML response.\n- `modifyResponseHTMLBodyFragment`: Allows to modify the HTML body fragment.",
+        "type": "string"
+      },
+      "cynthia-plugin-compat": {
+        "description": "The version of the CynthiaWeb plugin API that this plugin is compatible with. E.g '3.2'.",
+        "type": "number"
+      },
+      "workspaces": {
+        "description": "Allows packages within a directory to depend on one another using direct linking of local files. Additionally, dependencies within a workspace are hoisted to the workspace root when possible to reduce duplication. Note: It's also a good idea to set \"private\" to true when using this feature.",
+        "anyOf": [
+          {
+            "type": "array",
+            "description": "Workspace package paths. Glob patterns are supported.",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "packages": {
+                "type": "array",
+                "description": "Workspace package paths. Glob patterns are supported.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nohoist": {
+                "type": "array",
+                "description": "Packages to block from hoisting to the workspace root. Currently only supported in Yarn only.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "jspm": {
+        "$ref": "#"
+      },
+      "eslintConfig": {
+        "$ref": "https://json.schemastore.org/eslintrc.json"
+      },
+      "prettier": {
+        "$ref": "https://json.schemastore.org/prettierrc.json"
+      },
+      "stylelint": {
+        "$ref": "https://json.schemastore.org/stylelintrc.json"
+      },
+      "ava": {
+        "$ref": "https://json.schemastore.org/ava.json"
+      },
+      "release": {
+        "$ref": "https://json.schemastore.org/semantic-release.json"
+      },
+      "jscpd": {
+        "$ref": "https://json.schemastore.org/jscpd.json"
+      }
     }
   },
   "anyOf": [
     {
       "type": "object",
       "not": {
-        "required": [
-          "bundledDependencies",
-          "bundleDependencies"
-        ]
+        "required": ["bundledDependencies", "bundleDependencies"]
       }
     },
     {
       "type": "object",
       "not": {
-        "required": [
-          "bundleDependencies"
-        ]
+        "required": ["bundleDependencies"]
       },
-      "required": [
-        "bundledDependencies"
-      ]
+      "required": ["bundledDependencies"]
     },
     {
       "type": "object",
       "not": {
-        "required": [
-          "bundledDependencies"
-        ]
+        "required": ["bundledDependencies"]
       },
-      "required": [
-        "bundleDependencies"
-      ]
+      "required": ["bundleDependencies"]
     }
   ],
-  "$id": "https://json.schemastore.org/package.json"
+  "$id": "https://cdn.jsdelivr.net/gh/strawmelonjuice/CynthiaWebsiteEngine@master/source/Plugin-runners/node-plugin-api/package.plugin.schema.json"
 }
