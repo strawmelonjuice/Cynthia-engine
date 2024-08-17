@@ -5,20 +5,16 @@
  */
 
 export interface CynthiaPlugin {
-  modifyResponseHTML?: (
-    htmlin: string,
-    Cynthia: typeof CynthiaPassed,
-  ) => string;
-  modifyResponseHTMLBodyFragment?: (
-    htmlin: string,
-    Cynthia: typeof CynthiaPassed,
-  ) => string;
-  modifyRequest?: (
-    req: WebRequest,
-    Cynthia: typeof CynthiaWebResponderApi,
-  ) => void;
-  onLoad?: () => void;
-  onClearInterval?: () => void;
+  modifyResponseHTML?: (htmlin: string,
+                        metadata: ContentMetaDataType,
+                        Cynthia: typeof CynthiaPassed) => string;
+  modifyResponseHTMLBodyFragment?: (htmlin: string,
+                                    metadata: ContentMetaDataType,
+                                    Cynthia: typeof CynthiaPassed) => string;
+  modifyRequest?: (req: WebRequest,
+                   Cynthia: typeof CynthiaWebResponderApi) => void;
+  onLoad?: (Cynthia: typeof CynthiaPassed) => void;
+  onClearInterval?: (Cynthia: typeof CynthiaPassed) => void;
 }
 
 export interface Request {
@@ -49,25 +45,26 @@ export interface ContentRenderRequestBody {
   for: "ContentRenderRequest";
   template_path: string;
   template_data: {
-    meta: {
-      id: string;
-      title: string;
-      desc?: string;
-      tags: Array<string>;
-      category?: string;
-      author?: {
-        name?: string;
-        link?: string;
-        thumbnail?: string;
-      };
-      dates: {
-        altered: number;
-        published: number;
-      };
-      thumbnail?: string;
-    };
+    meta: ContentMetaDataType;
     content: string;
   };
+}
+export interface ContentMetaDataType {
+  id: string;
+  title: string;
+  desc?: string;
+  tags: Array<string>;
+  category?: string;
+  author?: {
+    name?: string;
+    link?: string;
+    thumbnail?: string;
+  };
+  dates: {
+    altered: number;
+    published: number;
+  };
+  thumbnail?: string;
 }
 
 export interface PostlistRenderRequest {
@@ -210,12 +207,12 @@ export namespace terminalOut {
 }
 export const Cynthia = {
   send: (
-    res:
-      | EmptyOKResponseType
-      | OkStringResponseType
-      | OkJSONResponse
-      | ErrorResponse
-      | WebResponse,
+      res:
+          | EmptyOKResponseType
+          | OkStringResponseType
+          | OkJSONResponse
+          | ErrorResponse
+          | WebResponse,
   ) => {
     console.log(`parse: ${JSON.stringify(res)}`);
   },
@@ -225,7 +222,7 @@ export interface ResponderResponse {
   headers: Array<[string, string]>;
   body: string;
 }
-export type Responder = () => ResponderResponse;
+export type Responder = () => ResponderResponse | string;
 
 export class CynthiaWebResponderApi {
   cynthia_req_queue_id: number;
@@ -253,26 +250,44 @@ export interface IncomingWebRequest {
   };
 }
 export class WebRequest {
-  private id: number;
-  private method: string;
-  uri: string;
-  headers: Array<[string, string]>;
-  private respondand: boolean;
+  // Method, URI, and headers are immutable
+  // Metod is either GET or POST, no need to check for other methods, so it is fine being protected.
+  protected readonly method: string;
+  // URI is the path of the request, this might be matched with a regex, making it possible for
+  // plugins to match multiple paths with one rule. It should as such not be protected.
+  readonly uri: string;
+  // Headers are the headers of the request, they are used to check for the presence of a header.
+  // They can be read by the plugin here, or using the header method.
+  readonly headers: Array<[string, string]>;
+  // ID is the id of the request, it is used to identify the request in the response. It is immutable, and irrelevant to the plugin.
+  private readonly id: number;
+  // Once a request is claimed, it cannot be claimed again. This is how multiple plugins responding to the same request is handled.
+  protected claimed: boolean;
   constructor(
-    id: number,
-    a: { method: string; uri: string; headers: Array<[string, string]> },
+      id: number,
+      a: { method: string; uri: string; headers: Array<[string, string]> },
   ) {
     this.id = id;
     this.method = a.method;
     this.uri = a.uri;
     this.headers = a.headers;
-    this.respondand = false;
+    this.claimed = false;
   }
-  private stillResponding() {
-    return !this.respondand;
+  // This method is used to get a header from the headers array. It returns the value of the header, or undefined if the header is not present.
+  header(name: string) {
+    return this.headers.find((header) => header[0] === name)?.[1];
   }
-  private respond(responder: Responder) {
-    const responder_answ = responder();
+  protected respond(responder: Responder) {
+    const responder_answ = (() => {
+      const res = responder();
+      if (typeof res === "string") {
+        return {
+          headers: [],
+          body: res,
+        };
+      }
+      return res;
+    })();
     const response: WebResponse = {
       id: this.id,
       body: {
@@ -288,36 +303,36 @@ export class WebRequest {
 
     // biome-ignore lint/style/noVar: This is a regex, not a variable
     var escapeRegex = (str: string) =>
-      str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+        str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
     return new RegExp(
-      // biome-ignore lint/style/useTemplate: This is a regex, not a template
-      "^" + rule.split("*").map(escapeRegex).join(".*") + "$",
+        // biome-ignore lint/style/useTemplate: This is a regex, not a template
+        "^" + rule.split("*").map(escapeRegex).join(".*") + "$",
     ).test(str);
   }
-
+  // Respond to a GET request, if the URI matches the request URI (wildcards supported), then the response in the callback is send back.
   get(adress: string, responder: Responder) {
     if (
-      this.matchUris(this.uri, adress) &&
-      this.method.toUpperCase() === "GET" &&
-      this.stillResponding()
+        this.matchUris(this.uri, adress) &&
+        this.method.toUpperCase() === "GET" &&
+        !this.claimed
     ) {
-      this.respondand = true;
+      this.claimed = true;
       this.respond(responder);
     }
   }
   post(adress: string, responder: Responder) {
     if (
-      this.matchUris(this.uri, adress) &&
-      this.method.toUpperCase() === "POST" &&
-      this.stillResponding()
+        this.matchUris(this.uri, adress) &&
+        this.method.toUpperCase() === "POST" &&
+        !this.claimed
     ) {
-      this.respondand = true;
+      this.claimed = true;
       this.respond(responder);
     }
   }
   escalate() {
-    if (this.stillResponding()) {
-      this.respondand = true;
+    if (!this.claimed) {
+      this.claimed = true;
       const response = new EmptyOKResponse(this.id);
       return Cynthia.send(response);
     }
