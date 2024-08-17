@@ -7,14 +7,14 @@
 export interface CynthiaPlugin {
   modifyResponseHTML?: (htmlin: string,
                         metadata: ContentMetaDataType,
-                        Cynthia: typeof CynthiaPassed) => string;
+                        Cynthia: CynthiaApiPoints) => string;
   modifyResponseHTMLBodyFragment?: (htmlin: string,
                                     metadata: ContentMetaDataType,
-                                    Cynthia: typeof CynthiaPassed) => string;
+                                    Cynthia: CynthiaApiPoints) => string;
   modifyRequest?: (req: WebRequest,
-                   Cynthia: typeof CynthiaWebResponderApi) => void;
-  onLoad?: (Cynthia: typeof CynthiaPassed) => void;
-  onClearInterval?: (Cynthia: typeof CynthiaPassed) => void;
+                   Cynthia: CynthiaApiPoints) => void;
+  onLoad?: (Cynthia: CynthiaApiPoints) => void;
+  onClearInterval?: (Cynthia: CynthiaApiPoints) => void;
 }
 
 export interface Request {
@@ -82,7 +82,7 @@ export interface PostlistRenderRequestBody {
       desc?: string;
       category?: string;
       tags: Array<string>;
-      author: null;
+      author: undefined;
       dates: {
         altered: number;
         published: number;
@@ -223,22 +223,29 @@ export interface ResponderResponse {
   body: string;
 }
 export type Responder = () => ResponderResponse | string;
-
-export class CynthiaWebResponderApi {
-  cynthia_req_queue_id: number;
-  constructor(id: number) {
-    this.cynthia_req_queue_id = id;
-  }
-}
-
-export const CynthiaPassed = {
-  /*
-   * This is a simplefied version of the Cynthia and CynthiaWebResponderApi classes.
+/*
+   * This is a simplified version of the Cynthia and CynthiaWebResponderApi classes.
    * It is used to pass the Cynthia object to the plugins, so they can use it to e.g. log messages to the console.
    * Currently, it's quite empty, but it will be expanded in the future.
-   */
-  console: terminalOut,
-};
+ */
+export class CynthiaApiPoints {
+  public console: typeof terminalOut;
+  constructor() {
+    this.console = {
+      log: terminalOut.log,
+      error: terminalOut.error,
+      warn: terminalOut.warn,
+      info: terminalOut.info,
+      debug: terminalOut.debug,
+    };
+  }
+}
+/*
+   * This is a simplified version of the Cynthia and CynthiaWebResponderApi classes.
+   * It is used to pass the Cynthia object to the plugins, so they can use it to e.g. log messages to the console.
+   * Currently, it's quite empty, but it will be expanded in the future.
+ */
+export const CynthiaPassed =  new CynthiaApiPoints();
 
 export interface IncomingWebRequest {
   id: number;
