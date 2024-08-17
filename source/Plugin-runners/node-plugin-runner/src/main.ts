@@ -10,8 +10,6 @@ import {
   Cynthia,
   CynthiaPassed,
   type CynthiaPlugin,
-  type CynthiaWebResponderApi,
-  type IncomingWebRequest,
 } from "cynthia-plugin-api/main";
 import type Config from "./types/config";
 const config: Config = (() => {
@@ -41,7 +39,7 @@ Cynthia.console.info(
 const cynthiaPluginFoundation: PluginBase = newPluginBase;
 
 for (const pluginname in config.plugins) {
-  if (config.plugins[pluginname].plugin_enabled === false) {
+  if (!config.plugins[pluginname].plugin_enabled) {
     continue;
   }
   if (
@@ -123,7 +121,7 @@ function clean() {
 }
 function cleanInterval() {
   for (const fn of cynthiaPluginFoundation.onClearInterval) {
-    fn();
+    fn(CynthiaPassed);
   }
   clean();
 }
@@ -137,5 +135,5 @@ if (process.argv0.includes("deno")) {
 }
 process.stdin.resume();
 process.stdin.on("data", async (s) => {
-  handle(s, cynthiaPluginFoundation);
+  await handle(s, cynthiaPluginFoundation);
 });

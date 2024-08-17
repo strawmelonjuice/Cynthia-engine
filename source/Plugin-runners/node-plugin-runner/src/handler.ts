@@ -6,22 +6,21 @@
 
 import * as process from "node:process";
 import {
-  terminalOut as console,
   type ContentRenderRequest,
   Cynthia,
   CynthiaPassed,
-  EmptyOKResponse,
   ErrorResponse,
   type GenericRequest,
-  WebRequest,
   type IncomingWebRequest,
   OkStringResponse,
   type PostlistRenderRequest,
+  terminalOut as console,
   type TestRequest,
+  WebRequest,
 } from "cynthia-plugin-api/main";
 import * as handlebars from "handlebars";
 import * as fs from "node:fs";
-import type { PluginBase } from "./types/internal_plugins";
+import type {PluginBase} from "./types/internal_plugins";
 
 export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
   if (buffer.toString().startsWith("parse: ")) {
@@ -36,7 +35,7 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
       }
       case "WebRequest": {
         const request: IncomingWebRequest = JSON.parse(requestAsString);
-        const req = new WebRequest(request.id, {
+        const req: WebRequest = new WebRequest(request.id, {
           method: request.body.method,
           uri: request.body.uri,
           headers: request.body.headers,
@@ -44,7 +43,6 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
         for (const modifier of cynthiabase.modifyRequest) {
           modifier(req, CynthiaPassed);
         }
-
         return req.escalate();
       }
       case "PostlistRenderRequest": {
@@ -57,12 +55,11 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
           const request: PostlistRenderRequest = JSON.parse(requestAsString);
           const template = fs.readFileSync(request.body.template_path, "utf8");
           const compiled = handlebars.compile(template);
-          const htmlBody = compiled(request.body.template_data);
-          let body = htmlBody;
+          let htmlBody = compiled(request.body.template_data);
           for (const modifier of cynthiabase.modifyResponseHTMLBodyFragment) {
-            body = modifier(body, CynthiaPassed);
+            htmlBody = modifier(htmlBody, request.body.template_data.meta, CynthiaPassed);
           }
-          const response = new OkStringResponse(request.id, body);
+          const response = new OkStringResponse(request.id, htmlBody);
           return Cynthia.send(response);
         } catch (e) {
           console.error(e);
@@ -80,12 +77,11 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
           const request: ContentRenderRequest = JSON.parse(requestAsString);
           const template = fs.readFileSync(request.body.template_path, "utf8");
           const compiled = handlebars.compile(template);
-          const htmlBody = compiled(request.body.template_data);
-          let body = htmlBody;
+          let htmlBody = compiled(request.body.template_data);
           for (const modifier of cynthiabase.modifyResponseHTMLBodyFragment) {
-            body = modifier(body, CynthiaPassed);
+            htmlBody = modifier(htmlBody, request.body.template_data.meta, CynthiaPassed);
           }
-          const response = new OkStringResponse(request.id, body);
+          const response = new OkStringResponse(request.id, htmlBody);
           return Cynthia.send(response);
         } catch (e) {
           console.error(e);

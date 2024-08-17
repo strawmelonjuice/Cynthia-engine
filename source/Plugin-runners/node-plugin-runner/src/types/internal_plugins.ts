@@ -5,45 +5,49 @@
  */
 
 import {
-  type CynthiaPassed,
-  CynthiaWebResponderApi,
   type WebRequest,
   IncomingWebRequest,
   type ResponderResponse,
 } from "cynthia-plugin-api/main";
+import {ContentMetaDataType, CynthiaApiPoints} from "../../../node-plugin-api/main";
 export const Plugincompat = 3.2;
 export interface PluginBase {
   modifyResponseHTML: Array<
-    (htmlin: string, Cynthia: typeof CynthiaPassed) => string
+      (htmlin: string,
+       metadata: ContentMetaDataType,
+       Cynthia: CynthiaApiPoints) => string
   >;
   modifyResponseHTMLBodyFragment: Array<
-    (htmlin: string, Cynthia: typeof CynthiaPassed) => string
+      (htmlin: string,
+       metadata: ContentMetaDataType,
+       Cynthia: CynthiaApiPoints) => string
   >;
   modifyRequest: Array<
-    (req: WebRequest, Cynthia: typeof CynthiaPassed) => void
+    (req: WebRequest,
+     Cynthia: CynthiaApiPoints) => void
   >;
-  onLoad: Array<(Cynthia: typeof CynthiaPassed) => void>;
-  onClearInterval: Array<(Cynthia: typeof CynthiaPassed) => void>;
+  onLoad: Array<(Cynthia: CynthiaApiPoints) => void>;
+  onClearInterval: Array<(Cynthia: CynthiaApiPoints) => void>;
 }
 export const newPluginBase: PluginBase = {
   modifyResponseHTML: [
-    (htmlin: string, Cynthia: typeof CynthiaPassed) => {
+    (htmlin: string, _1,_2) => {
       // Make no changes. Return unchanged.
       return htmlin;
     },
   ],
   modifyResponseHTMLBodyFragment: [
-    (htmlin: string, Cynthia: typeof CynthiaPassed) => {
+    (htmlin: string, _1,_2) => {
       // Return with a little comment.
       return `${htmlin}\n<!-- test... Body modifier Node plugins enabled! -->\n`;
     },
   ],
   modifyRequest: [
-    (req: WebRequest, Cynthia: typeof CynthiaPassed) => {
+    (req: WebRequest, Cynthia: CynthiaApiPoints) => {
       // Make no changes. Return unchanged.
       // This function doesn't actually return. It just sends out `Cynthia.answer(() => { return response });` if capturing.
     },
-    (req: WebRequest, Cynthia: typeof CynthiaPassed) => {
+    (req: WebRequest, Cynthia: CynthiaApiPoints) => {
       req.get("/pltest*", () => {
         const a: ResponderResponse = {
           headers: [],
@@ -54,12 +58,12 @@ export const newPluginBase: PluginBase = {
     },
   ],
   onLoad: [
-    (Cynthia: typeof CynthiaPassed) => {
+    (Cynthia: CynthiaApiPoints) => {
       // Do nothing.
     },
   ],
   onClearInterval: [
-    (Cynthia: typeof CynthiaPassed) => {
+    (Cynthia: CynthiaApiPoints) => {
       // Do nothing.
     },
   ],
