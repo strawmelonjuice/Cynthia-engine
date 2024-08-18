@@ -85,6 +85,22 @@ pub(crate) async fn serve(
             append_headers,
             response_body,
         } => {
+            let coninfo = req.connection_info();
+            let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+            config_clone.tell(format!(
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "Request:200".color_ok_green(),
+                {
+                    let uri =req.uri().to_string();
+                    if uri == *"" {
+                        "/".to_string()
+                    } else {
+                       uri
+                    }
+                },
+                ip.lightblue(),
+                "extern".bright_green()
+            ));
             let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
             for (k, v) in append_headers {
                 response.append_header((k, v));
@@ -135,10 +151,11 @@ pub(crate) async fn serve(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "Request:200".color_ok_green(),
                 {
-                    if req.uri().to_string() == "".to_string() {
+                    let uri =req.uri().to_string();
+                    if uri == *"" {
                         "/".to_string()
                     } else {
-                        req.uri().to_string()
+                        uri
                     }
                 },
                 ip.lightblue(),
@@ -164,10 +181,11 @@ pub(crate) async fn serve(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "Request:404".color_error_red(),
                 {
-                    if req.uri().to_string() == "".to_string() {
+                    let uri =req.uri().to_string();
+                    if uri == *"" {
                         "/".to_string()
                     } else {
-                        req.uri().to_string()
+                       uri
                     }
                 },
                 ip.lightblue(),
@@ -225,10 +243,11 @@ pub(crate) async fn assets_with_cache(
                     "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                     "Request:200".color_ok_green(),
                     {
-                        if req.uri().to_string() == "".to_string() {
+                        let uri =req.uri().to_string();
+                        if uri == *"" {
                             "/".to_string()
                         } else {
-                            req.uri().to_string()
+                            uri
                         }
                     },
                     ip.lightblue(),
@@ -244,10 +263,11 @@ pub(crate) async fn assets_with_cache(
                     "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                     "Request:404".color_error_red(),
                     {
-                        if req.uri().to_string() == *"" {
+                        let uri =req.uri().to_string();
+                        if uri == *"" {
                             "/".to_string()
                         } else {
-                            req.uri().to_string()
+                            uri
                         }
                     },
                     ip.lightblue(),
@@ -269,10 +289,11 @@ pub(crate) async fn assets_with_cache(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "Request:200".color_ok_green(),
                 {
-                    if req.uri().to_string() == *"" {
+                    let uri =req.uri().to_string();
+                    if uri == *"" {
                         "/".to_string()
                     } else {
-                        req.uri().to_string()
+                        uri
                     }
                 },
                 ip.lightblue(),
