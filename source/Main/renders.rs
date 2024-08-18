@@ -312,7 +312,7 @@ mod in_renderer {
                         error!(
                             "Error reading template file '{}':\n\n{}",
                             template_path.display(),
-                            e.to_string().bright_red()
+                            e.to_string().color_bright_red()
                         );
                         return RenderrerResponse::Error;
                     }
@@ -323,7 +323,7 @@ mod in_renderer {
                         error!(
                             "Error rendering template file '{}':\n\n{}",
                             template_path.display(),
-                            e.to_string().bright_red()
+                            e.to_string().color_bright_red()
                         );
                         RenderrerResponse::Error
                     }
@@ -652,7 +652,7 @@ mod inlines {
                     }
                 };
 
-                debug!("Running Terser in {}", runner.purple());
+                debug!("Running Terser in {}", runner.color_purple());
                 match std::process::Command::new(runner)
                     .args(xargs.clone())
                     .output()
@@ -673,9 +673,9 @@ mod inlines {
                         } else {
                             warn!(
                                 "Failed running Terser in {}, couldn't minify to embed JS.",
-                                config_clone.runtimes.ext_js_rt.as_str().purple()
+                                config_clone.runtimes.ext_js_rt.as_str().color_purple()
                             );
-                            println!("Ran command \"{} {}\"", runner.purple(), {
+                            println!("Ran command \"{} {}\"", runner.color_purple(), {
                                 let mut s = String::new();
                                 for a in &xargs {
                                     s.push_str(a);
@@ -688,7 +688,7 @@ mod inlines {
                     Err(why) => {
                         error!(
                             "Failed running CleanCSS in {}, couldn't minify to embed JS: {}",
-                            config_clone.runtimes.ext_js_rt.as_str().purple(),
+                            config_clone.runtimes.ext_js_rt.as_str().color_purple(),
                             why
                         );
                     }
@@ -747,7 +747,7 @@ mod inlines {
                         "npx"
                     }
                 };
-                debug!("Running CleanCSS in {}", runner.purple());
+                debug!("Running CleanCSS in {}", runner.color_purple());
                 match std::process::Command::new(runner)
                     .args(xargs.clone())
                     .output()
@@ -770,10 +770,10 @@ mod inlines {
                     Err(why) => {
                         error!(
                             "Failed running CleanCSS in {}, couldn't minify to embed CSS: {}",
-                            config_clone.runtimes.ext_js_rt.as_str().purple(),
+                            config_clone.runtimes.ext_js_rt.as_str().color_purple(),
                             why
                         );
-                        debug!("Ran command \"{} {}\"", runner.purple(), {
+                        debug!("Ran command \"{} {}\"", runner.color_purple(), {
                             let mut s = String::new();
                             for a in &xargs {
                                 s.push_str(a);

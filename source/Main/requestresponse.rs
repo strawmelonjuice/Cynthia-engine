@@ -98,8 +98,8 @@ pub(crate) async fn serve(
                        uri
                     }
                 },
-                ip.lightblue(),
-                "extern".bright_green()
+                ip.color_lightblue(),
+                "extern".color_lime()
             ));
             let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
             for (k, v) in append_headers {
@@ -158,12 +158,12 @@ pub(crate) async fn serve(
                         uri
                     }
                 },
-                ip.lightblue(),
+                ip.color_lightblue(),
                 {
                     if from_cache {
-                        "cache".green()
+                        "cache".color_green()
                     } else {
-                        "generated".yellow()
+                        "generated".color_yellow()
                     }
                 }
             ));
@@ -188,8 +188,8 @@ pub(crate) async fn serve(
                        uri
                     }
                 },
-                ip.lightblue(),
-                "not found".red()
+                ip.color_lightblue(),
+                "not found".color_red()
             );
 
             HttpResponse::NotFound()
@@ -250,8 +250,8 @@ pub(crate) async fn assets_with_cache(
                             uri
                         }
                     },
-                    ip.lightblue(),
-                    "filesystem".lilac()
+                    ip.color_lightblue(),
+                    "filesystem".color_lilac()
                 ));
                 HttpResponse::Ok()
                     .append_header(("Content-Type", "text/html; charset=utf-8"))
@@ -270,8 +270,8 @@ pub(crate) async fn assets_with_cache(
                             uri
                         }
                     },
-                    ip.lightblue(),
-                    "not found".red()
+                    ip.color_lightblue(),
+                    "not found".color_red()
                 ));
                 HttpResponse::NotFound().body("404 Not Found")
             }
@@ -296,8 +296,8 @@ pub(crate) async fn assets_with_cache(
                         uri
                     }
                 },
-                ip.lightblue(),
-                "cache".green()
+                ip.color_lightblue(),
+                "cache".color_green()
             ));
             HttpResponse::Ok()
                 .append_header(("Content-Type", "text/html; charset=utf-8"))

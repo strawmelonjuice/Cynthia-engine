@@ -216,7 +216,7 @@ pub(crate) async fn main(
                 } else if o.starts_with("warn: ") {
                     warn!(
                         "[JsPluginRuntime]: {}",
-                        format!("{}", o.split("warn: ").collect::<Vec<&str>>()[1]).orange()
+                        format!("{}", o.split("warn: ").collect::<Vec<&str>>()[1]).color_orange()
                     );
                 } else if o.starts_with("log: ") {
                     config_clone.clone().tell(format!(

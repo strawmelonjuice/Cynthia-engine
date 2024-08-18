@@ -46,8 +46,8 @@ impl ConfigLocations {
 fn choose_config_location() -> ConfigLocations {
     let unfound = || {
         eprintln!("Could not find cynthia-configuration at `{}`! Have you initialised a Cynthia setup here? To do so, run `{}`.",
-                  std::env::current_dir().unwrap().clone().to_string_lossy().replace("\\\\?\\", "").bright_cyan(),
-                  "cynthiaweb init".bright_green());
+                  std::env::current_dir().unwrap().clone().to_string_lossy().replace("\\\\?\\", "").color_bright_cyan(),
+                  "cynthiaweb init".color_lime());
         process::exit(1);
     };
     let cd = std::env::current_dir().unwrap();
@@ -87,12 +87,12 @@ pub(crate) fn load_config() -> CynthiaConf {
         ConfigLocations::JsonC(cynthiaconfpath) => {
             println!(
                 "{} Loading: {}",
-                "[Config]".bright_green(),
+                "[Config]".color_lime(),
                 cynthiaconfpath
                     .clone()
                     .to_string_lossy()
                     .replace("\\\\?\\", "")
-                    .bright_cyan()
+                    .color_bright_cyan()
             );
             let unparsed_json = match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(t) => t,
@@ -106,7 +106,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .bright_red(),
+                        .color_bright_red(),
                         e
                     );
                     process::exit(1);
@@ -126,7 +126,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                     .to_string_lossy()
                                     .replace("\\\\?\\", "")
                             )
-                            .bright_red(),
+                            .color_bright_red(),
                             e
                         );
                         process::exit(1);
@@ -145,7 +145,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                     .to_string_lossy()
                                     .replace("\\\\?\\", "")
                             )
-                            .bright_red(),
+                            .color_bright_red(),
                             e
                         );
                         process::exit(1);
@@ -162,7 +162,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .replace("\\\\?\\", "")
                         )
                         .color_error_red(),
-                        "ERROR: ".bright_red()
+                        "ERROR: ".color_bright_red()
                     );
                     process::exit(1);
                 }
@@ -171,12 +171,12 @@ pub(crate) fn load_config() -> CynthiaConf {
         ConfigLocations::Toml(cynthiaconfpath) => {
             println!(
                 "{} Loading: {}",
-                "[Config]".bright_green(),
+                "[Config]".color_lime(),
                 cynthiaconfpath
                     .clone()
                     .to_string_lossy()
                     .replace("\\\\?\\", "")
-                    .bright_cyan()
+                    .color_bright_cyan()
             );
             match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(g) => match toml::from_str(&g) {
@@ -191,7 +191,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                     .to_string_lossy()
                                     .replace("\\\\?\\", "")
                             )
-                            .bright_red(),
+                            .color_bright_red(),
                             e
                         );
                         process::exit(1);
@@ -207,7 +207,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .bright_red(),
+                        .color_bright_red(),
                         format!("{}", e).color_error_red()
                     );
                     process::exit(1);
@@ -217,12 +217,12 @@ pub(crate) fn load_config() -> CynthiaConf {
         ConfigLocations::Dhall(cynthiaconfpath) => {
             println!(
                 "{} Loading: {}",
-                "[Config]".bright_green(),
+                "[Config]".color_lime(),
                 cynthiaconfpath
                     .clone()
                     .to_string_lossy()
                     .replace("\\\\?\\", "")
-                    .bright_cyan()
+                    .color_bright_cyan()
             );
             match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(g) => match serde_dhall::from_str(&g).parse() {
@@ -237,7 +237,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                     .to_string_lossy()
                                     .replace("\\\\?\\", "")
                             )
-                            .bright_red(),
+                            .color_bright_red(),
                             e
                         );
                         process::exit(1);
@@ -253,7 +253,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .bright_red(),
+                        .color_bright_red(),
                         format!("{}", e).color_error_red()
                     );
                     process::exit(1);
@@ -263,12 +263,12 @@ pub(crate) fn load_config() -> CynthiaConf {
         ConfigLocations::Js(cynthiaconfpath) => {
             println!(
                 "{} Loading: {}",
-                "[Config]".bright_green(),
+                "[Config]".color_lime(),
                 cynthiaconfpath
                     .clone()
                     .to_string_lossy()
                     .replace("\\\\?\\", "")
-                    .bright_cyan()
+                    .color_bright_cyan()
             );
             let unparsed_js = match fs::read_to_string(cynthiaconfpath.clone()) {
                 Ok(t) => t,
@@ -282,7 +282,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .bright_red(),
+                        .color_bright_red(),
                         e
                     );
                     process::exit(1);
@@ -300,7 +300,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .bright_red(),
+                        .color_bright_red(),
                         e
                     );
                     process::exit(1);
@@ -315,7 +315,7 @@ pub(crate) fn load_config() -> CynthiaConf {
                                 .to_string_lossy()
                                 .replace("\\\\?\\", "")
                         )
-                        .bright_red(),
+                        .color_bright_red(),
                         e
                     );
                     process::exit(1);
@@ -340,7 +340,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 if to == "js" {
                     eprintln!(
                         "{} You are trying to convert a JavaScript configuration to JavaScript. This is not possible.",
-                        "error:".red()
+                        "error:".color_red()
                     );
                     process::exit(1);
                 }
@@ -349,7 +349,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 if to == "dhall" {
                     eprintln!(
                         "{} You are trying to convert a Dhall configuration to Dhall. This is not possible.",
-                        "error:".red()
+                        "error:".color_red()
                     );
                     process::exit(1);
                 }
@@ -358,7 +358,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 if to == "toml" {
                     eprintln!(
                         "{} You are trying to convert a TOML configuration to TOML. This is not possible.",
-                        "error:".red()
+                        "error:".color_red()
                     );
                     process::exit(1);
                 }
@@ -367,7 +367,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                 if to == "jsonc" {
                     eprintln!(
                         "{} You are trying to convert a JSONC configuration to JSONC. This is not possible.",
-                        "error:".red()
+                        "error:".color_red()
                     );
                     process::exit(1);
                 }
@@ -658,7 +658,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
         _ => {
             eprintln!(
                 "{} Could not interpret format `{}`! Please use `jsonc`, `dhall` or `toml`.",
-                "error:".red(),
+                "error:".color_red(),
                 to
             );
             process::exit(1);
@@ -673,18 +673,18 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
         Ok(_) => {
             println!(
                 "{} Successfully exported the configuration to {}!",
-                "Success:".green(),
+                "Success:".color_green(),
                 to_file
                     .clone()
                     .to_string_lossy()
                     .replace("\\\\?\\", "")
-                    .bright_cyan()
+                    .color_bright_cyan()
             );
             if args.get(3).unwrap_or(&String::from("")).as_str() == "-k" {
                 println!(
                     "{} Exiting without deleting old formats ({} flag). This is not recommended.",
-                    "Info:".yellow(),
-                    "-k".bright_yellow()
+                    "Info:".color_yellow(),
+                    "-k".color_bright_yellow()
                 );
                 process::exit(0);
             }
@@ -692,7 +692,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
         Err(e) => {
             eprintln!(
                 "{} Could not write the configuration to `{}`! Error: {}",
-                "error:".red(),
+                "error:".color_red(),
                 cd.join("Cynthia.".to_string() + to)
                     .to_string_lossy()
                     .replace("\\\\?\\", ""),
@@ -712,7 +712,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
             Err(e) => {
                 eprintln!(
                     "{} Could not remove the old configuration file at `{}`! Error: {}",
-                    "error:".red(),
+                    "error:".color_red(),
                     p.to_string_lossy().replace("\\\\?\\", ""),
                     e
                 );

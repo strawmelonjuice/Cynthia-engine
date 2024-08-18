@@ -99,18 +99,18 @@ async fn main() {
             .to_ascii_lowercase()
             .as_str()
     );
-    println!("{}", horizline().purple());
+    println!("{}", horizline().color_purple());
 
     println!(
         "{} - version {}\n by {}{}{} {}!",
-        "CynthiaWeb".bold().lilac(),
-        env!("CARGO_PKG_VERSION").to_string().green(),
-        "Straw".bright_red(),
-        "melon".green(),
-        "juice".bright_yellow(),
-        "Mar".pink()
+        "CynthiaWeb".style_bold().color_lilac(),
+        env!("CARGO_PKG_VERSION").to_string().color_green(),
+        "Straw".color_bright_red(),
+        "melon".color_green(),
+        "juice".color_bright_yellow(),
+        "Mar".color_pink()
     );
-    println!("{}", horizline().purple());
+    println!("{}", horizline().color_purple());
     match args
         .get(1)
         .unwrap_or(&String::from(""))
@@ -120,27 +120,27 @@ async fn main() {
         "help" => {
             println!(
                 "{}",
-                "Cynthia - a simple site generator/server with a focus on performance and ease of use. Targeted at smaller sites and personal projects.".pink()
+                "Cynthia - a simple site generator/server with a focus on performance and ease of use. Targeted at smaller sites and personal projects.".color_pink()
             );
             println!(
                 "{}",
-                "Usage: cynthiaweb [command]\n\nCommands:".bright_green()
+                "Usage: cynthiaweb [command]\n\nCommands:".color_lime()
             );
             println!(
                 "\t{}{}",
-                "help".bold().yellow(),
-                ": Displays this message.".bright_green()
+                "help".style_bold().color_yellow(),
+                ": Displays this message.".color_lime()
             );
             println!(
                 "\t{}{}",
-                "start".bold().yellow(),
-                ": Starts the server.".bright_green()
+                "start".style_bold().color_yellow(),
+                ": Starts the server.".color_lime()
             );
             println!(
                 "\t{}{}\n\t\t{}",
-                "convert [format] <-k>".bold().yellow(),
-                ": Converts the configuration to the specified format.".bright_green(),
-                "Available formats: `dhall`, `toml`, `jsonc`.".clear()
+                "convert [format] <-k>".style_bold().color_yellow(),
+                ": Converts the configuration to the specified format.".color_lime(),
+                "Available formats: `dhall`, `toml`, `jsonc`.".style_clear()
             );
             println!("\t{} {{{}}} <{}> ({})
             Available subcommands:
@@ -155,11 +155,11 @@ async fn main() {
                             If not specified, latest available will be used.
                 - Install:
                     Installs plugins from {} using the Cynthia Plugin Index. Useful after cloning a config.",
-                     "PM".bold().yellow(),"subcommand".bright_green(),"plugin name".bright_yellow(), "plugin version".lilac(),
-                     "plugin name".bright_yellow(),
-                     "plugin version".lilac(),
+                     "PM".style_bold().color_yellow(), "subcommand".color_lime(), "plugin name".color_bright_yellow(), "plugin version".color_lilac(),
+                     "plugin name".color_bright_yellow(),
+                     "plugin version".color_lilac(),
 
-            "cynthiapluginmanifest.json".bright_green(),);
+                     "cynthiapluginmanifest.json".color_lime(),);
             process::exit(0);
         }
         "start" => start().await,
@@ -167,7 +167,7 @@ async fn main() {
             if args.len() < 3 {
                 eprintln!(
                     "{} No format specified! Please run `cynthiaweb help` for a list of commands.",
-                    "error:".red()
+                    "error:".color_red()
                 );
                 process::exit(1);
             }
@@ -180,16 +180,16 @@ async fn main() {
         "" => {
             eprintln!(
                 "{} No command specified! Please run `cynthiaweb help` for a list of commands.\n\nRunning: `cynthiaweb start` from here on.",
-                "error:".red()
+                "error:".color_red()
             );
             start().await;
             println!("And next time, try to use the `start` command directly!");
         }
         _ => {
             eprintln!(
-            "{} Could not interpret command `{}`! Please run `cynthiaweb help` for a list of commands.",
-            "error:".red(),
-            args.get(1).unwrap_or(&String::from("")).to_ascii_lowercase()
+                "{} Could not interpret command `{}`! Please run `cynthiaweb help` for a list of commands.",
+                "error:".color_red(),
+                args.get(1).unwrap_or(&String::from("")).to_ascii_lowercase()
             );
             process::exit(1);
         }
@@ -203,7 +203,7 @@ async fn start() {
     if config.port == 0 {
         eprintln!(
             "{} Could not set port to 0! Please set it to a valid port.",
-            "error:".red()
+            "error:".color_red()
         );
         process::exit(1);
     }
@@ -214,7 +214,7 @@ async fn start() {
     if !config.scenes.validate() {
         eprintln!(
             "{} Could not validate scenes! Please check your configuration.",
-            "error:".red()
+            "error:".color_red()
         );
         process::exit(1);
     }
@@ -231,7 +231,7 @@ async fn start() {
                 _ => {
                     eprintln!(
                         "{} Could not set loglevel `{}`! Ranges are 0-5 (quiet to verbose)",
-                        "error:".red(),
+                        "error:".color_red(),
                         o
                     );
                     process::exit(1);
@@ -303,7 +303,7 @@ async fn start() {
         Err(e) => {
             error!(
                 "Could not create the Cynthia temp folder! Error: {}",
-                e.to_string().bright_red()
+                e.to_string().color_bright_red()
             );
             process::exit(1);
         }
@@ -382,7 +382,7 @@ async fn close(server_context_mutex: Arc<Mutex<ServerContext>>) {
         "Closing:\n\n\n\nBye! I served {} request{s} in this run of {}!\n",
         server_context.request_count, run_time_string
     ));
-    println!("{}", horizline().lilac());
+    println!("{}", horizline().color_lilac());
     process::exit(0);
 }
 use std::time::Duration;
@@ -448,7 +448,7 @@ pub(crate) mod tell {
             let dt1: OffsetDateTime = SystemTime::now().into();
             let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
             let times = dt1.format(&dt_fmt).unwrap();
-            format!("{} {} {}", times, "[LOG] ".magenta(), msg)
+            format!("{} {} {}", times, "[LOG] ".color_magenta(), msg)
         }
     }
     /// For when context is unavailable to be locked, confclone should be able to tell too.
@@ -471,7 +471,7 @@ pub(crate) mod tell {
             let dt1: OffsetDateTime = SystemTime::now().into();
             let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
             let times = dt1.format(&dt_fmt).unwrap();
-            format!("{} {} {}", times, "[LOG] ".magenta(), msg)
+            format!("{} {} {}", times, "[LOG] ".color_magenta(), msg)
         }
     }
     impl Logging {
@@ -483,7 +483,7 @@ pub(crate) mod tell {
                     let dt1: OffsetDateTime = SystemTime::now().into();
                     let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
                     let times = dt1.format(&dt_fmt).unwrap();
-                    println!("{} {} {}", times, "[LOG] ".magenta(), msg);
+                    println!("{} {} {}", times, "[LOG] ".color_magenta(), msg);
                     info!("{}", msg);
                 }
                 Some(s) => {
@@ -495,7 +495,7 @@ pub(crate) mod tell {
                             let dt1: OffsetDateTime = SystemTime::now().into();
                             let dt_fmt = format_description::parse(DATE_FORMAT_STR).unwrap();
                             let times = dt1.format(&dt_fmt).unwrap();
-                            println!("{} {} {}", times, "[LOG] ".magenta(), msg);
+                            println!("{} {} {}", times, "[LOG] ".color_magenta(), msg);
                             info!("{}", msg);
                         }
                     }
@@ -510,93 +510,109 @@ pub(crate) mod tell {
 
     #[allow(dead_code)]
     pub(crate) trait CynthiaStyles {
-        fn bold(self) -> CynthiaStyledString;
-        fn italic(self) -> CynthiaStyledString;
-        fn underline(self) -> CynthiaStyledString;
-        fn strikethrough(self) -> CynthiaStyledString;
-        fn dim(self) -> CynthiaStyledString;
-        fn blink(self) -> CynthiaStyledString;
-        fn reverse(self) -> CynthiaStyledString;
-        fn clear(self) -> CynthiaStyledString;
+        fn style_bold(self) -> CynthiaStyledString;
+        fn style_italic(self) -> CynthiaStyledString;
+        fn style_underline(self) -> CynthiaStyledString;
+        fn style_strikethrough(self) -> CynthiaStyledString;
+        fn style_dim(self) -> CynthiaStyledString;
+        fn style_blink(self) -> CynthiaStyledString;
+        fn style_reverse(self) -> CynthiaStyledString;
+        fn style_clear(self) -> CynthiaStyledString;
     }
     impl CynthiaStyles for &str {
-        fn clear(self) -> CynthiaStyledString {
-            format!("\u{001b}[0m{}\u{001b}[0m", self)
-        }
-        fn bold(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_bold(self) -> CynthiaStyledString {
             format!("\u{001b}[1m{}\u{001b}[0m", self)
         }
-        fn italic(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_italic(self) -> CynthiaStyledString {
             format!("\u{001b}[3m{}\u{001b}[0m", self)
         }
-        fn underline(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_underline(self) -> CynthiaStyledString {
             format!("\u{001b}[4m{}\u{001b}[0m", self)
         }
-        fn strikethrough(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_strikethrough(self) -> CynthiaStyledString {
             format!("\u{001b}[9m{}\u{001b}[0m", self)
         }
-        fn dim(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_dim(self) -> CynthiaStyledString {
             format!("\u{001b}[2m{}\u{001b}[0m", self)
         }
-        fn blink(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_blink(self) -> CynthiaStyledString {
             format!("\u{001b}[5m{}\u{001b}[0m", self)
         }
-        fn reverse(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_reverse(self) -> CynthiaStyledString {
             format!("\u{001b}[7m{}\u{001b}[0m", self)
+        }
+        #[inline]
+        fn style_clear(self) -> CynthiaStyledString {
+            format!("\u{001b}[0m{}\u{001b}[0m", self)
         }
     }
     impl CynthiaStyles for String {
-        fn clear(self) -> CynthiaStyledString {
-            format!("\u{001b}[0m{}\u{001b}[0m", self)
-        }
-        fn bold(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_bold(self) -> CynthiaStyledString {
             format!("\u{001b}[1m{}\u{001b}[0m", self)
         }
-        fn italic(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_italic(self) -> CynthiaStyledString {
             format!("\u{001b}[3m{}\u{001b}[0m", self)
         }
-        fn underline(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_underline(self) -> CynthiaStyledString {
             format!("\u{001b}[4m{}\u{001b}[0m", self)
         }
-        fn strikethrough(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_strikethrough(self) -> CynthiaStyledString {
             format!("\u{001b}[9m{}\u{001b}[0m", self)
         }
-        fn dim(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_dim(self) -> CynthiaStyledString {
             format!("\u{001b}[2m{}\u{001b}[0m", self)
         }
-        fn blink(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_blink(self) -> CynthiaStyledString {
             format!("\u{001b}[5m{}\u{001b}[0m", self)
         }
-        fn reverse(self) -> CynthiaStyledString {
+        #[inline]
+        fn style_reverse(self) -> CynthiaStyledString {
             format!("\u{001b}[7m{}\u{001b}[0m", self)
+        }
+        #[inline]
+        fn style_clear(self) -> CynthiaStyledString {
+            format!("\u{001b}[0m{}\u{001b}[0m", self)
         }
     }
     type CynthiaColoredString = String;
     #[allow(dead_code)]
     pub(crate) trait CynthiaColors {
         fn by_rgb(self, r: u32, g: u32, b: u32) -> CynthiaColoredString;
-        fn green(self) -> CynthiaColoredString;
+        fn color_green(self) -> CynthiaColoredString;
         fn color_ok_green(self) -> CynthiaColoredString;
-        fn bright_green(self) -> CynthiaColoredString;
-        fn red(self) -> CynthiaColoredString;
+        fn color_lime(self) -> CynthiaColoredString;
+        fn color_red(self) -> CynthiaColoredString;
         fn color_error_red(self) -> CynthiaColoredString;
-        fn bright_red(self) -> CynthiaColoredString;
-        fn black(self) -> CynthiaColoredString;
-        fn bright_black(self) -> CynthiaColoredString;
-        fn white(self) -> CynthiaColoredString;
-        fn bright_white(self) -> CynthiaColoredString;
-        fn yellow(self) -> CynthiaColoredString;
-        fn bright_yellow(self) -> CynthiaColoredString;
-        fn cyan(self) -> CynthiaColoredString;
-        fn bright_cyan(self) -> CynthiaColoredString;
-        fn magenta(self) -> CynthiaColoredString;
-        fn pink(self) -> CynthiaColoredString;
-        fn blue(self) -> CynthiaColoredString;
-        fn lightblue(self) -> CynthiaColoredString;
-        fn orange(self) -> CynthiaColoredString;
-        fn bright_orange(self) -> CynthiaColoredString;
-        fn purple(self) -> CynthiaColoredString;
-        fn lilac(self) -> CynthiaColoredString;
+        fn color_bright_red(self) -> CynthiaColoredString;
+        fn color_black(self) -> CynthiaColoredString;
+        fn color_bright_black(self) -> CynthiaColoredString;
+        fn color_white(self) -> CynthiaColoredString;
+        fn color_bright_white(self) -> CynthiaColoredString;
+        fn color_yellow(self) -> CynthiaColoredString;
+        fn color_bright_yellow(self) -> CynthiaColoredString;
+        fn color_cyan(self) -> CynthiaColoredString;
+        fn color_bright_cyan(self) -> CynthiaColoredString;
+        fn color_magenta(self) -> CynthiaColoredString;
+        fn color_pink(self) -> CynthiaColoredString;
+        fn color_blue(self) -> CynthiaColoredString;
+        fn color_lightblue(self) -> CynthiaColoredString;
+        fn color_orange(self) -> CynthiaColoredString;
+        fn color_bright_orange(self) -> CynthiaColoredString;
+        fn color_purple(self) -> CynthiaColoredString;
+        fn color_lilac(self) -> CynthiaColoredString;
     }
     impl CynthiaColors for &str {
         #[inline]
@@ -604,7 +620,7 @@ pub(crate) mod tell {
             format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, self)
         }
         #[inline]
-        fn green(self) -> CynthiaColoredString {
+        fn color_green(self) -> CynthiaColoredString {
             self.by_rgb(0, 255, 0)
         }
         #[inline]
@@ -612,11 +628,11 @@ pub(crate) mod tell {
             self.by_rgb(116, 204, 140)
         }
         #[inline]
-        fn bright_green(self) -> CynthiaColoredString {
+        fn color_lime(self) -> CynthiaColoredString {
             self.by_rgb(66, 245, 78)
         }
         #[inline]
-        fn red(self) -> CynthiaColoredString {
+        fn color_red(self) -> CynthiaColoredString {
             self.by_rgb(255, 0, 0)
         }
         #[inline]
@@ -624,71 +640,71 @@ pub(crate) mod tell {
             self.by_rgb(184, 28, 74)
         }
         #[inline]
-        fn bright_red(self) -> CynthiaColoredString {
+        fn color_bright_red(self) -> CynthiaColoredString {
             self.by_rgb(237, 68, 62)
         }
         #[inline]
-        fn black(self) -> CynthiaColoredString {
+        fn color_black(self) -> CynthiaColoredString {
             self.by_rgb(41, 40, 40)
         }
         #[inline]
-        fn bright_black(self) -> CynthiaColoredString {
+        fn color_bright_black(self) -> CynthiaColoredString {
             self.by_rgb(0, 0, 0)
         }
         #[inline]
-        fn white(self) -> CynthiaColoredString {
+        fn color_white(self) -> CynthiaColoredString {
             self.by_rgb(240, 240, 240)
         }
         #[inline]
-        fn bright_white(self) -> CynthiaColoredString {
+        fn color_bright_white(self) -> CynthiaColoredString {
             self.by_rgb(255, 255, 255)
         }
         #[inline]
-        fn yellow(self) -> CynthiaColoredString {
+        fn color_yellow(self) -> CynthiaColoredString {
             self.by_rgb(243, 201, 35)
         }
         #[inline]
-        fn bright_yellow(self) -> CynthiaColoredString {
+        fn color_bright_yellow(self) -> CynthiaColoredString {
             self.by_rgb(255, 234, 150)
         }
         #[inline]
-        fn cyan(self) -> CynthiaColoredString {
+        fn color_cyan(self) -> CynthiaColoredString {
             self.by_rgb(16, 227, 227)
         }
         #[inline]
-        fn bright_cyan(self) -> CynthiaColoredString {
+        fn color_bright_cyan(self) -> CynthiaColoredString {
             self.by_rgb(0, 255, 255)
         }
         #[inline]
-        fn magenta(self) -> CynthiaColoredString {
+        fn color_magenta(self) -> CynthiaColoredString {
             self.by_rgb(255, 0, 255)
         }
         #[inline]
-        fn pink(self) -> CynthiaColoredString {
+        fn color_pink(self) -> CynthiaColoredString {
             self.by_rgb(243, 154, 245)
         }
         #[inline]
-        fn blue(self) -> CynthiaColoredString {
+        fn color_blue(self) -> CynthiaColoredString {
             self.by_rgb(0, 0, 255)
         }
         #[inline]
-        fn lightblue(self) -> CynthiaColoredString {
+        fn color_lightblue(self) -> CynthiaColoredString {
             self.by_rgb(145, 220, 255)
         }
         #[inline]
-        fn orange(self) -> CynthiaColoredString {
+        fn color_orange(self) -> CynthiaColoredString {
             self.by_rgb(255, 165, 0)
         }
         #[inline]
-        fn bright_orange(self) -> CynthiaColoredString {
+        fn color_bright_orange(self) -> CynthiaColoredString {
             self.by_rgb(255, 157, 0)
         }
         #[inline]
-        fn purple(self) -> CynthiaColoredString {
+        fn color_purple(self) -> CynthiaColoredString {
             self.by_rgb(97, 18, 181)
         }
         #[inline]
-        fn lilac(self) -> CynthiaColoredString {
+        fn color_lilac(self) -> CynthiaColoredString {
             self.by_rgb(200, 162, 200)
         }
     }
@@ -698,92 +714,92 @@ pub(crate) mod tell {
             self.as_str().by_rgb(r, g, b)
         }
         #[inline]
-        fn green(self) -> CynthiaColoredString {
-            self.as_str().green()
+        fn color_green(self) -> CynthiaColoredString {
+            self.as_str().color_green()
         }
         #[inline]
         fn color_ok_green(self) -> CynthiaColoredString {
             self.as_str().color_ok_green()
         }
         #[inline]
-        fn bright_green(self) -> CynthiaColoredString {
-            self.as_str().bright_green()
+        fn color_lime(self) -> CynthiaColoredString {
+            self.as_str().color_lime()
         }
         #[inline]
-        fn red(self) -> CynthiaColoredString {
-            self.as_str().red()
+        fn color_red(self) -> CynthiaColoredString {
+            self.as_str().color_red()
         }
         #[inline]
         fn color_error_red(self) -> CynthiaColoredString {
             self.as_str().color_error_red()
         }
         #[inline]
-        fn bright_red(self) -> CynthiaColoredString {
-            self.as_str().bright_red()
+        fn color_bright_red(self) -> CynthiaColoredString {
+            self.as_str().color_bright_red()
         }
         #[inline]
-        fn black(self) -> CynthiaColoredString {
-            self.as_str().black()
+        fn color_black(self) -> CynthiaColoredString {
+            self.as_str().color_black()
         }
         #[inline]
-        fn bright_black(self) -> CynthiaColoredString {
-            self.as_str().bright_black()
+        fn color_bright_black(self) -> CynthiaColoredString {
+            self.as_str().color_bright_black()
         }
         #[inline]
-        fn white(self) -> CynthiaColoredString {
-            self.as_str().white()
+        fn color_white(self) -> CynthiaColoredString {
+            self.as_str().color_white()
         }
         #[inline]
-        fn bright_white(self) -> CynthiaColoredString {
-            self.as_str().bright_white()
+        fn color_bright_white(self) -> CynthiaColoredString {
+            self.as_str().color_bright_white()
         }
         #[inline]
-        fn yellow(self) -> CynthiaColoredString {
-            self.as_str().yellow()
+        fn color_yellow(self) -> CynthiaColoredString {
+            self.as_str().color_yellow()
         }
         #[inline]
-        fn bright_yellow(self) -> CynthiaColoredString {
-            self.as_str().bright_yellow()
+        fn color_bright_yellow(self) -> CynthiaColoredString {
+            self.as_str().color_bright_yellow()
         }
         #[inline]
-        fn cyan(self) -> CynthiaColoredString {
-            self.as_str().cyan()
+        fn color_cyan(self) -> CynthiaColoredString {
+            self.as_str().color_cyan()
         }
         #[inline]
-        fn bright_cyan(self) -> CynthiaColoredString {
-            self.as_str().bright_cyan()
+        fn color_bright_cyan(self) -> CynthiaColoredString {
+            self.as_str().color_bright_cyan()
         }
         #[inline]
-        fn magenta(self) -> CynthiaColoredString {
-            self.as_str().magenta()
+        fn color_magenta(self) -> CynthiaColoredString {
+            self.as_str().color_magenta()
         }
         #[inline]
-        fn pink(self) -> CynthiaColoredString {
-            self.as_str().pink()
+        fn color_pink(self) -> CynthiaColoredString {
+            self.as_str().color_pink()
         }
         #[inline]
-        fn blue(self) -> CynthiaColoredString {
-            self.as_str().blue()
+        fn color_blue(self) -> CynthiaColoredString {
+            self.as_str().color_blue()
         }
         #[inline]
-        fn lightblue(self) -> CynthiaColoredString {
-            self.as_str().lightblue()
+        fn color_lightblue(self) -> CynthiaColoredString {
+            self.as_str().color_lightblue()
         }
         #[inline]
-        fn orange(self) -> CynthiaColoredString {
-            self.as_str().orange()
+        fn color_orange(self) -> CynthiaColoredString {
+            self.as_str().color_orange()
         }
         #[inline]
-        fn bright_orange(self) -> CynthiaColoredString {
-            self.as_str().bright_orange()
+        fn color_bright_orange(self) -> CynthiaColoredString {
+            self.as_str().color_bright_orange()
         }
         #[inline]
-        fn purple(self) -> CynthiaColoredString {
-            self.as_str().purple()
+        fn color_purple(self) -> CynthiaColoredString {
+            self.as_str().color_purple()
         }
         #[inline]
-        fn lilac(self) -> CynthiaColoredString {
-            self.as_str().lilac()
+        fn color_lilac(self) -> CynthiaColoredString {
+            self.as_str().color_lilac()
         }
     }
 }
