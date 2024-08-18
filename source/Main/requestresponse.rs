@@ -5,7 +5,7 @@
  */
 use crate::tell::CynthiaColors;
 use actix_web::web::Data;
-use actix_web::{get, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, post, HttpRequest, HttpResponse, Responder};
 use log::{debug, trace, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -89,7 +89,7 @@ pub(crate) async fn serve(
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
-                "Request:200".color_ok_green(),
+                "GET:200".color_ok_green(),
                 {
                     let uri =req.uri().to_string();
                     if uri == *"" {
@@ -149,7 +149,7 @@ pub(crate) async fn serve(
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
-                "Request:200".color_ok_green(),
+                "GET:200".color_ok_green(),
                 {
                     let uri =req.uri().to_string();
                     if uri == *"" {
@@ -179,7 +179,7 @@ pub(crate) async fn serve(
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             warn!(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
-                "Request:404".color_error_red(),
+                "GET:404".color_error_red(),
                 {
                     let uri =req.uri().to_string();
                     if uri == *"" {
@@ -241,7 +241,7 @@ pub(crate) async fn assets_with_cache(
                 let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
                 server_context.tell(format!(
                     "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
-                    "Request:200".color_ok_green(),
+                    "GET:200".color_ok_green(),
                     {
                         let uri =req.uri().to_string();
                         if uri == *"" {
@@ -261,7 +261,7 @@ pub(crate) async fn assets_with_cache(
                 let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
                 config_clone.tell(format!(
                     "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
-                    "Request:404".color_error_red(),
+                    "GET:404".color_error_red(),
                     {
                         let uri =req.uri().to_string();
                         if uri == *"" {
@@ -287,7 +287,7 @@ pub(crate) async fn assets_with_cache(
             let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
             config_clone.tell(format!(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
-                "Request:200".color_ok_green(),
+                "GET:200".color_ok_green(),
                 {
                     let uri =req.uri().to_string();
                     if uri == *"" {
@@ -305,3 +305,78 @@ pub(crate) async fn assets_with_cache(
         }
     }
 }
+
+/// Cynthia doesn't respond to POST requests, but it's plugins might.
+/// Support for form data is planned but not yet implemented.
+#[post("/{a:.*}")]
+pub(crate) async fn post(
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (w_s, w_a) = urlspace();
+    // We can't lock the mutex here because it wouldn't be usable by EPS, so we need to use a callback.
+    // let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    let config_clone = server_context_mutex
+        .lock_callback(|a| {
+            a.request_count += 1;
+            a.config.clone()
+        })
+        .await;
+
+    let page_uri = if req.uri() == "" {
+        "root".to_string()
+    } else {
+        req.uri().to_string()
+    };
+    let headers = {
+        // Transform it into makeshift JSON!
+        let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>())
+            .replace("(\"", "[\"")
+            .replace("\")", "\"]");
+        // And then parse it back into an object.
+        serde_json::from_str(&json_kinda).unwrap_or_default()
+    };
+    trace!("{}", serde_json::to_string(&headers).unwrap());
+    let pluginsresponse = contact_eps(
+        server_context_mutex.clone(),
+        EPSRequestBody::WebRequest {
+            uri: page_uri.clone(),
+            headers,
+            method: "get".to_string(),
+        },
+    )
+        .await;
+    match pluginsresponse {
+        crate::externalpluginservers::EPSResponseBody::WebResponse {
+            append_headers,
+            response_body,
+        } => {
+            let coninfo = req.connection_info();
+            let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+            config_clone.tell(format!(
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "POST:200".color_ok_green(),
+                {
+                    let uri =req.uri().to_string();
+                    if uri == *"" {
+                        "/".to_string()
+                    } else {
+                        uri
+                    }
+                },
+                ip.color_lightblue(),
+                "extern".color_lime()
+            ));
+            let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
+            for (k, v) in append_headers {
+                response.append_header((k, v));
+            }
+            return response.body(response_body);
+        }
+        crate::externalpluginservers::EPSResponseBody::NoneOk => {}
+        crate::externalpluginservers::EPSResponseBody::Disabled => {}
+        _ => return HttpResponse::InternalServerError().body("Internal server error."),
+    }
+    HttpResponse::NoContent().finish()
+}
+
