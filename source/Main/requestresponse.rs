@@ -91,15 +91,15 @@ pub(crate) async fn serve(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "GET:200".color_ok_green(),
                 {
-                    let uri =req.uri().to_string();
+                    let uri = req.uri().to_string();
                     if uri == *"" {
                         "/".to_string()
                     } else {
-                       uri
+                        uri
                     }
                 },
                 ip.color_lightblue(),
-                "extern".color_lime()
+                "extern".color_pink()
             ));
             let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
             for (k, v) in append_headers {
@@ -151,7 +151,7 @@ pub(crate) async fn serve(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "GET:200".color_ok_green(),
                 {
-                    let uri =req.uri().to_string();
+                    let uri = req.uri().to_string();
                     if uri == *"" {
                         "/".to_string()
                     } else {
@@ -181,11 +181,11 @@ pub(crate) async fn serve(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "GET:404".color_error_red(),
                 {
-                    let uri =req.uri().to_string();
+                    let uri = req.uri().to_string();
                     if uri == *"" {
                         "/".to_string()
                     } else {
-                       uri
+                        uri
                     }
                 },
                 ip.color_lightblue(),
@@ -231,7 +231,7 @@ pub(crate) async fn assets_with_cache(
                 .join("cynthiaFiles/assets/")
                 .join(path);
             debug!("Requested asset: {:?}", filepath);
-            if filepath.exists() {
+            if filepath.exists() && filepath.is_file() {
                 let contents: Vec<u8> = std::fs::read(filepath).unwrap();
                 let mut server_context = server_context_mutex.lock().await;
                 server_context
@@ -243,7 +243,7 @@ pub(crate) async fn assets_with_cache(
                     "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                     "GET:200".color_ok_green(),
                     {
-                        let uri =req.uri().to_string();
+                        let uri = req.uri().to_string();
                         if uri == *"" {
                             "/".to_string()
                         } else {
@@ -263,7 +263,7 @@ pub(crate) async fn assets_with_cache(
                     "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                     "GET:404".color_error_red(),
                     {
-                        let uri =req.uri().to_string();
+                        let uri = req.uri().to_string();
                         if uri == *"" {
                             "/".to_string()
                         } else {
@@ -289,7 +289,7 @@ pub(crate) async fn assets_with_cache(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "GET:200".color_ok_green(),
                 {
-                    let uri =req.uri().to_string();
+                    let uri = req.uri().to_string();
                     if uri == *"" {
                         "/".to_string()
                     } else {
@@ -345,7 +345,7 @@ pub(crate) async fn post(
             method: "get".to_string(),
         },
     )
-        .await;
+    .await;
     match pluginsresponse {
         crate::externalpluginservers::EPSResponseBody::WebResponse {
             append_headers,
@@ -357,7 +357,7 @@ pub(crate) async fn post(
                 "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
                 "POST:200".color_ok_green(),
                 {
-                    let uri =req.uri().to_string();
+                    let uri = req.uri().to_string();
                     if uri == *"" {
                         "/".to_string()
                     } else {
@@ -365,7 +365,7 @@ pub(crate) async fn post(
                     }
                 },
                 ip.color_lightblue(),
-                "extern".color_lime()
+                "extern".color_pink()
             ));
             let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
             for (k, v) in append_headers {
@@ -379,4 +379,3 @@ pub(crate) async fn post(
     }
     HttpResponse::NoContent().finish()
 }
-
