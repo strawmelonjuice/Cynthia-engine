@@ -69,6 +69,9 @@ export const newPluginBase: PluginBase = {
   ],
 };
 export interface PluginPackageJson {
+  scripts: {
+    [key: string]: string;
+  };
   "cynthia-plugin": string;
   version: string;
   "cynthia-plugin-compat": number;

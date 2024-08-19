@@ -38,33 +38,75 @@ Cynthia.console.info(
 );
 const cynthiaPluginFoundation: PluginBase = newPluginBase;
 
-for (const pluginname in config.plugins) {
-  if (!config.plugins[pluginname].plugin_enabled) {
+for (const pluginIndex in config.plugins) {
+  if (!config.plugins[pluginIndex].plugin_enabled) {
     continue;
   }
   if (
-    config.plugins[pluginname].plugin_runtime === "javascript" ||
-    config.plugins[pluginname].plugin_runtime === "js"
+    config.plugins[pluginIndex].plugin_runtime === "javascript" ||
+    config.plugins[pluginIndex].plugin_runtime === "js"
   ) {
+    const pluginName = config.plugins[pluginIndex].plugin_name;
+    Cynthia.console.info(`Loading plugin ${pluginName}...`);
     try {
       const plugin: CynthiaPlugin = (() => {
         const pluginPackageJson: PluginPackageJson = require(
           path.join(
             process.cwd(),
             "cynthiaPlugins/",
-            pluginname,
+            pluginName,
             "/package.json",
           ),
         );
         if (pluginPackageJson["cynthia-plugin-compat"] !== Plugincompat) {
           throw new Error(
-            `Plugin ${pluginname} is not compatible with this version of Cynthia.`,
+            `Plugin ${pluginName} is not compatible with this version of Cynthia.`,
           );
         }
-        const pluginEntryJs = path.join(
+        const pluginDir = path.join(
           process.cwd(),
           "cynthiaPlugins/",
-          pluginname,
+          pluginName,
+        );
+        const exec = require("child_process").execSync;
+        const runner = (() => {
+          if (process.argv0.includes("bun")) {
+            return [
+              process.argv0 + " --bun --silent",
+              process.argv0 + " --silent",
+            ];
+          }
+          return ["npm", "npm"];
+        })();
+        Cynthia.console.info(`Running: '${runner[1]} install'`);
+        try {
+          const stdout = exec(`${runner[1]} install`, {
+            cwd: pluginDir,
+          });
+
+          Cynthia.console.debug(stdout);
+        } catch (error: unknown) {
+          Cynthia.console.error(
+            `Error installing dependencies for ${pluginName}: ${error}`,
+          );
+        }
+
+        // Now we gotta run the plugin's prerun script. (onBeforeRun)
+        if (pluginPackageJson.scripts.onBeforeRun) {
+          Cynthia.console.info(`Running: '${runner[0]} run onBeforeRun'`);
+          try {
+            const stdout = exec(`${runner[0]} run onBeforeRun`, {
+              cwd: pluginDir,
+            });
+            Cynthia.console.debug(stdout);
+          } catch (error) {
+            Cynthia.console.error(
+              `Error running onBeforeRun script for plugin ${pluginName}: ${error}`,
+            );
+          }
+        }
+        const pluginEntryJs = path.join(
+          pluginDir,
           pluginPackageJson["cynthia-plugin"],
         );
         return require(pluginEntryJs);
@@ -82,8 +124,14 @@ for (const pluginname in config.plugins) {
           plugin.modifyResponseHTMLBodyFragment,
         );
       }
+      if (typeof plugin.onClearInterval === "function") {
+        cynthiaPluginFoundation.onClearInterval.push(plugin.onClearInterval);
+      }
+      if (typeof plugin.onLoad === "function") {
+        plugin.onLoad(CynthiaPassed);
+      }
     } catch (e) {
-      Cynthia.console.error(`Error loading plugin ${pluginname}: ${e}`);
+      Cynthia.console.error(`Error loading plugin ${pluginName}: ${e}`);
     }
   }
 }
