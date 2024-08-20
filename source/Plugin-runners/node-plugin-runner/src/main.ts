@@ -89,6 +89,7 @@ for (const pluginIndex in config.plugins) {
           Cynthia.console.error(
             `Error installing dependencies for ${pluginName}: ${error}`,
           );
+          return;
         }
 
         // Now we gotta run the plugin's prerun script. (onBeforeRun)
@@ -103,6 +104,7 @@ for (const pluginIndex in config.plugins) {
             Cynthia.console.error(
               `Error running onBeforeRun script for plugin ${pluginName}: ${error}`,
             );
+            return;
           }
         }
         const pluginEntryJs = path.join(
