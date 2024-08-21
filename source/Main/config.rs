@@ -174,10 +174,7 @@ pub(crate) enum Plugin {
 }
 
 fn c_plugins() -> Vec<Plugin> {
-    vec![Plugin::JsPlugin {
-        plugin_name: "test".to_string(),
-        plugin_enabled: false,
-    }]
+    vec![]
 }
 
 /// A clone of the CynthiaConf struct

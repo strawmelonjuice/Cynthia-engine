@@ -29,6 +29,7 @@ use crate::tell::horizline;
 mod config;
 mod externalpluginservers;
 mod files;
+mod helpers;
 mod jsrun;
 mod publications;
 mod renders;
@@ -117,6 +118,9 @@ async fn main() {
         .to_ascii_lowercase()
         .as_str()
     {
+        "init" => {
+            interactive_initialiser();
+        }
         "help" => {
             println!(
                 "{}",
@@ -193,6 +197,277 @@ async fn main() {
             );
             process::exit(1);
         }
+    }
+}
+
+fn interactive_initialiser() {
+    // Steps for the initialiser:
+    // 1. Check if over a config already exists.
+    // 2. If it does, ask if the user wants to overwrite it, if not, exit.
+    // --> Continue with the rest of the initialiser
+    // 3. Ask if initialising a git repository is wanted, if so, do it.
+
+    // 4. Ask what configuration format (toml, jsonc, dhall, js) the user wants to use.
+    // 5. Check for Node/Bun/Deno, if not found, ask if the user wants to install it, or if they
+    //    want to disable the external js runtime.
+    // 6. Preview the config, ask if the user wants to save it.
+    // 7. Write the config file using config::actions::save_config from default.
+    // 8. Unpack the rest of the config from the tar.xz file included in the binary.
+    // 9. Ask if the user wants to install some default plugins.
+    // 10. Ask if the user wants to start the server.
+    // Exit, done.
+    let cd = std::env::current_dir().unwrap();
+    // Check if a configuration file already exists
+    let old_config = crate::config::actions::choose_config_location_option();
+    if old_config.is_some() {
+        // If so, ask if the user wants to overwrite it.
+        println!(
+            "{} A configuration file already exists in this directory! Do you want to overwrite it?",
+            "warning:".color_yellow()
+        );
+        let ans = inquire::Confirm::new("Overwrite the existing configuration file?")
+            .with_default(false)
+            .with_help_message("This will overwrite the existing configuration files.")
+            .prompt();
+
+        match ans {
+            Ok(true) => {}
+            _ => {
+                eprintln!("Exiting.");
+                process::exit(1);
+            }
+        }
+    } else {
+    }
+
+    // Ask if the user wants to initialise a git repository
+    let git: bool;
+    {
+        let ans = inquire::Confirm::new("Do you want to initialise a git repository?")
+    .with_default(true)
+    .with_help_message("This will initialise a git repository in the current directory. This is useful to keep track of changes, as well as to keep a backup of your work.")
+    .prompt();
+        if let Ok(true) = ans {
+            git = true;
+            let s = std::process::Command::new("git")
+                .arg("init")
+                .arg(".")
+                .current_dir(cd.clone())
+                .output();
+            match s {
+                Ok(_) => {}
+                Err(a) => {
+                    eprintln!("Could not initialise a git repository! Error: {}", a);
+                    process::exit(1);
+                }
+            }
+            if old_config.is_some() {
+                let old_config_path = match old_config.unwrap() {
+                    config::actions::ConfigLocations::Js(_) => cd.join("CynthiaConfig.js"),
+                    config::actions::ConfigLocations::Dhall(_) => cd.join("Cynthia.dhall"),
+                    config::actions::ConfigLocations::Toml(_) => cd.join("Cynthia.toml"),
+                    config::actions::ConfigLocations::JsonC(_) => cd.join("Cynthia.jsonc"),
+                };
+
+                fs::remove_file(old_config_path.clone()).unwrap();
+                let s = std::process::Command::new("git")
+                    .arg("add")
+                    .arg(old_config_path)
+                    .current_dir(cd.clone())
+                    .output();
+                match s {
+                    Ok(_) => {}
+                    Err(a) => {
+                        eprintln!(
+                            "Could not remove the old configuration file from git! Error: {}",
+                            a
+                        );
+                        process::exit(1);
+                    }
+                }
+            }
+        } else {
+            git = false;
+        }
+    }
+    let mut config_in_progress: CynthiaConf = CynthiaConf::default();
+
+    // Check for Node/Bun/Deno
+    // If not found, ask if the user wants to install Bun, or if they want to disable the external
+    // js runtime.
+
+    #[cfg(feature = "js_runtime")]
+    {
+        let s = std::process::Command::new(config_in_progress.runtimes.ext_js_rt.clone().as_str())
+            .arg("--version")
+            .output();
+        match s {
+            Ok(_) => {}
+            Err(e) => {
+                println!(
+                    "{} Could not find a suitable external JavaScript runtime! Error: {}",
+                    "warning:".color_yellow(),
+                    e
+                );
+                let ans = inquire::Confirm::new("Do you want to install Bun?")
+                    .with_default(true)
+                    .with_help_message("This will install Bun, a lightweight JavaScript runtime, to use with Cynthia.")
+                    .prompt();
+                if let Ok(true) = ans {
+                    let s = if cfg!(target_os = "windows") {
+                        std::process::Command::new("powershell")
+                            .arg("-c")
+                            .arg("irm bun.sh/install.ps1 | iex")
+                            .output()
+                    } else {
+                        std::process::Command::new("sh")
+                            .arg("-c")
+                            .arg("curl -fsSL bun.sh/install.sh | sh")
+                            .output()
+                    };
+                    match s {
+                        Ok(_) => {
+                            println!("{}", "Installed Bun!".color_ok_green());
+                            config_in_progress.runtimes.ext_js_rt = "bun".to_string();
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "{} Could not install Bun! Error: {}",
+                                "error:".color_red(),
+                                e
+                            );
+                            process::exit(1);
+                        }
+                    }
+                } else {
+                    let ans = inquire::Confirm::new("Do you want to disable the external JavaScript runtime?")
+                        .with_default(false)
+                        .with_help_message("This will disable the external JavaScript runtime, and will not allow you to use JavaScript plugins.")
+                        .prompt();
+                    if let Ok(true) = ans {
+                        println!("Disabling the external JavaScript runtime.");
+                        config_in_progress.runtimes.ext_js_rt = "disabled".to_string();
+                    }
+                }
+            }
+        }
+    }
+    // Ask the name of the site.
+    {
+        let site_name = inquire::Text::new("What is the name of your site?")
+            .with_help_message(
+                "This is the name of your site, and will be used in the title of the site.",
+            )
+            .prompt();
+        match site_name {
+            Ok(s) => {
+                config_in_progress.site.og_sitename = s.clone();
+                let defscen = crate::config::Scene {
+                    sitename: Some(s.clone()),
+                    ..Default::default()
+                };
+                config_in_progress.scenes = vec![defscen];
+            }
+            Err(e) => {
+                eprintln!("Could not get the site name! Error: {}", e);
+                process::exit(1);
+            }
+        }
+    }
+    // Preview config and ask if the user wants to save it, and if so, in what format.
+    {
+        println!("Preview of the configuration:");
+        println!(
+            "{}",
+            serde_yaml::to_string(&config_in_progress)
+                .unwrap()
+                .color_pink()
+        );
+        let confirm = inquire::Confirm::new("Do you want to save this configuration?")
+            .with_default(true)
+            .with_help_message("This will save the configuration file.")
+            .prompt();
+        let go_continue: bool;
+        if let Ok(true) = confirm {
+            go_continue = true
+        } else {
+            go_continue = false
+        };
+        if !go_continue {
+            println!("Cancelled.");
+            process::exit(0);
+        }
+
+        let options: Vec<&str> = vec!["toml", "jsonc", "dhall", "js"];
+
+        let save_format_answer: Result<&str, inquire::InquireError> = inquire::Select::new("Save config in format:", options)
+            .with_help_message("This will save the configuration in the specified format. If you are unsure, choose `toml`.")
+            .prompt();
+
+        match save_format_answer {
+            Ok(format) => {
+                let confifile = config::actions::save_config(format, config_in_progress);
+                if git {
+                    let s = std::process::Command::new("git")
+                        .arg("add")
+                        .arg(confifile)
+                        .current_dir(cd.clone())
+                        .output();
+                    match s {
+                        Ok(_) => {}
+                        Err(e) => {
+                            eprintln!("Could not add the configuration file to git! Error: {}", e);
+                            process::exit(1);
+                        }
+                    }
+                }
+            }
+            Err(_) => {
+                eprintln!("Could not get the save format! Exiting.");
+                process::exit(1);
+            }
+        }
+    }
+    // Unpack the rest of the config from the tar.xz file included in the binary.
+    {
+        let packed_folder = include_bytes!("../../target/cleansheet.tar.xz");
+        crate::helpers::decompress_folder(packed_folder, cd.clone());
+
+        if git {
+            for file in include_str!("../../target/cleansheet.filelist.txt").lines() {
+                let s = std::process::Command::new("git")
+                    .arg("add")
+                    .arg(file)
+                    .current_dir(cd.clone())
+                    .output();
+                match s {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("Could not add file {} to git! Error: {}", file, e);
+                        process::exit(1);
+                    }
+                }
+            }
+            let s = std::process::Command::new("git")
+                .arg("commit")
+                .arg("-m")
+                .arg("Initialise CynthiaWeb")
+                .current_dir(cd.clone())
+                .output();
+            match s {
+                Ok(a) => {
+                    println!("{}", String::from_utf8_lossy(&a.stdout).color_cyan());
+                }
+                Err(e) => {
+                    eprintln!("Could not commit to git! Error: {}", e);
+                    process::exit(1);
+                }
+            }
+        }
+        println!(
+            "{} ✨",
+            "Successfully wrote CynthiaConfig!".color_bright_orange()
+        );
     }
 }
 

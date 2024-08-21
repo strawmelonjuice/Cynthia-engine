@@ -17,7 +17,7 @@ const CONFIG_LOCATIONS: [&str; 4] = [
     "Cynthia.toml",
     "Cynthia.jsonc",
 ];
-enum ConfigLocations {
+pub(crate) enum ConfigLocations {
     Js(PathBuf),
     Dhall(PathBuf),
     Toml(PathBuf),
@@ -325,7 +325,7 @@ pub(crate) fn load_config() -> CynthiaConf {
     };
 }
 
-pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
+pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) -> PathBuf {
     let to_ =
         if to_ex.to_lowercase().as_str() == "js" || to_ex.to_lowercase().as_str() == "javascript" {
             String::from("js")
@@ -334,9 +334,9 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
         };
     let to = to_.as_str();
     {
-        let chosen_config_location = choose_config_location();
+        let chosen_config_location = choose_config_location_option();
         match chosen_config_location {
-            ConfigLocations::Js(_) => {
+            Some(ConfigLocations::Js(_)) => {
                 if to == "js" {
                     eprintln!(
                         "{} You are trying to convert a JavaScript configuration to JavaScript. This is not possible.",
@@ -345,7 +345,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                     process::exit(1);
                 }
             }
-            ConfigLocations::Dhall(_) => {
+            Some(ConfigLocations::Dhall(_)) => {
                 if to == "dhall" {
                     eprintln!(
                         "{} You are trying to convert a Dhall configuration to Dhall. This is not possible.",
@@ -354,7 +354,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                     process::exit(1);
                 }
             }
-            ConfigLocations::Toml(_) => {
+            Some(ConfigLocations::Toml(_)) => {
                 if to == "toml" {
                     eprintln!(
                         "{} You are trying to convert a TOML configuration to TOML. This is not possible.",
@@ -363,7 +363,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                     process::exit(1);
                 }
             }
-            ConfigLocations::JsonC(_) => {
+            Some(ConfigLocations::JsonC(_)) => {
                 if to == "jsonc" {
                     eprintln!(
                         "{} You are trying to convert a JSONC configuration to JSONC. This is not possible.",
@@ -372,6 +372,7 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
                     process::exit(1);
                 }
             }
+            None => {}
         }
     }
     let cynthiaconfdoclink = r#"https://strawmelonjuice.github.io/CynthiaWebsiteEngine/Admins/configuration/CynthiaConf.html"#;
@@ -671,22 +672,26 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
     };
     match fs::write(to_file.clone(), config_serialised) {
         Ok(_) => {
-            println!(
-                "{} Successfully exported the configuration to {}!",
-                "Success:".color_green(),
-                to_file
-                    .clone()
-                    .to_string_lossy()
-                    .replace("\\\\?\\", "")
-                    .color_bright_cyan()
-            );
-            if args.get(3).unwrap_or(&String::from("")).as_str() == "-k" {
+            if args.get(1) == Some(&String::from("convert")) {
                 println!(
+                    "{} Successfully exported the configuration to {}!",
+                    "Success:".color_green(),
+                    to_file
+                        .clone()
+                        .to_string_lossy()
+                        .replace("\\\\?\\", "")
+                        .color_bright_cyan()
+                );
+                if args.get(3).unwrap_or(&String::from("")).as_str() == "-k" {
+                    println!(
                     "{} Exiting without deleting old formats ({} flag). This is not recommended.",
                     "Info:".color_yellow(),
                     "-k".color_bright_yellow()
                 );
-                process::exit(0);
+                    process::exit(0);
+                }
+            } else {
+                return to_file;
             }
         }
         Err(e) => {
@@ -720,4 +725,29 @@ pub(crate) fn save_config(to_ex: &str, config: CynthiaConf) {
             }
         }
     }
+
+    process::exit(0);
+}
+
+pub(crate) fn choose_config_location_option() -> Option<ConfigLocations> {
+    let cd = std::env::current_dir().unwrap();
+    // In order of preference for Cynthia. I personally prefer TOML, but Cynthia would prefer Dhall. Besides, Dhall is far more powerful.
+    // JS, Dhall, TOML, jsonc
+    let config_locations: [ConfigLocations; 4] = [
+        ConfigLocations::Js(cd.join("CynthiaConfig.js")),
+        ConfigLocations::Dhall(cd.join("Cynthia.dhall")),
+        ConfigLocations::Toml(cd.join("Cynthia.toml")),
+        ConfigLocations::JsonC(cd.join("Cynthia.jsonc")),
+    ];
+    // let chosen_config_location = _chonfig_locations.iter().position(|p| p.exists());
+    // Whichever config file is found first, is the one that is chosen. Put it in the enum.
+
+    let mut a: Option<usize> = None;
+    for (i, p) in config_locations.iter().enumerate() {
+        if p.exists() {
+            a = Some(i);
+            break;
+        }
+    }
+    a.map(|p| config_locations[p].clone())
 }

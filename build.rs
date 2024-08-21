@@ -4,9 +4,37 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-const FILES: [&str; 1] = [""];
+const FILES: [&str; 1] = ["cleansheet"];
 
 fn main() {
+    {
+        let packed_folder = {
+            let mut pkd = Vec::new();
+            let mut archive = tar::Builder::new(&mut pkd);
+            archive.append_dir_all("", "cleansheet").unwrap();
+            archive.finish().unwrap();
+            drop(archive);
+            pkd
+        };
+
+        let compressed_file = lzma::compress(&packed_folder, 9).unwrap();
+        std::fs::write("./target/cleansheet.tar.xz", compressed_file).unwrap();
+        {
+            let mut filelist: String = String::new();
+            let paths = std::fs::read_dir("./cleansheet/").unwrap();
+
+            for path in paths {
+                filelist.push_str(
+                    format!("{}\n", path.unwrap().path().display())
+                        .as_str()
+                        .replace("./cleansheet/", "")
+                        .as_str(),
+                );
+            }
+            std::fs::write("./target/cleansheet.filelist.txt", filelist).unwrap();
+        }
+    }
+
     #[cfg(not(feature = "js_runtime"))]
     println!("cargo:warning=Node features are disabled. This means you won't need a node runtime to build or run Cynthia. It also means that some features are disabled.");
 
