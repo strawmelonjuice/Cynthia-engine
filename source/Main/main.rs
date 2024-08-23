@@ -7,9 +7,9 @@
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use futures::join;
-use log::info;
 use log::LevelFilter;
 use log::{debug, error};
+use log::{info, trace};
 use requestresponse::{assets_with_cache, serve};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
@@ -19,13 +19,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, process};
 use tell::{CynthiaColors, CynthiaStyles};
 use tokio::sync::{Mutex, MutexGuard};
-use tokio::{spawn, task};
+use tokio::spawn;
 
+use crate::cache::CynthiaCache;
 use crate::config::{CynthiaConf, CynthiaConfig, SceneCollectionTrait};
 use crate::externalpluginservers::EPSRequest;
-use crate::files::CynthiaCache;
 use crate::tell::horizline;
 
+mod cache;
 mod config;
 mod externalpluginservers;
 mod files;
@@ -218,7 +219,7 @@ async fn interactive_initialiser() {
     // Exit, done.
     let cd = std::env::current_dir().unwrap();
     // Check if a configuration file already exists
-    let old_config = crate::config::actions::choose_config_location_option();
+    let old_config = config::actions::choose_config_location_option();
     if old_config.is_some() {
         // If so, ask if the user wants to overwrite it.
         println!(
@@ -237,8 +238,7 @@ async fn interactive_initialiser() {
                 process::exit(1);
             }
         }
-    } else {
-    }
+    } 
 
     // Ask if the user wants to initialise a git repository
     let git: bool;
@@ -249,7 +249,7 @@ async fn interactive_initialiser() {
     .prompt();
         if let Ok(true) = ans {
             git = true;
-            let s = std::process::Command::new("git")
+            let s = process::Command::new("git")
                 .arg("init")
                 .arg(".")
                 .current_dir(cd.clone())
@@ -270,7 +270,7 @@ async fn interactive_initialiser() {
                 };
 
                 fs::remove_file(old_config_path.clone()).unwrap();
-                let s = std::process::Command::new("git")
+                let s = process::Command::new("git")
                     .arg("add")
                     .arg(old_config_path)
                     .current_dir(cd.clone())
@@ -298,7 +298,7 @@ async fn interactive_initialiser() {
 
     #[cfg(feature = "js_runtime")]
     {
-        let s = std::process::Command::new(config_in_progress.runtimes.ext_js_rt.clone().as_str())
+        let s = process::Command::new(config_in_progress.runtimes.ext_js_rt.clone().as_str())
             .arg("--version")
             .output();
         match s {
@@ -315,12 +315,12 @@ async fn interactive_initialiser() {
                     .prompt();
                 if let Ok(true) = ans {
                     let s = if cfg!(target_os = "windows") {
-                        std::process::Command::new("powershell")
+                        process::Command::new("powershell")
                             .arg("-c")
                             .arg("irm bun.sh/install.ps1 | iex")
                             .output()
                     } else {
-                        std::process::Command::new("sh")
+                        process::Command::new("sh")
                             .arg("-c")
                             .arg("curl -fsSL bun.sh/install.sh | sh")
                             .output()
@@ -362,7 +362,7 @@ async fn interactive_initialiser() {
         match site_name {
             Ok(s) if s != *"" => {
                 config_in_progress.site.og_sitename = s.clone();
-                let defscen = crate::config::Scene {
+                let defscen = config::Scene {
                     sitename: Some(s.clone()),
                     ..Default::default()
                 };
@@ -430,7 +430,7 @@ async fn interactive_initialiser() {
             Ok(format) => {
                 let confifile = config::actions::save_config(format, config_in_progress);
                 if git {
-                    let s = std::process::Command::new("git")
+                    let s = process::Command::new("git")
                         .arg("add")
                         .arg(confifile)
                         .current_dir(cd.clone())
@@ -453,11 +453,11 @@ async fn interactive_initialiser() {
     // Unpack the rest of the config from the tar.xz file included in the binary.
     {
         let packed_folder = include_bytes!("../../target/cleansheet.tar.xz");
-        crate::helpers::decompress_folder(packed_folder, cd.clone());
+        helpers::decompress_folder(packed_folder, cd.clone());
 
         if git {
             for file in include_str!("../../target/cleansheet.filelist.txt").lines() {
-                let s = std::process::Command::new("git")
+                let s = process::Command::new("git")
                     .arg("add")
                     .arg(file)
                     .current_dir(cd.clone())
@@ -470,7 +470,7 @@ async fn interactive_initialiser() {
                     }
                 }
             }
-            let s = std::process::Command::new("git")
+            let s = process::Command::new("git")
                 .arg("commit")
                 .arg("-m")
                 .arg("Initialise CynthiaWeb")
@@ -704,10 +704,10 @@ use std::time::Duration;
 use tokio::time;
 async fn cache_manager(server_context_mutex: Arc<Mutex<ServerContext>>) {
     let server_context_mutex_clone = server_context_mutex.clone();
-    let forever = task::spawn(async move {
+    let forever = spawn(async move {
         let mut interval = time::interval(Duration::from_secs(2));
         loop {
-            debug!("Cache manager tick");
+            trace!("Cache manager tick");
             interval.tick().await;
             {
                 let mut server_context: MutexGuard<ServerContext> =
@@ -821,7 +821,7 @@ pub(crate) mod tell {
         }
     }
     pub(crate) fn horizline() -> String {
-        ("\u{2500}".repeat(termsize::get().unwrap().cols as usize)).to_string()
+        "\u{2500}".repeat(termsize::get().unwrap().cols as usize).to_string()
     }
     type CynthiaStyledString = String;
 

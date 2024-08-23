@@ -4,14 +4,17 @@
  * Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, see the LICENSE file for more information.
  */
 
-use std::path::Path;
-use std::{fs, process};
-
+use crate::config::{CynthiaConfClone, CynthiaConfig};
+use crate::ServerContext;
+use actix_web::web::Data;
+use futures::Future;
 use jsonc_parser::parse_to_serde_value as preparse_jsonc;
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
-
-use crate::config::{CynthiaConfClone, CynthiaConfig};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::process;
+use tokio::sync::Mutex;
 
 pub(crate) type CynthiaPublicationList = Vec<CynthiaPublication>;
 pub(crate) trait PostLists {
@@ -90,7 +93,9 @@ pub(crate) trait CynthiaPublicationListTrait {
     fn get_root(&self) -> Option<CynthiaPublication>;
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication>;
     fn validate(&self, config: CynthiaConfClone) -> bool;
-    fn load() -> CynthiaPublicationList;
+    fn load(
+        server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    ) -> impl Future<Output = CynthiaPublicationList>;
 }
 impl CynthiaPublicationListTrait for CynthiaPublicationList {
     fn only_posts(&self) -> CynthiaPostList {
@@ -214,21 +219,29 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
         // Return true if all checks passed
         valid.iter().all(|x| *x)
     }
-    fn load() -> CynthiaPublicationList {
-        if Path::new("./cynthiaFiles/published.yaml").exists() {
-            let file = "./cynthiaFiles/published.yaml".to_owned();
-            let unparsed_yaml = fs::read_to_string(file).expect("Couldn't find or load that file.");
-            serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
-                error!("Published.yaml contains invalid Cynthia-instructions.",);
-                Vec::new()
-            })
-        } else {
-            let file = "./cynthiaFiles/published.jsonc".to_owned();
-            let unparsed_json = match fs::read_to_string(file) {
-                Ok(t) => t,
-                Err(e) => {
-                    error!("Couldn't find or load published.jsonc.\n\n\t\t{e}");
-                    process::exit(1);
+    async fn load(server_context_mutex: Data<Arc<Mutex<ServerContext>>>) -> CynthiaPublicationList {
+        if Path::new("./cynthiaFiles/published.jsonc").exists() {
+            let unparsed_json = {
+                let res = {
+                    let server_context = server_context_mutex.lock().await;
+                    (|| -> Result<String, String> {
+                        let file_pathbuf = PathBuf::from("./cynthiaFiles/published.jsonc");
+                        match std::str::from_utf8(&crate::files::fs_get(
+                            server_context,
+                            file_pathbuf,
+                            crate::files::FilePriority::High,
+                        )?) {
+                            Ok(t) => Ok(t.to_string()),
+                            Err(e) => Err(format!("{e}")),
+                        }
+                    })()
+                };
+                match res {
+                    Ok(t) => t,
+                    Err(e) => {
+                        error!("Couldn't find or load published.jsonc.\n\n\t\t{e}");
+                        process::exit(1);
+                    }
                 }
             };
             // println!("{}", unparsed_json);
@@ -245,6 +258,38 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
                 error!("Published.json contains invalid Cynthia-instructions.\n\n\t\t{e}, {k}",);
                 Vec::new()
             })
+        } else if Path::new("./cynthiaFiles/published.yaml").exists() {
+            let unparsed_yaml = {
+                let res = {
+                    let server_context = server_context_mutex.lock().await;
+
+                    (|| -> Result<String, String> {
+                        let file_pathbuf = PathBuf::from("./cynthiaFiles/published.yaml");
+                        match std::str::from_utf8(&crate::files::fs_get(
+                            server_context,
+                            file_pathbuf,
+                            crate::files::FilePriority::High,
+                        )?) {
+                            Ok(t) => Ok(t.to_string()),
+                            Err(e) => Err(format!("{e}")),
+                        }
+                    })()
+                };
+                match res {
+                    Ok(t) => t,
+                    Err(e) => {
+                        error!("Couldn't find or load published.yaml.\n\n\t\t{e}");
+                        process::exit(1);
+                    }
+                }
+            };
+            serde_yaml::from_str(&unparsed_yaml).unwrap_or_else(|_e| {
+                error!("Published.yaml contains invalid Cynthia-instructions.",);
+                Vec::new()
+            })
+        } else {
+            error!("Couldn't find published.jsonc or published.yaml.");
+            process::exit(1);
         }
     }
 }

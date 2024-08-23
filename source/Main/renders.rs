@@ -7,7 +7,7 @@ use actix_web::web::Data;
 use log::error;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 
 use crate::config::CynthiaConfClone;
 use crate::publications::{CynthiaPostList, CynthiaPublicationList, CynthiaPublicationListTrait};
@@ -57,17 +57,17 @@ impl RenderrerResponse {
     }
 }
 
-pub(crate) fn check_pgid(
+pub(crate) async fn check_pgid(
     pgid: String,
-    server_context: &MutexGuard<ServerContext>,
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
 ) -> PGIDCheckResponse {
     let page_id = if pgid == *"" {
         String::from("root")
     } else {
         pgid
     };
-    let published = CynthiaPublicationList::load();
-
+    let published = CynthiaPublicationList::load(server_context_mutex.clone()).await;
+    let server_context = server_context_mutex.lock().await;
     if !published.validate(server_context.config.clone()) {
         error!("Incorrect publications found in publications.jsonc.");
         return PGIDCheckResponse::Error;
@@ -94,7 +94,7 @@ pub(crate) async fn render_from_pgid(
     let config = server_context_mutex
         .lock_callback(|a| a.config.clone())
         .await;
-    let published = CynthiaPublicationList::load();
+    let published = CynthiaPublicationList::load(server_context_mutex.clone()).await;
     let publication = if pgid == *"" {
         published.get_root()
     } else {
@@ -260,7 +260,8 @@ mod in_renderer {
                 filter,
                 ..
             } => {
-                let publicationlist: CynthiaPublicationList = CynthiaPublicationList::load();
+                let publicationlist: CynthiaPublicationList =
+                    CynthiaPublicationList::load(server_context_mutex.clone()).await;
                 let postlist: CynthiaPostList = publicationlist.only_posts();
                 let filtered_postlist = postlist.filter(filter);
                 postlist_template_data = PostListPublicationTemplateData {
@@ -387,8 +388,7 @@ mod in_renderer {
                     .unwrap()
                     .canonicalize()
                     .unwrap()
-                    .join("cynthiaFiles/assets/")
-                    .join(stylefile);
+                    .join("./cynthiaFiles/assets/".to_string() + stylefile.as_str());
                 if path.exists() {
                     let css = inlines::inline_css(path, server_context_mutex.clone()).await;
                     head.push_str(&css);
@@ -410,8 +410,7 @@ mod in_renderer {
                     .unwrap()
                     .canonicalize()
                     .unwrap()
-                    .join("cynthiaFiles/assets/")
-                    .join(script);
+                    .join("./cynthiaFiles/assets/".to_string() + script.as_str());
                 if path.exists() {
                     let d = inlines::inline_js(path, server_context_mutex.clone()).await;
                     htmlbody.push_str(&d);
@@ -660,7 +659,6 @@ mod inlines {
                     Ok(output) => {
                         if output.status.success() {
                             let d = format!("{}", String::from_utf8_lossy(&output.stdout));
-                            debug!("Minified JS: {}", d);
                             {
                                 let mut server_context = server_context_mutex.lock().await;
                                 server_context
@@ -755,7 +753,6 @@ mod inlines {
                     Ok(output) => {
                         if output.status.success() {
                             let d = format!("{}", String::from_utf8_lossy(&output.stdout));
-                            debug!("Minified JS: {}", d);
                             {
                                 let mut server_context = server_context_mutex.lock().await;
                                 server_context

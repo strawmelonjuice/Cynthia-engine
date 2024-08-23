@@ -11,9 +11,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::cache::CynthiaCacheExtraction;
 use crate::config::CynthiaConfig;
 use crate::externalpluginservers::{contact_eps, EPSRequestBody};
-use crate::files::CynthiaCacheExtraction;
 use crate::renders::render_from_pgid;
 use crate::LockCallback;
 use crate::{renders, ServerContext};
@@ -21,21 +21,21 @@ use crate::{renders, ServerContext};
 fn urlspace() -> (usize, usize) {
     let fullwidth = termsize::get().unwrap().cols as usize;
 
-    // let w_a = if fullwidth < 210 {
-    //     fullwidth
-    //         .checked_div(10)
-    //         .unwrap_or(10)
-    //         .checked_mul(4)
-    //         .unwrap_or(30)
-    // } else {
-    //     140
-    // };
+    let w_a = if fullwidth < 210 {
+        fullwidth
+            .checked_div(10)
+            .unwrap_or(10)
+            .checked_mul(4)
+            .unwrap_or(30)
+    } else {
+        140
+    };
 
-    let w_a: usize = 30;
+    // let w_a: usize = 30;
     let w_s = w_a.checked_sub(3).unwrap_or(27);
     // let w_s = 0;
 
-    debug!("Full widht is {fullwidth} cols. Any request urls will be printed in a space of {} characters, with the actual url being {} characters long.", w_a, w_s);
+    // Full widht is {fullwidth} cols. Any request urls will be printed in a space of {w_a} characters, with the actual url being {w_s} characters long.
     (w_s, w_a)
     // (53, 55)
 }
@@ -111,9 +111,7 @@ pub(crate) async fn serve(
         crate::externalpluginservers::EPSResponseBody::Disabled => {}
         _ => return HttpResponse::InternalServerError().body("Internal server error."),
     }
-    let s = server_context_mutex
-        .lock_callback(|servercontext| renders::check_pgid(page_id.to_string(), servercontext))
-        .await;
+    let s = renders::check_pgid(page_id.to_string(), server_context_mutex.clone()).await;
     match s {
         renders::PGIDCheckResponse::Ok => {
             let from_cache: bool;

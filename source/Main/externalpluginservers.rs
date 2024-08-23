@@ -11,6 +11,7 @@
 // This module will be a testing ground for a new system that will be more reliable and more secure.
 // More specifically: The plugins will attach to js again, but inside of a controlled environment.
 use crate::config::ConfigExternalJavascriptRuntime;
+use crate::config::CynthiaConfClone;
 
 #[cfg(feature = "js_runtime")]
 #[derive(Debug)]
@@ -59,7 +60,7 @@ use tokio::sync::Mutex;
 use crate::EPSCommunicationsID;
 use crate::ServerContext;
 #[cfg(feature = "js_runtime")]
-use crate::{config::CynthiaConfig, files::tempfolder};
+use crate::{cache::tempfolder, config::CynthiaConfig};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct EPSRequest {
@@ -122,8 +123,6 @@ pub(crate) async fn main(
     server_context_mutex: Arc<Mutex<ServerContext>>,
     mut eps_r: Receiver<EPSRequest>,
 ) {
-    use crate::tell::CynthiaColors;
-
     let config_clone = {
         // We need to clone the config because we can't hold the lock while we're in the tokio runtime.
         let server_context = server_context_mutex.lock().await;
@@ -136,6 +135,75 @@ pub(crate) async fn main(
     std::fs::write(jstempfolder.join("main.mjs"), jsfile).unwrap();
     // now we can run the javascript
     let external_js_runtime_binary: &str = config_clone.runtimes.ext_js_rt.as_ref();
+
+    let p = Arc::new(std::sync::Mutex::new(String::new()));
+    let ctx_clone = server_context_mutex.clone();
+    let mut proc = new_proc(
+        fun_name(
+            external_js_runtime_binary,
+            &config_clone,
+            &mut eps_r,
+            &server_context_mutex,
+        )
+        .await,
+        p.clone(),
+        ctx_clone.clone(),
+        config_clone.clone(),
+    );
+    let mut wait = tokio::time::interval(tokio::time::Duration::from_micros(2000));
+    loop {
+        // This is the main loop. It will receive requests from the server and send them to the
+        // external js runtime.
+        //
+        // It needs to wait before sending thru, though, because multiple lines will overflow the js buffer.
+
+        if let Some(o) = eps_r.recv().await {
+            wait.tick().await;
+            let mut s = String::from("parse: ");
+            s.push_str(serde_json::to_string(&o).unwrap().as_str());
+            debug!("Sending to JsPluginRuntime: `{}`", s);
+            match proc.send(s.replace("\n", "").as_str()) {
+                Ok(_) => {
+                    debug!("Sent request to external plugin server.");
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
+                    // The process has died. Restart it.
+                    proc = new_proc(
+                        fun_name(
+                            external_js_runtime_binary,
+                            &config_clone,
+                            &mut eps_r,
+                            &server_context_mutex,
+                        )
+                        .await,
+                        p.clone(),
+                        ctx_clone.clone(),
+                        config_clone.clone(),
+                    );
+                    match proc.send(s.replace("\n", "").as_str()) {
+                        Ok(_) => {
+                            debug!("Sent request to external plugin server.");
+                        }
+                        _ => {
+                            panic!("Failed repeatedly to send request to external plugin server.");
+                        }
+                    };
+                }
+                _ => {
+                    panic!("Failed to send request to external plugin server.");
+                }
+            };
+        }
+    }
+}
+
+async fn fun_name(
+    external_js_runtime_binary: &str,
+    config_clone: &CynthiaConfClone,
+    eps_r: &mut Receiver<EPSRequest>,
+    server_context_mutex: &Arc<Mutex<ServerContext>>,
+) -> Command {
+    let jstempfolder = tempfolder().join("js");
     let mut r = Command::new(external_js_runtime_binary);
     if config_clone.runtimes.ext_js_rt.validate().is_err() {
         error!("Invalid node runtime path. Plugins will not run.");
@@ -161,7 +229,6 @@ pub(crate) async fn main(
             }
         }
     };
-    let rt = tokio::runtime::Runtime::new().unwrap();
     if external_js_runtime_binary.contains("deno") {
         r.arg("run");
         r.arg("--allow-read");
@@ -178,8 +245,19 @@ pub(crate) async fn main(
             .unwrap()
             .as_str(),
     ]);
-    let p = Arc::new(std::sync::Mutex::new(String::new()));
-    let mut proc = InteractiveProcess::new(&mut r, move |line| {
+    r
+}
+
+fn new_proc(
+    mut r: Command,
+    p: Arc<std::sync::Mutex<String>>,
+    ctx_clone: Arc<Mutex<ServerContext>>,
+    config_clone: CynthiaConfClone,
+) -> InteractiveProcess {
+    use crate::tell::CynthiaColors;
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    InteractiveProcess::new(&mut r, move |line| {
         let y = p.clone();
         if let Ok(o) = line {
             if o.starts_with("parse: ") {
@@ -190,7 +268,7 @@ pub(crate) async fn main(
                 let q = from_str::<EPSResponse>(z.as_str());
                 if let Ok(o) = q {
                     debug!("JsPluginRuntime parsed a response: {:?}", o);
-                    rt.spawn(and_now(o, server_context_mutex.clone()));
+                    rt.spawn(and_now(o, ctx_clone.clone()));
                     z.clear();
                 }
             } else if o.replace("\n", "").is_empty() {
@@ -216,7 +294,9 @@ pub(crate) async fn main(
                 } else if o.starts_with("warn: ") {
                     warn!(
                         "[JsPluginRuntime]: {}",
-                        format!("{}", o.split("warn: ").collect::<Vec<&str>>()[1]).color_orange()
+                        o.split("warn: ").collect::<Vec<&str>>()[1]
+                            .to_string()
+                            .color_orange()
                     );
                 } else if o.starts_with("log: ") {
                     config_clone.clone().tell(format!(
@@ -227,15 +307,7 @@ pub(crate) async fn main(
             }
         }
     })
-    .unwrap();
-    loop {
-        if let Some(o) = eps_r.recv().await {
-            let mut s = String::from("parse: ");
-            s.push_str(serde_json::to_string(&o).unwrap().as_str());
-            debug!("Sending to JsPluginRuntime: `{}`", s);
-            proc.send(s.as_str()).unwrap();
-        }
-    }
+    .unwrap()
 }
 
 #[cfg(feature = "js_runtime")]
