@@ -1,0 +1,66 @@
+{{! This template is used by Cynthia to put stuff in the <body></body> tags of posts. }}
+
+<div id="link-menu">
+<a href="/" {{#if (streq meta.id "root")}}class="active"{{/if}}>Home</a>
+<a href="/posts" {{#if (streq meta.id "posts")}}class="active"{{/if}}>Post list</a>
+<a href="/what-is-cynthia" {{#if (streq meta.id "what-is-cynthia")}}class="active"{{/if}}>What is Cynthia</a>
+</div>
+<main>
+  {{{content}}}
+  {{#if meta.tags}}
+    <div id="taglist">
+      <h4>Tags</h4>
+      {{#each meta.tags}}
+        <a href="/tag/{{this}}"><code class="post_tag">{{this}}</code></a>
+      {{/each}}
+    </div>
+  {{/if}}
+</main>
+
+
+
+
+<div
+  class="pageinfosidebar"
+  id="pageinfosidebar"
+  style="opacity: 0.3; transition: 2s ease-out;"
+  onmouseover="this.style.opacity = '100%'"
+  onmouseout="this.style.opacity = '30%'"
+>
+  <span
+    class="not-on-mobile"
+    style="position:absolute;right:0;top:0;font-size: 3em; cursor: pointer; "
+    id="pageinfosidebar-rollup"
+  >⇙</span>
+  <p class="pageinfo-title">{{meta.title}}</p>
+  <ul>
+    {{#if meta.author}}
+      {{#if meta.author.name}}
+        <li>Author:
+          {{#if meta.author.thumbnail}}<img
+              alt="Author thumbnail"
+              style="width: 1.5em; border-radius: 50%; border: 1px solid gray;"
+              src="{{meta.author.thumbnail}}"
+            />{{/if}}
+          {{meta.author.name}}</li>
+      {{/if}}
+    {{/if}}
+    {{#if meta.category}}
+    <li>Category: 
+<a href="/category/{{meta.category}}">{{meta.category}}</a></li>
+    {{/if}}
+    {{#if meta.dates}}
+    <li>Posted:
+      <span class="unparsedtimestamp">{{meta.dates.published}}</span></li>
+      {{#if meta.dates.altered}}
+      {{#unless (streq meta.dates.altered meta.dates.published)}}
+        <li>Last modified:
+          <span class="unparsedtimestamp">{{meta.dates.altered}}</span></li>
+      {{/unless}}{{/if}}
+    {{/if}}
+    
+  </ul>
+  <p class="pageinfo-shortversion">{{meta.desc}}</p>
+</div>
+
+

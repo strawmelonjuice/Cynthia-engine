@@ -303,7 +303,7 @@ impl Default for Lifetimes {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
 // #[serde(rename_all = "camelCase")]
 pub(crate) struct Site {
     #[serde(alias = "404-page")]
@@ -321,6 +321,17 @@ pub(crate) struct Site {
     pub(crate) og_sitename: String,
 
     pub(crate) meta: Meta,
+}
+
+impl Default for Site {
+    fn default() -> Self {
+        Site {
+            notfound_page: String::from("404"),
+            site_baseurl: String::new(),
+            og_sitename: String::new(),
+            meta: Meta { enable_tags: false },
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, StaticType)]
@@ -365,8 +376,8 @@ impl Default for Scene {
             stylefile: Some(String::from("/styles/default.css")),
             script: Some(String::from("/scripts/client.js")),
             templates: Templates {
-                post: String::from("../default"),
-                page: String::from("../default"),
+                post: String::from("default"),
+                page: String::from("default"),
                 postlist: String::from("default"),
             },
         }

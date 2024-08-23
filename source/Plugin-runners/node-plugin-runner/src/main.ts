@@ -184,6 +184,20 @@ if (process.argv0.includes("deno")) {
   );
 }
 process.stdin.resume();
-process.stdin.on("data", async (s) => {
-  await handle(s, cynthiaPluginFoundation);
+// process.stdin.on("data", async (s) => {
+//   await handle(s, cynthiaPluginFoundation);
+// });
+import os from "node:os";
+let BUFF = "";
+process.stdin.on("data", (buff) => {
+  const content = buff.toString("utf-8");
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === os.EOL) {
+      // Cynthia.console.info(`Got a request: ${BUFF}`);
+      handle(BUFF, cynthiaPluginFoundation);
+      BUFF = "";
+    } else {
+      BUFF += content[i];
+    }
+  }
 });

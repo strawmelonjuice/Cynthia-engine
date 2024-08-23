@@ -20,14 +20,29 @@ import {
 } from "cynthia-plugin-api/main";
 import * as handlebars from "handlebars";
 import * as fs from "node:fs";
-import type {PluginBase} from "./types/internal_plugins";
+import type { PluginBase } from "./types/internal_plugins";
 
-export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
-  if (buffer.toString().startsWith("parse: ")) {
-    console.debug("Got a request.");
-    console.debug(`Buffer: ${buffer}`);
-    const requestAsString = buffer.toString().replace("parse: ", "");
-    const request: GenericRequest = JSON.parse(requestAsString);
+export default async function handle(
+  incoming: string,
+  cynthiabase: PluginBase,
+) {
+  console.error("Got: " + incoming);
+  console.log("Going to parse: " + incoming);
+  if (incoming.startsWith("parse: ")) {
+    Cynthia.console.debug("Got a request.");
+    Cynthia.console.debug(`Buffer: ${incoming}`);
+    const requestAsString = incoming.replace("parse: ", "");
+    let request: GenericRequest;
+    try {
+      request = JSON.parse(requestAsString);
+    } catch (_e) {
+      Cynthia.console.error("Failed to parse JSON: " + requestAsString);
+      const response = new ErrorResponse(
+        0,
+        "Expected JSON, got: " + requestAsString,
+      );
+      return Cynthia.send(response);
+    }
     switch (request.body.for) {
       case "Exit": {
         console.error("Exiting...");
@@ -57,7 +72,11 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
           const compiled = handlebars.compile(template);
           let htmlBody = compiled(request.body.template_data);
           for (const modifier of cynthiabase.modifyResponseHTMLBodyFragment) {
-            htmlBody = modifier(htmlBody, request.body.template_data.meta, CynthiaPassed);
+            htmlBody = modifier(
+              htmlBody,
+              request.body.template_data.meta,
+              CynthiaPassed,
+            );
           }
           const response = new OkStringResponse(request.id, htmlBody);
           return Cynthia.send(response);
@@ -79,7 +98,11 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
           const compiled = handlebars.compile(template);
           let htmlBody = compiled(request.body.template_data);
           for (const modifier of cynthiabase.modifyResponseHTMLBodyFragment) {
-            htmlBody = modifier(htmlBody, request.body.template_data.meta, CynthiaPassed);
+            htmlBody = modifier(
+              htmlBody,
+              request.body.template_data.meta,
+              CynthiaPassed,
+            );
           }
           const response = new OkStringResponse(request.id, htmlBody);
           return Cynthia.send(response);
@@ -100,6 +123,6 @@ export default async function handle(buffer: Buffer, cynthiabase: PluginBase) {
       }
     }
   } else {
-    console.log(`Got: ${buffer}`);
+    console.log(`Got: ${incoming}`);
   }
 }

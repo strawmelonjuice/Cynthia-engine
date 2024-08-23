@@ -119,7 +119,7 @@ async fn main() {
         .as_str()
     {
         "init" => {
-            interactive_initialiser();
+            interactive_initialiser().await;
         }
         "help" => {
             println!(
@@ -200,7 +200,7 @@ async fn main() {
     }
 }
 
-fn interactive_initialiser() {
+async fn interactive_initialiser() {
     // Steps for the initialiser:
     // 1. Check if over a config already exists.
     // 2. If it does, ask if the user wants to overwrite it, if not, exit.
@@ -360,7 +360,7 @@ fn interactive_initialiser() {
             )
             .prompt();
         match site_name {
-            Ok(s) => {
+            Ok(s) if s != *"" => {
                 config_in_progress.site.og_sitename = s.clone();
                 let defscen = crate::config::Scene {
                     sitename: Some(s.clone()),
@@ -368,19 +368,41 @@ fn interactive_initialiser() {
                 };
                 config_in_progress.scenes = vec![defscen];
             }
+            Ok(_) => {
+                println!("Using default site name: 'My Cynthia Site'");
+                config_in_progress.site.og_sitename = "My Cynthia Site".to_string();
+            }
             Err(e) => {
                 eprintln!("Could not get the site name! Error: {}", e);
                 process::exit(1);
             }
         }
     }
+
+    // {
+    //         // Ask which default plugins to install, multiple choice.
+    //         let plugins = vec![
+    //             "cynthia-plugin-markdown",
+    //             "cynthia-plugin-sass",
+    //             "cynthia-plugin-typescript",
+    //             "cynthia-plugin-external",
+    //         ];
+    //         let plugins_answer: Result<Vec<&str>, inquire::InquireError> = inquire::MultiSelect::new("Which default plugins do you want to install?", plugins)
+    //             .with_help_message("This will install the selected plugins.")
+    //             .prompt();
+    //     }
+    // }
+
     // Preview config and ask if the user wants to save it, and if so, in what format.
     {
         println!("Preview of the configuration:");
         println!(
             "{}",
-            serde_yaml::to_string(&config_in_progress)
+            toml::to_string(&config_in_progress)
                 .unwrap()
+                // serde_yaml::to_string(&config_in_progress)
+                //     .unwrap()
+                // format!("{:#?}", config_in_progress)
                 .color_pink()
         );
         let confirm = inquire::Confirm::new("Do you want to save this configuration?")
@@ -468,6 +490,24 @@ fn interactive_initialiser() {
             "{} ✨",
             "Successfully wrote CynthiaConfig!".color_bright_orange()
         );
+        {
+            // Ask if the server admin wants to start the server now.
+            let ans = inquire::Confirm::new("Do you want to start Cynthia now?")
+                .with_default(true)
+                .with_help_message("This will start the server.")
+                .prompt();
+            match ans {
+                Ok(a) if a => start().await,
+                Ok(_) => {
+                    println!("Okay! See you later!");
+                    process::exit(0);
+                }
+                Err(e) => {
+                    eprintln!("Could not get the answer! Error: {}", e);
+                    process::exit(1);
+                }
+            }
+        }
     }
 }
 
@@ -674,6 +714,8 @@ async fn cache_manager(server_context_mutex: Arc<Mutex<ServerContext>>) {
                     server_context_mutex_clone.lock().await;
                 // trace!("Cache: {:?}", server_context.cache);
                 if server_context.estimate_cache_size() > server_context.config.cache.max_cache_size
+                // if it's 0, check is disabled
+                    && server_context.config.cache.max_cache_size != 0
                 {
                     info!(
                         "Maximum cache size of {} exceeded, clearing cache now.",

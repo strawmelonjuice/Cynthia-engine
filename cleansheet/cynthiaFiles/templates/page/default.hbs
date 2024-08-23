@@ -1,0 +1,8 @@
+{{! This template is used by Cynthia to put stuff in the <body></body> tags of pages. }}
+
+<div id="link-menu">
+<a href="/" {{#if (streq meta.id "root")}}class="active"{{/if}}>Home</a>
+<a href="/posts" {{#if (streq meta.id "posts")}}class="active"{{/if}}>Post list</a>
+<a href="/what-is-cynthia" {{#if (streq meta.id "what-is-cynthia")}}class="active"{{/if}}>What is Cynthia</a>
+</div>
+<main>{{{content}}}</main>

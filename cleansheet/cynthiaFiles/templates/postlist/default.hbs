@@ -1,0 +1,22 @@
+{{! This template is used by Cynthia to put stuff in the <body></body> tags of postlists. }}
+
+<div id="link-menu">
+<a href="/" {{#if (streq meta.id "root")}}class="active"{{/if}}>Home</a>
+<a href="/posts" {{#if (streq meta.id "posts")}}class="active"{{/if}}>Post list</a>
+<a href="/what-is-cynthia" {{#if (streq meta.id "what-is-cynthia")}}class="active"{{/if}}>What is Cynthia</a>
+</div>
+<main style="justify-content: center;">
+<h1>{{meta.title}}</h1>
+{{#if meta.desc}}
+<p>{{meta.desc}}</p>
+{{/if}}
+<table class="post-listpreview"><tr id="post-listpreview-h"><th id="h-post-date">Posted on</th><th id="h-post-title">Title</th><th id="h-post-category">Category</th></tr>
+{{#if posts}}
+{{#each posts}}
+<tr><td class="post-date"><span class="unparsedtimestamp post-date">{{this.dates.published}}</span></td><td><a href="/{{this.id}}"><span class="post-title">{{this.short}}</span></a></td><td class="post-category"><a href="/c/{{this.category}}">{{this.category}}</a></td></tr><tr><td></td><td class="post-desc"><p>{{this.desc}}</p></td></tr>
+{{/each}}
+</table>
+{{else}}
+<p>No posts found.</p>
+{{/if}}
+</main>

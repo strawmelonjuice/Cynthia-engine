@@ -1,0 +1,96 @@
+// A published.jsonc file for testing.
+[
+	{
+		"postlist": {
+			"id": "posts",
+			"title": "All posts",
+			"description": "A list of all posts.",
+			"filter": "Latest",
+			"scene": "default"
+		}
+	},
+	{
+		"postlist": {
+			"id": "cynthia",
+			"title": "Cynthia's posts",
+			"description": "A list of all posts by Cynthia.",
+			"filter": {
+				"author": "Cynthia"
+			},
+			"scene": "default",
+			"author": "Cynthia"
+		}
+	},
+	{
+		"post": {
+			"id": "hello-world",
+			"title": "Hello, World!",
+			"short": "A simple hello world post.",
+			"category": "Cynthia",
+			"tags": ["hello", "world", "simple"],
+			"author": {
+				"name": "Mar (@strawmelonjuice)",
+				"thumbnail": "https://avatars.githubusercontent.com/u/101558380?s=400&u=aa8f776b3e11f02130575d1b46851cca05a0c981&v=4"
+			},
+			"content": {
+				"local": {
+					"source": {
+						"as": "markdown",
+						"value": "hello-world.md"
+					}
+				}
+			},
+			"dates": {
+				"altered": 1699658204,
+				"published": 1689023904
+			},
+			"scene": "default"
+		}
+	},
+	{
+		"page": {
+			"id": "root",
+			"title": "An empty home",
+			"description": "Great things may be created here!",
+			"author": {
+				"name": "Mar (@strawmelonjuice)",
+				"thumbnail": "https://avatars.githubusercontent.com/u/101558380?s=400&u=aa8f776b3e11f02130575d1b46851cca05a0c981&v=4"
+			},
+			"content": {
+				"local": {
+					"source": {
+						"as": "markdown",
+						"value": "index.md"
+					}
+				}
+			},
+			"dates": {
+				"altered": 1699658204,
+				"published": 1689023804
+			},
+			"scene": "default"
+		}
+	},
+	{
+		"page": {
+			"id": "404",
+			"title": "Not found",
+			"description": "You lost it!",
+			"author": {
+				"name": "Mar (@strawmelonjuice)",
+				"thumbnail": "https://avatars.githubusercontent.com/u/101558380?s=400&u=aa8f776b3e11f02130575d1b46851cca05a0c981&v=4"
+			},
+			"content": {
+				"inline": {
+					"as": "markdown",
+					"value": "# This is a 404!\n\nWe could not find that page... Sorry! 😢, but you can always go back to the [home page](/)."
+				}
+			},
+			"dates": {
+				"altered": 1699658204,
+				"published": 1689023804
+			},
+			"scene": "default"
+		}
+	}
+]
