@@ -375,8 +375,12 @@ mod in_renderer {
             head.push_str("\n\t\t<meta charset=\"utf-8\" />");
             head.push_str(
                 format!(
-                    "\n\t\t<title>{}</title>",
-                    pageish_template_data.meta.title.clone()
+                    "\n\t\t<title>{}{}</title>",
+                    pageish_template_data.meta.title.clone(),
+                    match scene.sitename {
+                        Some(s) => format!(" - {}", s),
+                        None => String::new(),
+                    }
                 )
                 .as_str(),
             );
