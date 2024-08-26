@@ -12,8 +12,8 @@ use jsonc_parser::parse_to_serde_value as preparse_jsonc;
 use log::{error, warn};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::process;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub(crate) type CynthiaPublicationList = Vec<CynthiaPublication>;

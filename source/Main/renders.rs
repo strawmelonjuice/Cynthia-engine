@@ -1091,13 +1091,11 @@ pub(crate) mod json_html {
                 ContentBlock::HorizontalRule => "<hr>".to_string(),
                 ContentBlock::Html { content } => content.clone(),
                 ContentBlock::Markdown { content } => {
-                    match { markdown::to_html_with_options(content, &markdown::Options::gfm()) } {
+                    match markdown::to_html_with_options(content, &markdown::Options::gfm()) {
                         Ok(html) => html,
                         Err(_) => {
                             error!("An error occurred while rendering markdown embedded in JSON.");
-                            return String::from(
-                                "An error occurred while rendering this markdown.",
-                            );
+                            String::from("An error occurred while rendering this markdown.")
                         }
                     }
                 }

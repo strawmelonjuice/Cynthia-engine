@@ -18,8 +18,8 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, process};
 use tell::{CynthiaColors, CynthiaStyles};
-use tokio::sync::{Mutex, MutexGuard};
 use tokio::spawn;
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::cache::CynthiaCache;
 use crate::config::{CynthiaConf, CynthiaConfig, SceneCollectionTrait};
@@ -238,7 +238,7 @@ async fn interactive_initialiser() {
                 process::exit(1);
             }
         }
-    } 
+    }
 
     // Ask if the user wants to initialise a git repository
     let git: bool;
@@ -821,7 +821,9 @@ pub(crate) mod tell {
         }
     }
     pub(crate) fn horizline() -> String {
-        "\u{2500}".repeat(termsize::get().unwrap().cols as usize).to_string()
+        "\u{2500}"
+            .repeat(termsize::get().unwrap().cols as usize)
+            .to_string()
     }
     type CynthiaStyledString = String;
 
