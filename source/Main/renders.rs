@@ -810,3 +810,301 @@ mod inlines {
         format!("<style>{}</style>", file_content)
     }
 }
+
+pub(crate) mod json_html {
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn stringify_inner() {
+            let inner = vec![
+                ContentBlock::Paragraph {
+                    inner: "Hello, World!".to_string(),
+                },
+                ContentBlock::UnorderedList {
+                    inner: vec![
+                        ContentBlock::ListItem {
+                            inner: Inner::Elements(vec![ContentBlock::Image {
+                                src: "http://hi.jpg".to_string(),
+                                alt: Some("hi".to_string()),
+                            }]),
+                        },
+                        ContentBlock::ListItem {
+                            inner: Inner::Text("Hello, World!".to_string()),
+                        },
+                    ],
+                },
+            ];
+            let result = serde_json::to_string(&inner).unwrap();
+            let expectation = r#"[{"type":"paragraph","inner":"Hello, World!"},{"type":"unordered-list","inner":[{"type":"list-item","inner":{"elements":[{"type":"image","src":"http://hi.jpg","alt":"hi"}]}},{"type":"list-item","inner":"Hello, World!"}]}]"#.to_string();
+            assert_eq!(result, expectation);
+            let content_block_json = result.from_string().unwrap();
+            println!("{}", content_block_json.as_str());
+            let result = content_block_json.to_html().unwrap();
+            println!("{}", result);
+            let expectation = "<p>Hello, World!</p><ul><li><img src=\"http://hi.jpg\" alt=\"hi\"></li><li>Hello, World!</li></ul>";
+            assert_eq!(result, expectation);
+        }
+
+        #[test]
+        fn paragraphs() {
+            let result = (r#"[{"type":"text","inner":"Hello, World!"}]"#.from_string())
+                .unwrap()
+                .to_html()
+                .unwrap();
+            let expectation = "<p>Hello, World!</p>".to_string();
+            assert_eq!(result, expectation);
+        }
+        #[test]
+        fn lists() {
+            let json_str = r#"
+[
+    {
+        "type": "unordered-list",
+        "inner": [
+            {
+                "type": "li",
+                "inner": {"elements": [
+                    {
+                        "type": "paragraph",
+                        "inner": "**Hello, World!**"
+                    }
+                ]}
+            },
+            {
+                "type": "li",
+                "inner": {"elements": [
+                    {
+                        "type": "image",
+                        "src": "http://hi.jpg"
+                    }
+                ]}
+            }
+        ]
+    }
+]
+            "#;
+            let orpoerpoe = serde_json::from_str::<Vec<ContentBlock>>(json_str);
+            println!("{:?}", orpoerpoe);
+            let content_block_json = json_str.from_string().unwrap();
+            println!("{}", content_block_json.as_str());
+            let result = content_block_json.to_html().unwrap();
+            println!("{}", result);
+            let expectation =
+                "<ul><li><p>**Hello, World!**</p></li><li><img src=\"http://hi.jpg\"></li></ul>";
+            assert_eq!(result, expectation);
+        }
+    }
+
+    use log::error;
+    use serde::{Deserialize, Serialize};
+
+    fn inhouse_rewrap<T, E: std::fmt::Display>(value: Result<T, E>) -> Result<T, String> {
+        match value {
+            Ok(value) => Ok(value),
+            Err(err) => Err(format!("{err}")),
+        }
+    }
+
+    pub struct ContentBlocksJson {
+        json: String,
+    }
+
+    impl ContentBlocksJson {
+        #[allow(unused)]
+        pub fn as_str(&self) -> &str {
+            &self.json
+        }
+    }
+    trait ToHtml {
+        fn to_html(&self) -> String;
+    }
+    trait ToHtmlFallible {
+        fn to_html(&self) -> Result<String, String>;
+    }
+    trait FromString {
+        fn from_string(self) -> Result<ContentBlocksJson, String>;
+    }
+    impl FromString for &str {
+        fn from_string(self) -> Result<ContentBlocksJson, String> {
+            let blocks =
+                inhouse_rewrap::<Vec<ContentBlock>, serde_json::Error>(serde_json::from_str(self));
+            if blocks.is_ok() {
+                Ok(ContentBlocksJson {
+                    json: self.to_string(),
+                })
+            } else {
+                Err("Could not parse JSON.".to_string())
+            }
+        }
+    }
+    impl FromString for String {
+        fn from_string(self) -> Result<ContentBlocksJson, String> {
+            let blocks =
+                inhouse_rewrap::<Vec<ContentBlock>, serde_json::Error>(serde_json::from_str(&self));
+            if blocks.is_ok() {
+                Ok(ContentBlocksJson { json: self })
+            } else {
+                Err("Could not parse JSON.".to_string())
+            }
+        }
+    }
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(tag = "type")]
+    #[serde(rename_all = "kebab-case")]
+    pub enum ContentBlock {
+        // Basic HTML blocks.
+        #[serde(alias = "paragraph")]
+        #[serde(alias = "p")]
+        #[serde(alias = "text")]
+        Paragraph { inner: String },
+        #[serde(alias = "header-1")]
+        #[serde(alias = "h1")]
+        Header1 { inner: String },
+        #[serde(alias = "header-2")]
+        #[serde(alias = "h2")]
+        Header2 { inner: String },
+        #[serde(alias = "header-3")]
+        #[serde(alias = "h3")]
+        Header3 { inner: String },
+        #[serde(alias = "header-4")]
+        #[serde(alias = "h4")]
+        Header4 { inner: String },
+        #[serde(alias = "header-5")]
+        #[serde(alias = "h5")]
+        Header5 { inner: String },
+        #[serde(alias = "header-6")]
+        #[serde(alias = "h6")]
+        Header6 { inner: String },
+        #[serde(alias = "list-item")]
+        #[serde(alias = "li")]
+        #[serde(alias = "listitem")]
+        ListItem { inner: Inner },
+        #[serde(alias = "unordered-list")]
+        #[serde(alias = "ul")]
+        UnorderedList { inner: Vec<ContentBlock> },
+        #[serde(alias = "ordered-list")]
+        #[serde(alias = "ol")]
+        OrderedList { inner: Vec<ContentBlock> },
+        #[serde(alias = "blockquote")]
+        Blockquote { inner: Inner },
+        #[serde(alias = "code")]
+        Code { inner: Inner },
+        #[serde(alias = "code-block")]
+        CodeBlock { inner: Inner },
+        #[serde(alias = "image")]
+        Image { src: String, alt: Option<String> },
+        #[serde(alias = "link")]
+        Link { href: String, inner: Inner },
+        #[serde(alias = "horizontal-rule")]
+        #[serde(alias = "hr")]
+        HorizontalRule,
+        #[serde(alias = "div")]
+        #[serde(alias = "divblock")]
+        #[serde(alias = "div-block")]
+        DivBlock { inner: Vec<ContentBlock> },
+        #[serde(alias = "span")]
+        #[serde(alias = "spanblock")]
+        #[serde(alias = "span-block")]
+        SpanBlock { inner: Inner },
+        #[serde(alias = "bttn")]
+        #[serde(alias = "button")]
+        Button { inner: Inner },
+        // Embed formats blocks.
+        #[serde(alias = "html")]
+        #[serde(alias = "raw-html")]
+        Html { content: String },
+        #[serde(alias = "md")]
+        #[serde(alias = "markdown")]
+        Markdown { content: String },
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub enum Inner {
+        #[serde(rename = "elements")]
+        Elements(Vec<ContentBlock>),
+        #[serde(untagged)]
+        Text(String),
+    }
+
+    impl ToHtmlFallible for ContentBlocksJson {
+        fn to_html(&self) -> Result<String, String> {
+            let blocks: Vec<ContentBlock> = inhouse_rewrap::<Vec<ContentBlock>, serde_json::Error>(
+                serde_json::from_str(&self.json),
+            )?;
+            Ok(blocks.to_html())
+        }
+    }
+
+    impl ToHtml for Vec<ContentBlock> {
+        fn to_html(&self) -> String {
+            let mut html = String::new();
+            for block in self {
+                html.push_str(&block.to_html());
+            }
+            html
+        }
+    }
+
+    impl ToHtml for Inner {
+        fn to_html(&self) -> String {
+            match self {
+                Inner::Text(text) => text.clone(),
+                Inner::Elements(elements) => {
+                    let mut html = String::new();
+                    for element in elements {
+                        html.push_str(&element.to_html());
+                    }
+                    html
+                }
+            }
+        }
+    }
+
+    impl ToHtml for ContentBlock {
+        fn to_html(&self) -> String {
+            match self {
+                ContentBlock::Paragraph { inner } => format!("<p>{}</p>", inner),
+                ContentBlock::Header1 { inner } => format!("<h1>{}</h1>", inner),
+                ContentBlock::Header2 { inner } => format!("<h2>{}</h2>", inner),
+                ContentBlock::Header3 { inner } => format!("<h3>{}</h3>", inner),
+                ContentBlock::Header4 { inner } => format!("<h4>{}</h4>", inner),
+                ContentBlock::Header5 { inner } => format!("<h5>{}</h5>", inner),
+                ContentBlock::Header6 { inner } => format!("<h6>{}</h6>", inner),
+                ContentBlock::ListItem { inner } => format!("<li>{}</li>", inner.to_html()),
+                ContentBlock::UnorderedList { inner } => format!("<ul>{}</ul>", inner.to_html()),
+                ContentBlock::OrderedList { inner } => format!("<ol>{}</ol>", inner.to_html()),
+                ContentBlock::Blockquote { inner } => {
+                    format!("<blockquote>{}</blockquote>", inner.to_html())
+                }
+                ContentBlock::Code { inner } => format!("<code>{}</code>", inner.to_html()),
+                ContentBlock::CodeBlock { inner } => format!("<pre>{}</pre>", inner.to_html()),
+                ContentBlock::Image { src, alt } => match alt {
+                    Some(alt) => format!("<img src=\"{}\" alt=\"{}\">", src, alt),
+                    None => format!("<img src=\"{}\">", src),
+                },
+                ContentBlock::Link { href, inner } => {
+                    format!("<a href=\"{}\">{}</a>", href, inner.to_html())
+                }
+                ContentBlock::HorizontalRule => "<hr>".to_string(),
+                ContentBlock::Html { content } => content.clone(),
+                ContentBlock::Markdown { content } => {
+                    match { markdown::to_html_with_options(content, &markdown::Options::gfm()) } {
+                        Ok(html) => html,
+                        Err(_) => {
+                            error!("An error occurred while rendering markdown embedded in JSON.");
+                            return String::from(
+                                "An error occurred while rendering this markdown.",
+                            );
+                        }
+                    }
+                }
+                ContentBlock::DivBlock { inner } => todo!(),
+                ContentBlock::SpanBlock { inner } => todo!(),
+                ContentBlock::Button { inner } => todo!(),
+            }
+        }
+    }
+}
