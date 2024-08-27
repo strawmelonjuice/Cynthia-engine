@@ -26,8 +26,6 @@ export default async function handle(
   incoming: string,
   cynthiabase: PluginBase,
 ) {
-  console.error("Got: " + incoming);
-  console.log("Going to parse: " + incoming);
   if (incoming.startsWith("parse: ")) {
     Cynthia.console.debug("Got a request.");
     Cynthia.console.debug(`Buffer: ${incoming}`);
