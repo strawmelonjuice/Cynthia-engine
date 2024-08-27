@@ -10,7 +10,7 @@ use futures::join;
 use log::LevelFilter;
 use log::{debug, error};
 use log::{info, trace};
-use requestresponse::{assets_with_cache, serve};
+use requestresponse::{assets_with_cache, category, post, serve, tags};
 use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
 use std::path::PathBuf;
@@ -628,8 +628,11 @@ async fn start() {
         Data::new(server_context_arc_mutex.clone());
     let main_server = match HttpServer::new(move || {
         App::new()
+            .service(tags)
+            .service(category)
             .service(assets_with_cache)
             .service(serve)
+            .service(post)
             .app_data(server_context_data.clone())
     })
     .bind(("localhost", config.port))

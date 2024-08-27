@@ -1,3 +1,4 @@
+use crate::publications::CynthiaPublication;
 /*
  * Copyright (c) 2024, MLC 'Strawmelonjuice' Bloeiman
  *
@@ -107,10 +108,10 @@ pub(crate) async fn serve(
             }
             return response.body(response_body);
         }
-        crate::externalpluginservers::EPSResponseBody::NoneOk => {}
-        crate::externalpluginservers::EPSResponseBody::Disabled => {}
+        crate::externalpluginservers::EPSResponseBody::NoneOk
+        | crate::externalpluginservers::EPSResponseBody::Disabled => (),
         _ => return HttpResponse::InternalServerError().body("Internal server error."),
-    }
+    };
     let s = renders::check_pgid(page_id.to_string(), server_context_mutex.clone()).await;
     match s {
         renders::PGIDCheckResponse::Ok => {
@@ -344,7 +345,7 @@ pub(crate) async fn post(
         },
     )
     .await;
-    match pluginsresponse {
+    return match pluginsresponse {
         crate::externalpluginservers::EPSResponseBody::WebResponse {
             append_headers,
             response_body,
@@ -369,11 +370,290 @@ pub(crate) async fn post(
             for (k, v) in append_headers {
                 response.append_header((k, v));
             }
+            response.body(response_body)
+        }
+        crate::externalpluginservers::EPSResponseBody::NoneOk
+        | crate::externalpluginservers::EPSResponseBody::Disabled => {
+            HttpResponse::NoContent().finish()
+        }
+        _ => HttpResponse::InternalServerError().body("Internal server error."),
+    };
+}
+#[actix_web::routes]
+#[get("/category/{c:.*}")]
+#[get("/c/{c:.*}")]
+#[get("/cat/{c:.*}")]
+async fn category(
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (w_s, w_a) = urlspace();
+    let c = req.match_info().get("c").unwrap();
+    let virtual_publication = CynthiaPublication::PostList {
+        id: format!("category:{}", c),
+        title: format!("Category: {}", c),
+        short: None,
+        filter: crate::publications::PostListFilter::Category(c.to_string()),
+        scene_override: None,
+    };
+    // We can't lock the mutex here because it wouldn't be usable by EPS, so we need to use a callback.
+    // let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    let config_clone = server_context_mutex
+        .lock_callback(|a| {
+            a.request_count += 1;
+            a.config.clone()
+        })
+        .await;
+
+    let page_id_string = format!(
+        "virtual:{}",
+        serde_json::to_string(&virtual_publication).unwrap()
+    );
+    let page_id = page_id_string.as_str();
+    let page_uri = if req.uri() == "" {
+        "root".to_string()
+    } else {
+        req.uri().to_string()
+    };
+    let headers = {
+        // Transform it into makeshift JSON!
+        let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>())
+            .replace("(\"", "[\"")
+            .replace("\")", "\"]");
+        // And then parse it back into an object.
+        serde_json::from_str(&json_kinda).unwrap_or_default()
+    };
+    trace!("{}", serde_json::to_string(&headers).unwrap());
+    let pluginsresponse = contact_eps(
+        server_context_mutex.clone(),
+        EPSRequestBody::WebRequest {
+            uri: page_uri.clone(),
+            headers,
+            method: "get".to_string(),
+        },
+    )
+    .await;
+    match pluginsresponse {
+        crate::externalpluginservers::EPSResponseBody::WebResponse {
+            append_headers,
+            response_body,
+        } => {
+            let coninfo = req.connection_info();
+            let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+            config_clone.tell(format!(
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "GET:200".color_ok_green(),
+                {
+                    let uri = req.uri().to_string();
+                    if uri == *"" {
+                        "/".to_string()
+                    } else {
+                        uri
+                    }
+                },
+                ip.color_lightblue(),
+                "extern".color_pink()
+            ));
+            let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
+            for (k, v) in append_headers {
+                response.append_header((k, v));
+            }
             return response.body(response_body);
         }
-        crate::externalpluginservers::EPSResponseBody::NoneOk => {}
-        crate::externalpluginservers::EPSResponseBody::Disabled => {}
+        crate::externalpluginservers::EPSResponseBody::NoneOk
+        | crate::externalpluginservers::EPSResponseBody::Disabled => (),
         _ => return HttpResponse::InternalServerError().body("Internal server error."),
     }
-    HttpResponse::NoContent().finish()
+    let from_cache: bool;
+    let cache_result = server_context_mutex
+        .lock_callback(|servercontext| servercontext.get_cache(page_id, 0))
+        .await;
+    let page = match cache_result {
+        Some(c) => {
+            from_cache = true;
+            c
+        }
+        None => {
+            from_cache = false;
+            // Now that we're past the EPS, we can lock the mutex for this scope.
+            let page =
+                render_from_pgid(page_id.parse().unwrap(), server_context_mutex.clone()).await;
+            let mut server_context = server_context_mutex.lock().await;
+            server_context
+                .store_cache(
+                    page_id,
+                    page.clone().unwrap().as_bytes(),
+                    config_clone.clone().cache.lifetimes.served,
+                )
+                .unwrap();
+            server_context
+                .get_cache(page_id, config_clone.clone().cache.lifetimes.served)
+                .unwrap_or(CynthiaCacheExtraction(page.unwrap().as_bytes().to_vec(), 0))
+        }
+    };
+
+    let coninfo = req.connection_info();
+    let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+    config_clone.tell(format!(
+        "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+        "GET:200".color_ok_green(),
+        {
+            let uri = req.uri().to_string();
+            if uri == *"" {
+                "/".to_string()
+            } else {
+                uri
+            }
+        },
+        ip.color_lightblue(),
+        {
+            if from_cache {
+                "cache".color_green()
+            } else {
+                "generated".color_yellow()
+            }
+        }
+    ));
+    HttpResponse::Ok()
+        .append_header(("Content-Type", "text/html; charset=utf-8"))
+        .body(page.0)
+}
+
+#[actix_web::routes]
+#[get("/tag/{t:.*}")]
+#[get("/t/{t:.*}")]
+async fn tags(
+    server_context_mutex: Data<Arc<Mutex<ServerContext>>>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (w_s, w_a) = urlspace();
+    let t = req.match_info().get("t").unwrap();
+    let virtual_publication = CynthiaPublication::PostList {
+        id: format!("tag:{}", t),
+        title: format!("Tag: {}", t),
+        short: None,
+        filter: crate::publications::PostListFilter::Tag(t.to_string()),
+        scene_override: None,
+    };
+    // We can't lock the mutex here because it wouldn't be usable by EPS, so we need to use a
+    // callback.
+    // let mut server_context: MutexGuard<ServerContext> = server_context_mutex.lock().await;
+    let config_clone = server_context_mutex
+        .lock_callback(|a| {
+            a.request_count += 1;
+            a.config.clone()
+        })
+        .await;
+    let page_id_string = format!(
+        "virtual:{}",
+        serde_json::to_string(&virtual_publication).unwrap()
+    );
+    let page_id = page_id_string.as_str();
+    let page_uri = if req.uri() == "" {
+        "root".to_string()
+    } else {
+        req.uri().to_string()
+    };
+    let headers = {
+        // Transform it into makeshift JSON!
+        let json_kinda = format!("{:?}", &req.headers().iter().collect::<Vec<_>>())
+            .replace("(\"", "[\"")
+            .replace("\")", "\"]");
+        // And then parse it back into an object.
+        serde_json::from_str(&json_kinda).unwrap_or_default()
+    };
+    trace!("{}", serde_json::to_string(&headers).unwrap());
+    let pluginsresponse = contact_eps(
+        server_context_mutex.clone(),
+        EPSRequestBody::WebRequest {
+            uri: page_uri.clone(),
+            headers,
+            method: "get".to_string(),
+        },
+    )
+    .await;
+    match pluginsresponse {
+        crate::externalpluginservers::EPSResponseBody::WebResponse {
+            append_headers,
+            response_body,
+        } => {
+            let coninfo = req.connection_info();
+            let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+            config_clone.tell(format!(
+                "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+                "GET:200".color_ok_green(),
+                {
+                    let uri = req.uri().to_string();
+                    if uri == *"" {
+                        "/".to_string()
+                    } else {
+                        uri
+                    }
+                },
+                ip.color_lightblue(),
+                "extern".color_pink()
+            ));
+            let mut response = HttpResponse::build(actix_web::http::StatusCode::OK);
+            for (k, v) in append_headers {
+                response.append_header((k, v));
+            }
+            return response.body(response_body);
+        }
+        crate::externalpluginservers::EPSResponseBody::NoneOk
+        | crate::externalpluginservers::EPSResponseBody::Disabled => (),
+        _ => return HttpResponse::InternalServerError().body("Internal server error."),
+    }
+    let from_cache: bool;
+    let cache_result = server_context_mutex
+        .lock_callback(|servercontext| servercontext.get_cache(page_id, 0))
+        .await;
+    let page = match cache_result {
+        Some(c) => {
+            from_cache = true;
+            c
+        }
+        None => {
+            from_cache = false;
+            // Now that we're past the EPS, we can lock the mutex for this scope.
+            let page =
+                render_from_pgid(page_id.parse().unwrap(), server_context_mutex.clone()).await;
+            let mut server_context = server_context_mutex.lock().await;
+            server_context
+                .store_cache(
+                    page_id,
+                    page.clone().unwrap().as_bytes(),
+                    config_clone.clone().cache.lifetimes.served,
+                )
+                .unwrap();
+            server_context
+                .get_cache(page_id, config_clone.clone().cache.lifetimes.served)
+                .unwrap_or(CynthiaCacheExtraction(page.unwrap().as_bytes().to_vec(), 0))
+        }
+    };
+
+    let coninfo = req.connection_info();
+    let ip = coninfo.realip_remote_addr().unwrap_or("<unknown IP>");
+    config_clone.tell(format!(
+        "{}\t{:>w_s$.w_a$}\t\t\t{}\t{}",
+        "GET:200".color_ok_green(),
+        {
+            let uri = req.uri().to_string();
+            if uri == *"" {
+                "/".to_string()
+            } else {
+                uri
+            }
+        },
+        ip.color_lightblue(),
+        {
+            if from_cache {
+                "cache".color_green()
+            } else {
+                "generated".color_yellow()
+            }
+        }
+    ));
+    HttpResponse::Ok()
+        .append_header(("Content-Type", "text/html; charset=utf-8"))
+        .body(page.0)
 }

@@ -42,7 +42,13 @@ impl PostLists for CynthiaPostList {
                 .collect(),
             PostListFilter::Category(category) => self
                 .iter()
-                .filter(|x| x.category == Some(category.clone()))
+                .filter(|x| {
+                    if let Some(c) = &x.category {
+                        c.to_lowercase() == category.to_lowercase()
+                    } else {
+                        false
+                    }
+                })
                 .cloned()
                 .collect(),
             PostListFilter::Author(author) => self
@@ -66,6 +72,16 @@ impl PostLists for CynthiaPostList {
         }
     }
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication> {
+        if id.starts_with("virtual:") {
+            let l = id.split("virtual:").collect::<Vec<&str>>()[1];
+            return match serde_json::from_str(l) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    error!("Couldn't parse virtual publication.\n\n\t\t{e}");
+                    None
+                }
+            };
+        };
         let mut a: Option<CynthiaPublication> = None;
         for i in self {
             if i.id == id {
@@ -173,18 +189,42 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
             .cloned()
     }
     fn get_by_id(&self, id: String) -> Option<CynthiaPublication> {
+        if id.starts_with("virtual:") {
+            let l = id.split("virtual:").collect::<Vec<&str>>()[1];
+            return match serde_json::from_str(l) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    error!("Couldn't parse virtual publication.\n\n\t\t{e}");
+                    None
+                }
+            };
+        };
         self.iter().find(|x| x.get_id() == id).cloned()
     }
     fn validate(&self, config: CynthiaConfClone) -> bool {
         // Collect validation results in a vector
         let mut valid: Vec<bool> = vec![];
 
+        // Check for ids with reserved names or prefixes
+        // - Reserved prefixes: "es/", "category/", "tag/", "virtual:"
+        let reserved_prefixes = vec!["es/", "category/", "tag/", "virtual:"];
+        let reserved_prefix = self.iter().all(|x| {
+            let id = x.get_id();
+            if reserved_prefixes.iter().any(|&p| id.starts_with(p)) {
+                error!("Id with reserved prefix found in publication file: {}", id);
+                false
+            } else {
+                true
+            }
+        });
+        valid.push(reserved_prefix);
+
         // Check for duplicate ids
         let mut ids: Vec<String> = vec![];
         let duplication = self.iter().all(|x| {
             let id = x.get_id();
             if ids.contains(&id) {
-                error!("Duplicate id found in published.jsonc: {}", id);
+                error!("Duplicate id found in publication file: {}", id);
                 false
             } else {
                 ids.push(id);
@@ -196,14 +236,14 @@ impl CynthiaPublicationListTrait for CynthiaPublicationList {
         // - 404 page
         let notfound_exists = self.get_notfound(config).is_some();
         if !notfound_exists {
-            error!("404 page not found in published.jsonc: Add a page with id being either \"404\" or \"notfound\" or the id specified in the config.");
+            error!("404 page not found in publication file: Add a page with id being either \"404\" or \"notfound\" or the id specified in the config.");
         }
         valid.push(notfound_exists);
 
         // - Root page
         let root_exists = self.get_root().is_some();
         if !root_exists {
-            error!("Root page not found in published.jsonc: Add a page with id being either \"root\" or \"/\"");
+            error!("Root page not found in publication file: Add a page with id being either \"root\" or \"/\"");
         }
         valid.push(root_exists);
 
