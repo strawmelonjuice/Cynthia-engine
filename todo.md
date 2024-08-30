@@ -1,9 +1,16 @@
 # To-Do
 
 - [ ] Re-do of entire project
-  - [ ] New way of doing plugins
-    - Part through features
-    - Part through plugins in JS, ran in Boa
+  - [ ] Plugins
+    - [x] Re-do plugin loader, make it more like Cynthia v1 (using TypeScript imports)
+    - [ ] Implement new plugin runtimes
+        - [x] JavaScript/TypeScript
+        - [ ] Python
+        - [ ] Compiled languages: Gleam, Go, Rust, etc. (through codegen)
+          - [ ] Implement codegen
+              - [ ] Gleam
+              - [ ] Go
+              - [ ] Rust
   - [ ] Re-do of the way the configuration is structured
     - [x] `published.jsonc` is to be restructured using Serde's enumerator support
     - [ ] `Cynthia.toml` uses logging settings alike Lumina's.
@@ -11,7 +18,7 @@
     - [ ] Plugin documentation
       - [ ] For plugin developers
       - [ ] For users
-    - [ ] Configuration documentation
+    - [x] Configuration documentation
       - [ ] `published.jsonc`
         - [ ] Structure and usage
           - [ ] Publication types
