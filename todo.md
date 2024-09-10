@@ -5,8 +5,8 @@
     - [x] Re-do plugin loader, make it more like Cynthia v1 (using TypeScript imports)
     - [ ] Implement new plugin runtimes
         - [x] JavaScript/TypeScript
-        - [ ] Python
-        - [ ] Compiled languages: Gleam, Go, Rust, etc. (through codegen)
+        - [ ] Python **--> For a future release**
+        - [ ] Compiled languages: Gleam, Go, Rust, etc. (through codegen) **--> For a future release**
           - [ ] Implement codegen
               - [ ] Gleam
               - [ ] Go
