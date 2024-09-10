@@ -11,9 +11,9 @@
               - [ ] Gleam
               - [ ] Go
               - [ ] Rust
-  - [ ] Re-do of the way the configuration is structured
+  - [x] Re-do of the way the configuration is structured
     - [x] `published.jsonc` is to be restructured using Serde's enumerator support
-    - [ ] `Cynthia.toml` uses logging settings alike Lumina's.
+    - [x] `Cynthia.toml` uses logging settings alike Lumina's.
   - [ ] Writing some documentation
     - [ ] Plugin documentation
       - [ ] For plugin developers
