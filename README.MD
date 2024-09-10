@@ -7,6 +7,11 @@
 <font style="color: red; font-weight: bold">
 Cynthia is currently in development, and is not yet ready for use. Cynthia is semantically versioned, which means no huge breaks should be expected between MAJOR versions. In the minor versions, however... Cynthia is not nearly done getting new features!</font>
 
+> [!WARNING]  
+> Windows support is not yet available. Cynthia is currently only supported on Linux and MacOS.
+> As I don't run servers on Windows, it doesn't make sense for me to support it. If you want to run Cynthia on Windows, you can try using WSL2.
+> This might be fixed in the future, but it's not something I'm actively working on.
+
 ## usage
 
 Firstly, you need to install the package. You can do this by running the following command:
