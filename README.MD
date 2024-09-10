@@ -1,24 +1,38 @@
 # Cynthia!(.rs)
+
 - Generating websites
 - Serving them
 - Using a simple file-based content management system (CMS)
-<font style="color: red"><b>
 
-Cynthia is in active development, but not ready for full production usage! It has some releases for testing, but none are marked as 'ready' at the moment.
+<font style="color: red; font-weight: bold">
+Cynthia is currently in development, and is not yet ready for use. Cynthia is semantically versioned, which means no huge breaks should be expected between MAJOR versions. In the minor versions, however... Cynthia is not nearly done getting new features!</font>
 
-</font></b>
+## usage
 
-This page is either found on [/p/about/](/p/about/) in your fresh Cynthia install, or on <https://github.com/strawmelonjuice/CynthiaCMS-JS/blob/main/README.MD>.
+Firstly, you need to install the package. You can do this by running the following command:
 
-Cynthia is an alternative to the engine I built to host <https://strawmelonjuice.com/>. (The original engine is built on a mix of PHP and javascript, Cynthia is pure Rust (yes, Rust!).)
+```bash
+cargo install cynthiaweb
+```
 
-The philosophy?
+After that, you can run the following command to generate a new website:
 
-> Why use a database if your content is mostly static? Why use an admin panel if you have file access?
+```bash
+md abc
+cd abc
+cynthiaweb init
+```
 
-Sure, WordPress can be useful, and can be the best way to set up your website.
-But if you like tinkering about with configuration files and like writing your pages in markdown (yes, that's Cynthia's default format!), then join the Cynthia side (basically Jekyll but less... Jekyll, and no Ruby).
-Oh! Aaand, for those who like using a panel or app to change their site, yes. It will come. But opt-in, not opt-out.
-## Getting started
+The initialisation wizard will ask you a few questions about your website, and then generate the necessary files for you.
 
-_The docs for this will come, when cynthia is ready for usage!_
+You can then run the following command to serve your website:
+
+```bash
+cynthiaweb start
+```
+
+Or bind it to a service.
+
+You'll of course need to forward Cynthia to the web, which you can do with a reverse proxy like Nginx or Apache.
+
+More documentation will be available on <https://cynthia-docs.strawmelonjuice.com>!
