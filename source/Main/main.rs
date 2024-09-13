@@ -119,6 +119,7 @@ async fn main() {
         .to_ascii_lowercase()
         .as_str()
     {
+        #[cfg(feature = "selfinit")]
         "init" => {
             interactive_initialiser().await;
         }
@@ -201,6 +202,7 @@ async fn main() {
     }
 }
 
+#[cfg(feature = "selfinit")]
 async fn interactive_initialiser() {
     // Steps for the initialiser:
     // 1. Check if over a config already exists.

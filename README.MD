@@ -10,7 +10,8 @@ Cynthia is currently in development, and is not yet ready for use. Cynthia is se
 > [!WARNING]  
 > Windows support is not yet available. Cynthia is currently only supported on Linux and MacOS.
 > As I don't run servers on Windows, it doesn't make sense for me to support it. If you want to run Cynthia on Windows, you can try using WSL2.
-> This might be fixed in the future, but it's not something I'm actively working on.
+> 
+>> UPDATE: If you _need_ Windows support timely, disable the `selfinit` feature while compiling Cynthia. This will remove the need for the lzma crate, which is not yet supported on Windows.
 
 ## usage
 
