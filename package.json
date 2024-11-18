@@ -1,33 +1,34 @@
 {
-  "devDependencies": {
-    "tailwindcss": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "terser": "latest",
-    "typescript": "^5.0.0",
-    "postcss-cli": "^11.0.0",
-    "@biomejs/biome": "latest",
-    "@types/node": "latest",
-    "clean-css-cli": "4"
-  },
-  "dependencies": {
-    "@types/bun": "^1.1.6",
-    "cynthia-plugin-api": "file:source/Plugin-runners/node-plugin-api/",
-    "handlebars": "^4.7.8"
-  },
-  "scripts": {
-    "build": "npm run build:deps && npm run build:rs",
-    "build:deps": "npm run build:css && npm run build:jsts && npm run minify",
-    "build:css-disabled": "postcss -o ./target/generated/css/main.css src-frontend/styles/main.pcss",
-    "build:css": "echo tailwind compilation is disabled.",
-    "build:jsts": "npx -y bun build './source/Plugin-runners/node-plugin-runner/src/main.ts' --minify --target=node --outfile './target/generated/js/plugins-runtime.js'",
-    "build:rs": "cargo build",
-    "format": "npm run format:rs && npm run format:ts && npm run minify:css",
-    "format:rs": "cargo fmt",
-    "format:ts": "npx biome format \"./src-frontend/ts/main.ts\" --write",
-    "minify": "echo minification is disabled.",
-    "minify-disabled": "npm run minify:js && npm run minify:css",
-    "minify:css": "npx cleancss -O1 specialComments:all --inline none ./target/generated/css/main.css > ./target/generated/css/main.min.css",
-    "start": "npm run build && cargo run"
-  }
+	"devDependencies": {
+		"tailwindcss": "latest",
+		"autoprefixer": "latest",
+		"postcss": "latest",
+		"terser": "latest",
+		"typescript": "^5.0.0",
+		"postcss-cli": "^11.0.0",
+		"@biomejs/biome": "latest",
+		"@types/node": "latest",
+		"clean-css-cli": "4"
+	},
+	"dependencies": {
+		"@types/bun": "^1.1.6",
+		"cynthia-plugin-api": "file:source/Plugin-runners/node-plugin-api/",
+		"handlebars": "^4.7.8"
+	},
+	"scripts": {
+		"build": "bun run build:deps && bun run build:rs",
+		"build:deps": "bun run build:css && bun run build:jsts && bun run minify",
+		"build:css-disabled": "postcss -o ./target/generated/css/main.css src-frontend/styles/main.pcss",
+		"build:css": "echo tailwind compilation is disabled.",
+		"build:jsts": "bun x -y bun build './source/Plugin-runners/node-plugin-runner/src/main.ts' --minify --target=node --outfile './target/generated/js/plugins-runtime.js'",
+		"build:rs": "cargo build",
+		"format": "bun run format:rs && bun run format:ts && bun run minify:css",
+		"format:rs": "cargo fmt",
+		"format:ts": "bun x biome format \"./src-frontend/ts/main.ts\" --write",
+		"minify": "echo minification is disabled.",
+		"minify-disabled": "bun run minify:js && bun run minify:css",
+		"minify:css": "bun x cleancss -O1 specialComments:all --inline none ./target/generated/css/main.css > ./target/generated/css/main.min.css",
+		"start": "bun run build && cargo run"
+	}
 }
+
